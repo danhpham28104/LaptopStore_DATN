@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Product Details - NiceShop Bootstrap Template</title>
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+
+  <!-- Favicons -->
+  <link href="assets/img/favicon.png" rel="icon">
+  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+  <link th:href="@{/css/bootstrap-icons.css}" rel="stylesheet">
+  <link th:href="@{/css/swiper-bundle.min.css}" rel="stylesheet">
+  <link th:href="@{/css/aos.css}" rel="stylesheet">
+  <link th:href="@{/css/glightbox.min.css}" rel="stylesheet">
+  <link th:href="@{/css/drift-basic.css}" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Main CSS File -->
+  <link th:href="@{/css/main.css}" rel="stylesheet">
+  <link th:href="@{/css/style.css}" rel="stylesheet">
+
+
+</head>
+
+<body class="product-details-page">
+
+<!-- Gọi fragment header -->
+<div th:replace="fragments/header :: siteHeader"></div>
+
+
+<main class="main">
+
+  <!-- Page Title -->
+  <div class="page-title light-background">
+    <div class="container d-lg-flex justify-content-between align-items-center">
+      <h1 class="mb-2 mb-lg-0">Chi tiết sản phẩm</h1>
+      <nav class="breadcrumbs">
+        <ol>
+          <li>
+            <a th:href="@{/}"
+                 th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI == '/'} ? 'active' : ''">
+              Trang chủ
+            </a>
+          </li>
+          <li class="current">Chi tiết sản phẩm</li>
+        </ol>
+      </nav>
+    </div>
+  </div><!-- End Page Title -->
+
+  <!-- Product Details Section -->
+  <section id="product-details" class="product-details section">
+    <div class="container" data-aos="fade-up" data-aos-delay="100">
+      <div class="row g-4">
+
+        <!-- Product Gallery -->
+        <div class="col-lg-7" data-aos="zoom-in" data-aos-delay="150">
+          <div class="product-gallery">
+            <div class="main-showcase">
+              <div class="image-zoom-container">
+                <!-- Ảnh chính -->
+                <img th:src="@{${allImages[0]}}"
+                     class="img-fluid main-product-image drift-zoom"
+                     id="main-product-image"
+                     th:data-zoom="@{${allImages[0]}}">
+
+
+                <div class="image-navigation">
+                  <button class="nav-arrow prev-image image-nav-btn" type="button">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                  <button class="nav-arrow next-image image-nav-btn" type="button">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thumbnail list -->
+            <div class="thumbnail-grid">
+              <div class="thumbnail-wrapper thumbnail-item"
+                   th:each="img, iterStat : ${allImages}"
+                   th:classappend="${iterStat.index == 0} ? ' active'">
+
+                <img th:src="@{${img}}"
+                     class="img-fluid"
+                     th:alt="'View ' + ${iterStat.count}">
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ✅ CAM KẾT SẢN PHẨM -->
+          <div class="product-guarantee mt-4">
+            <h4 class="fw-bold mb-3">Cam kết sản phẩm</h4>
+            <div class="guarantee-grid">
+
+              <div class="guarantee-item">
+                <i class="bi bi-shield-check icon"></i>
+                <p>
+                  Laptop mới 100%, chính hãng. LaptopStore cam kết sản phẩm đúng mô tả, nguyên seal/brand new (tuỳ sản phẩm) và đầy đủ hoá đơn/phiếu bảo hành.
+                </p>
+              </div>
+
+              <div class="guarantee-item">
+                <i class="bi bi-arrow-repeat icon"></i>
+                <p>
+                  1 đổi 1 trong 15 ngày nếu có lỗi phần cứng do nhà sản xuất (theo chính sách cửa hàng). Bảo hành theo tiêu chuẩn của hãng hoặc trung tâm uỷ quyền.
+                  <a href="#" class="text-primary fw-semibold">Xem chi tiết</a>
+                </p>
+              </div>
+
+              <div class="guarantee-item">
+                <i class="bi bi-box-seam icon"></i>
+                <p>Hộp, sách hướng dẫn, sạc &amp; phụ kiện đi kèm đầy đủ (tuỳ mẫu laptop).</p>
+              </div>
+
+              <div class="guarantee-item">
+                <i class="bi bi-receipt icon"></i>
+                <p>Giá sản phẩm <strong>đã bao gồm thuế VAT</strong>, giúp bạn yên tâm khi thanh toán.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Product Details -->
+        <div class="col-lg-5" data-aos="fade-left" data-aos-delay="200">
+          <div class="product-details">
+
+            <div class="product-badge-container">
+              <span class="badge-category" th:text="${product.brand != null ? product.brand.name : 'Thương hiệu'}">Brand</span>
+              <div class="rating-group">
+                <div class="stars">
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-fill"></i>
+                  <i class="bi bi-star-half"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="pricing-section">
+              <div class="price-display">
+                <h1 class="product-name mb-2" th:text="${product.name}">Tên sản phẩm</h1>
+
+                <div class="product-price-box mb-2">
+
+                  <!-- Giá sau giảm -->
+                  <span class="sale-price fw-bold text-danger fs-3"
+                        th:if="${product.salePercent != null and product.salePercent > 0}"
+                        th:text="${#numbers.formatDecimal(product.finalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                  </span>
+
+                  <!-- Giá gốc (gạch ngang nếu giảm) -->
+                  <span class="original-price text-muted ms-2"
+                        th:classappend="${product.salePercent != null and product.salePercent > 0} ? 'text-decoration-line-through' : ''"
+                        th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
+                  </span>
+
+                  <!-- Badge giảm giá -->
+                  <span class="badge bg-danger ms-2"
+                        th:if="${product.salePercent != null and product.salePercent > 0}"
+                        th:text="'-' + ${product.salePercent} + '%'">
+                  </span>
+
+                </div>
+
+              </div>
+              <div class="savings-info">
+                <span class="save-amount" th:if="${product.stock > 0}">Còn hàng</span>
+                <span class="discount-percent" th:if="${product.stock == 0}">(Hết hàng)</span>
+              </div>
+            </div>
+
+            <!-- MÀU SẮC -->
+            <div class="variant-section mt-3">
+              <label class="fw-bold d-block mb-2">Màu sắc:</label>
+              <div id="colorOptions" class="d-flex flex-wrap gap-2">
+                <button type="button"
+                  class="btn btn-outline-dark color-btn"
+                  th:each="v : ${variants}"
+                  th:text="${v.color}"
+                  th:data-color="${v.color}"
+                  th:data-image="@{${v.image}}"
+                  th:data-variant-id="${v.id}"
+                  th:data-storage="${v.storage}">
+                </button>
+              </div>
+            </div>
+
+            <!-- DUNG LƯỢNG -->
+            <div class="variant-section mt-3">
+              <label class="fw-bold d-block mb-2">SSD:</label>
+              <div class="d-flex flex-wrap gap-2" id="storageOptions"></div>
+            </div>
+
+            <div class="availability-status">
+              <div class="stock-indicator">
+                <i class="bi bi-check-circle-fill" th:if="${product.stock > 0}"></i>
+                <i class="bi bi-x-circle-fill" th:if="${product.stock == 0}"></i>
+                <span class="stock-text"
+                      th:text="${product.stock > 0 ? 'Available' : 'Out of Stock'}">Available</span>
+              </div>
+              <div class="quantity-left"
+                   th:text="'Còn ' + ${product.stock} + ' sản phẩm trong kho'">Only 18 items remaining
+              </div>
+            </div>
+
+            <!-- Purchase Options -->
+            <div class="purchase-section">
+              <div class="quantity-control">
+                <label class="control-label">Số lượng:</label>
+                <div class="quantity-input-group">
+                  <div class="quantity-selector">
+                    <button class="quantity-btn decrease" type="button">
+                      <i class="bi bi-dash"></i>
+                    </button>
+                    <input type="number" class="quantity-input" value="1" min="1" th:attr="max=${product.stock}">
+                    <button class="quantity-btn increase" type="button">
+                      <i class="bi bi-plus"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Nếu đã đăng nhập -->
+              <div sec:authorize="isAuthenticated()" class="action-buttons d-flex gap-3 mt-3 w-100">
+
+                <!-- Thêm vào giỏ -->
+                <form th:action="@{/cart/add}" method="post" class="flex-grow-1">
+                  <input type="hidden" name="productId" th:value="${product.id}">
+                  <input type="hidden" name="variantId" id="selectedVariantId">
+
+                  <button type="submit" class="btn add-cart-btn w-100">
+                    <i class="bi bi-cart-plus me-2"></i>
+                  </button>
+                </form>
+
+                <!-- Mua ngay -->
+                <a id="buyNowBtn"
+                   class="btn buy-now-btn w-100 flex-grow-1"
+                   th:data-product-id="${product.id}">
+                  ⚡ Mua ngay
+                </a>
+              </div>
+            </div>
+
+            <!-- Benefits List -->
+            <div class="benefits-list">
+              <div class="benefit-item">
+                <i class="bi bi-truck"></i>
+                <span>Miễn phí vận chuyển</span>
+              </div>
+              <div class="benefit-item">
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Bảo hành 3 năm</span>
+              </div>
+              <div class="benefit-item">
+                <i class="bi bi-shield-check"></i>
+                <span>Đảm bảo chất lượng</span>
+              </div>
+              <div class="benefit-item">
+                <i class="bi bi-headset"></i>
+                <span>Hỗ trợ 24/7</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Information Tabs -->
+      <div class="row mt-5" data-aos="fade-up" data-aos-delay="300">
+        <div class="col-12">
+          <div class="info-tabs-container">
+            <nav class="tabs-navigation nav">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview" type="button">Thông tin</button>
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#technical" type="button">Cấu hình</button>
+            </nav>
+
+            <div class="tab-content">
+              <!-- Overview -->
+              <div class="tab-pane fade show active" id="overview">
+                <div class="overview-content p-3">
+                  <h3>Mô tả</h3>
+                  <p th:text="${product.description}">Thông tin mô tả sản phẩm...</p>
+                </div>
+              </div>
+
+              <!-- Technical Details -->
+              <div class="tab-pane fade" id="technical">
+                <div class="technical-content p-3">
+                  <div class="tech-group">
+                    <h4 class="fw-bold mb-3 border-bottom pb-2">Thông số kỹ thuật</h4>
+                    <div class="spec-table border rounded-3 overflow-hidden">
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="spec-name fw-semibold">RAM</span>
+                        <span class="spec-value text-muted" th:text="${product.ram}">12GB</span>
+                      </div>
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="spec-name fw-semibold">SSD</span>
+                        <span class="spec-value text-muted"
+                              th:text="${#lists.isEmpty(variants) ? '—' : variants.get(0).storage}"> 256GB
+                        </span>
+                      </div>
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="spec-name fw-semibold">Màn hình</span>
+                        <span class="spec-value text-muted" th:text="${product.display}">6.5 inch AMOLED</span>
+                      </div>
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="spec-name fw-semibold">CPU</span>
+                        <span class="spec-value text-muted" th:text="${product.cpu}">Intel Core i7</span>
+                      </div>
+
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="spec-name fw-semibold">GPU</span>
+                        <span class="spec-value text-muted" th:text="${product.gpu}">RTX 4060</span>
+                      </div>
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="spec-name fw-semibold">Pin</span>
+                        <span class="spec-value text-muted" th:text="${product.battery}">5000mAh</span>
+                      </div>
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <span class="spec-name fw-semibold">Kích thước</span>
+                        <span class="spec-value text-muted" th:text="${product.dimensions}">---</span>
+                      </div>
+                      <div class="spec-row d-flex justify-content-between align-items-center p-3">
+                        <span class="spec-name fw-semibold">Chất liệu</span>
+                        <span class="spec-value text-muted" th:text="${product.material}">---</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+</main>
+
+<div th:replace="fragments/footer :: siteFooter"></div>
+
+<!-- Scroll Top -->
+<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+<!-- Preloader -->
+<div id="preloader"></div>
+
+<!-- Vendor JS Files -->
+
+
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/swiper-bundle.min.js}"></script>
+<script th:src="@{/js/aos.js}"></script>
+<script th:src="@{/js/glightbox.min.js}"></script>
+<script th:src="@{/js/Drift.min.js}"></script>
+<script th:src="@{/js/purecounter_vanilla.js}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+<!-- ✅ SCRIPT CHO CHỌN BIẾN THỂ -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const colorButtons = document.querySelectorAll(".color-btn");
+    const mainImage = document.getElementById("main-product-image");
+    const variantInput = document.getElementById("selectedVariantId");
+    const storageContainer = document.getElementById("storageOptions");
+
+    let selectedColor = null;
+
+    // 🎨 Chọn màu
+    colorButtons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectedColor = btn.dataset.color;
+        const imageUrl = btn.dataset.image;
+        const variantId = btn.dataset.variantId;
+
+        colorButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        if (imageUrl) {
+          mainImage.src = imageUrl;
+          mainImage.dataset.zoom = imageUrl;
+        }
+
+        variantInput.value = variantId;
+        renderStorages(selectedColor);
+      });
+    });
+
+    // 💾 Tạo danh sách dung lượng theo màu
+    function renderStorages(color) {
+      storageContainer.innerHTML = "";
+      const filtered = Array.from(colorButtons)
+        .filter(v => v.dataset.color === color);
+
+      filtered.forEach(v => {
+        const storageBtn = document.createElement("button");
+        storageBtn.className = "btn btn-outline-primary storage-btn";
+        storageBtn.textContent = v.dataset.storage;
+        storageBtn.dataset.variantId = v.dataset.variantId;
+
+        storageBtn.addEventListener("click", () => {
+          document.querySelectorAll(".storage-btn").forEach(b => b.classList.remove("active"));
+          storageBtn.classList.add("active");
+          variantInput.value = v.dataset.variantId;
+        });
+
+        storageContainer.appendChild(storageBtn);
+      });
+    }
+  });
+</script>
+
+<script>
+  // 🖼 Điều khiển gallery (thumbnail + prev/next)
+  document.addEventListener("DOMContentLoaded", function () {
+    const mainImage = document.getElementById("main-product-image");
+    const thumbnails = document.querySelectorAll(".thumbnail-item img");
+    const prevBtn = document.querySelector(".prev-image");
+    const nextBtn = document.querySelector(".next-image");
+
+    let currentIndex = 0;
+
+    thumbnails.forEach((thumb, index) => {
+      thumb.addEventListener("click", () => {
+        currentIndex = index;
+        updateMainImage();
+      });
+    });
+
+    prevBtn.addEventListener("click", () => {
+      currentIndex = (currentIndex - 1 + thumbnails.length) % thumbnails.length;
+      updateMainImage();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      currentIndex = (currentIndex + 1) % thumbnails.length;
+      updateMainImage();
+    });
+
+    function updateMainImage() {
+      const newSrc = thumbnails[currentIndex].src;
+      mainImage.src = newSrc;
+      mainImage.dataset.zoom = newSrc;
+
+      thumbnails.forEach(t => t.parentElement.classList.remove("active"));
+      thumbnails[currentIndex].parentElement.classList.add("active");
+    }
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const buyNowBtn = document.getElementById("buyNowBtn");
+    if (!buyNowBtn) return;
+
+    buyNowBtn.addEventListener("click", function () {
+
+      const productId = this.dataset.productId;  // ← Lấy từ th:data-product-id
+      const variantId = document.getElementById("selectedVariantId").value;
+      const quantity = document.querySelector(".quantity-input").value || 1;
+
+      if (!variantId || variantId.trim() === "") {
+        Swal.fire({
+          icon: "warning",
+          title: "Vui lòng chọn biến thể",
+          text: "Bạn phải chọn màu và dung lượng trước khi mua."
+        });
+        return;
+      }
+
+      const url =
+        "/checkout/buy-now?productId=" + encodeURIComponent(productId) +
+        "&variantId="   + encodeURIComponent(variantId) +
+        "&quantity="    + encodeURIComponent(quantity);
+
+      window.location.href = url;
+    });
+  });
+</script>
+
+
+</body>
+
+</html>

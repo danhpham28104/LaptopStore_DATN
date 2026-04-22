@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta name="description" content="Cửa hàng laptop chính hãng - nhiều lựa chọn Gaming / Văn phòng / Đồ họa. Giao hàng nhanh, bảo hành rõ ràng.">
+    <meta name="keywords" content="laptop, laptop gaming, laptop văn phòng, laptop đồ họa">
+
+    <!-- Favicons -->
+    <link href="assets/img/favicon.png" rel="icon">
+    <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <!-- Vendor CSS Files -->
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link th:href="@{/css/bootstrap-icons.css}" rel="stylesheet">
+    <link th:href="@{/css/swiper-bundle.min.css}" rel="stylesheet">
+    <link th:href="@{/css/aos.css}" rel="stylesheet">
+    <link th:href="@{/css/glightbox.min.css}" rel="stylesheet">
+    <link th:href="@{/css/drift-basic.css}" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Main CSS File -->
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+
+<body class="index-page">
+
+<div th:replace="fragments/header :: siteHeader"></div>
+
+<main class="main">
+
+    <!-- Banner đôi -->
+    <section class="double-banner container py-2">
+        <div class="row g-3">
+            <!-- Banner trái -->
+            <div class="col-lg-6">
+                <div id="bannerLeft" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3500">
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <img src="/images/banners/laptopsale.jpg" class="d-block w-100" alt="Laptop Sale">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="/images/banners/laptopnewarrivals.jpg" class="d-block w-100" alt="Laptop New Arrivals">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banner phải -->
+            <div class="col-lg-6">
+                <div id="bannerRight" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4200">
+                    <div class="carousel-inner">
+                        <div class="carousel-item active">
+                            <img src="/images/banners/laptopgaming.jpg" class="d-block w-100" alt="Laptop Gaming">
+                        </div>
+                        <div class="carousel-item">
+                            <img src="/images/banners/laptopvanphong.jpg" class="d-block w-100" alt="Laptop Văn phòng">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Brands -->
+    <section class="brand-section py-4">
+        <div class="container">
+            <h5 class="fw-bold mb-3">Laptop theo thương hiệu</h5>
+            <div class="brand-box">
+                <div class="brand-list">
+                    <div class="brand-card" th:each="brand : ${brands}" th:data-id="${brand.id}">
+                        <img th:src="@{'/images/brands/' + ${brand.logo}}" th:alt="${brand.name}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bộ lọc sản phẩm -->
+    <section class="filter-bar container py-3 border-bottom">
+        <h6 class="fw-bold mb-3">Chọn laptop theo tiêu chí</h6>
+
+        <div class="row g-3 align-items-end">
+
+            <!-- CPU -->
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label mb-1">CPU</label>
+                <select id="filter-cpu" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="i3">Intel Core i3</option>
+                    <option value="i5">Intel Core i5</option>
+                    <option value="i7">Intel Core i7</option>
+                    <option value="i9">Intel Core i9</option>
+                    <option value="Ryzen 5">AMD Ryzen 5</option>
+                    <option value="Ryzen 7">AMD Ryzen 7</option>
+                    <option value="Ryzen 9">AMD Ryzen 9</option>
+                    <option value="Apple M">Apple Silicon (M1/M2/M3)</option>
+                </select>
+            </div>
+
+            <!-- RAM -->
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label mb-1">RAM</label>
+                <select id="filter-ram" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="8GB">8GB</option>
+                    <option value="16GB">16GB</option>
+                    <option value="32GB">32GB</option>
+                    <option value="64GB">64GB</option>
+                </select>
+            </div>
+
+            <!-- SSD -->
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label mb-1">SSD</label>
+                <select id="filter-storage" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="256GB">256GB</option>
+                    <option value="512GB">512GB</option>
+                    <option value="1TB">1TB</option>
+                    <option value="2TB">2TB</option>
+                </select>
+            </div>
+
+            <!-- Giá -->
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label mb-1">Mức giá</label>
+                <select id="filter-price" class="form-select">
+                    <option value="">Tất cả</option>
+                    <option value="0-15000000">Dưới 15 triệu</option>
+                    <option value="15000000-25000000">15 – 25 triệu</option>
+                    <option value="25000000-35000000">25 – 35 triệu</option>
+                    <option value="35000000-999999999">Trên 35 triệu</option>
+                </select>
+            </div>
+
+            <!-- Nút lọc -->
+            <div class="col-12">
+                <button class="btn btn-danger w-100" id="applyFilters">
+                    <i class="bi bi-funnel"></i> Áp dụng bộ lọc
+                </button>
+            </div>
+
+        </div>
+
+    </section>
+
+    <style>
+        .filter-bar label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .filter-bar select {
+            font-size: 14px;
+            border-radius: 8px;
+        }
+    </style>
+
+    <!-- Sắp xếp -->
+    <section class="sort-section container py-3 border-bottom">
+        <div class="container d-flex justify-content-between align-items-center flex-wrap">
+            <h6 class="fw-bold mb-2 mb-md-0">Sắp xếp sản phẩm</h6>
+            <div class="sort-buttons text-end">
+                <button class="btn btn-outline-dark sort-btn active" data-sort="default">
+                    <i class="bi bi-list"></i> Mặc định
+                </button>
+                <button class="btn btn-outline-dark sort-btn" data-sort="hot">
+                    🔥 Nổi bật
+                </button>
+                <button class="btn btn-outline-dark sort-btn" data-sort="priceAsc">
+                    <i class="bi bi-arrow-down-up"></i> Giá thấp → cao
+                </button>
+                <button class="btn btn-outline-dark sort-btn" data-sort="priceDesc">
+                    <i class="bi bi-arrow-up"></i> Giá cao → thấp
+                </button>
+                <button class="btn btn-outline-dark sort-btn" data-sort="newest">
+                    <i class="bi bi-stars"></i> Mới nhất
+                </button>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- Product List -->
+    <section id="best-sellers" class="best-sellers section">
+        <div class="container">
+
+            <div class="row g-5" id="product-list" th:insert="fragments/product_list :: productList">
+                <!-- sản phẩm sẽ được render bởi fragment -->
+            </div>
+
+            <!-- PHÂN TRANG -->
+            <div class="pagination d-flex justify-content-center mt-4">
+                <a th:if="${currentPage > 0}"
+                   th:href="@{/home(page=${currentPage - 1})}"
+                   class="btn btn-outline-dark me-2">«</a>
+
+                <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                    <a th:href="@{/home(page=${i})}"
+                       th:text="${i + 1}"
+                       th:classappend="${i == currentPage} ? 'btn btn-dark me-2' : 'btn btn-outline-dark me-2'">
+                    </a>
+                </span>
+
+                <a th:if="${currentPage < totalPages - 1}"
+                   th:href="@{/home(page=${currentPage + 1})}"
+                   class="btn btn-outline-dark">»</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="faq-section py-5 bg-light">
+        <div class="container">
+            <div class="section-header text-center mb-4">
+                <h2 class="fw-bold">Câu hỏi thường gặp</h2>
+                <p class="text-muted">Giải đáp nhanh những thắc mắc khi chọn mua laptop</p>
+            </div>
+
+            <div class="accordion" id="faqAccordion">
+
+                <!-- Q1 -->
+                <div class="accordion-item mb-3">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button fw-semibold" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            Nên chọn laptop Gaming hay laptop Văn phòng?
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne"
+                         data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Nếu bạn chơi game/đồ họa, ưu tiên CPU H-series và GPU rời (RTX). Nếu học tập/văn phòng,
+                            laptop mỏng nhẹ (U-series) sẽ tiết kiệm pin và dễ mang theo.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q2 -->
+                <div class="accordion-item mb-3">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            Nên chọn RAM 8GB hay 16GB?
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo"
+                         data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            8GB đủ cho nhu cầu cơ bản (web, Office). 16GB phù hợp đa nhiệm, học lập trình, chỉnh sửa ảnh/video
+                            và dùng lâu dài. Nếu làm đồ họa nặng, cân nhắc 32GB.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q3 -->
+                <div class="accordion-item mb-3">
+                    <h2 class="accordion-header" id="headingThree">
+                        <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                            SSD 256GB có đủ dùng không?
+                        </button>
+                    </h2>
+                    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree"
+                         data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Nếu bạn chỉ dùng Office/học tập, 256GB có thể đủ. Với nhu cầu lưu nhiều dữ liệu, cài game/phần mềm nặng,
+                            nên chọn 512GB hoặc 1TB để thoải mái hơn.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Q4 -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingFour">
+                        <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                            GPU rời có bắt buộc không?
+                        </button>
+                    </h2>
+                    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour"
+                         data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">
+                            Không bắt buộc. GPU tích hợp (iGPU) đủ cho văn phòng/học tập. GPU rời (RTX/AMD Radeon) cần thiết khi bạn
+                            chơi game, dựng phim, render 3D hoặc làm đồ họa chuyên nghiệp.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<div th:replace="fragments/footer :: siteFooter"></div>
+
+<!-- Vendor JS Files -->
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/swiper-bundle.min.js}"></script>
+<script th:src="@{/js/aos.js}"></script>
+<script th:src="@{/js/glightbox.min.js}"></script>
+<script th:src="@{/js/Drift.min.js}"></script>
+<script th:src="@{/js/purecounter_vanilla.js}"></script>
+
+<!-- Main JS File -->
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/style.js}"></script>
+
+</body>
+</html>
