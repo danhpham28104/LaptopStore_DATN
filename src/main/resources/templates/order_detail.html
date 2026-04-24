@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <title th:text="${pageTitle}">Chi tiết đơn hàng</title>
+
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link th:href="@{/css/main.css}" rel="stylesheet">
+  <link th:href="@{/css/style.css}" rel="stylesheet">
+
+  <style>
+    .order-box { border: 1px solid #ddd; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .product-img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; }
+    .item-row { padding: 12px 0; border-bottom: 1px solid #eee; }
+  </style>
+</head>
+
+<body>
+
+<div th:replace="fragments/header :: siteHeader"></div>
+
+<main class="main container py-4">
+
+  <h2 class="fw-bold mb-4">Chi tiết đơn hàng #<span th:text="${order.id}"></span></h2>
+
+  <!-- Thông tin đơn hàng -->
+  <div class="order-box">
+
+    <div class="mb-2">
+      <strong>Ngày đặt:</strong>
+      <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></span>
+    </div>
+
+    <div class="mb-2">
+      <strong>Trạng thái:</strong>
+      <span class="status-badge"
+            th:classappend="${
+                order.orderStatus == 'Pending'   ? 'bg-warning text-dark' :
+                order.orderStatus == 'Paid'      ? 'bg-info text-dark' :
+                order.orderStatus == 'Shipped'   ? 'bg-primary text-white' :
+                order.orderStatus == 'Delivered' ? 'bg-success text-white' :
+                                                   'bg-secondary text-white'
+            }"
+                  th:text="${
+                order.orderStatus == 'Pending'   ? 'Chờ xử lý' :
+                order.orderStatus == 'Paid'      ? 'Đã thanh toán' :
+                order.orderStatus == 'Shipped'   ? 'Đang giao hàng' :
+                order.orderStatus == 'Delivered' ? 'Đã giao' :
+                                                   'Không xác định'
+            }">
+      </span>
+
+    </div>
+
+    <div class="mb-2">
+      <strong>Người nhận:</strong>
+      <span th:text="${order.receiverName}"></span>
+    </div>
+
+    <div class="mb-2">
+      <strong>SĐT:</strong>
+      <span th:text="${order.receiverPhone}"></span>
+    </div>
+
+    <div class="mb-2">
+      <strong>Địa chỉ giao:</strong>
+      <span th:text="${order.shippingAddress}"></span>
+    </div>
+
+    <div class="mb-2" th:if="${order.voucher != null}">
+      <strong>Mã giảm giá:</strong>
+      <span th:text="${order.voucher.code}"></span>
+    </div>
+
+  </div>
+
+  <!-- SẢN PHẨM TRONG ĐƠN -->
+  <h4 class="fw-bold mb-3">Sản phẩm</h4>
+
+  <div class="order-box">
+
+    <div th:each="item : ${order.orderItems}" class="item-row d-flex align-items-center">
+
+      <!-- Ảnh -->
+      <img class="product-img"
+           th:src="${item.product.images != null ?
+                    #strings.arraySplit(item.product.images, ',')[0] :
+                    '/images/placeholder.png'}">
+
+      <!-- Tên sản phẩm -->
+      <div class="ms-3" style="flex: 1;">
+        <strong th:text="${item.product.name}"></strong>
+
+        <!-- 🔹 Biến thể: Màu + dung lượng -->
+        <div class="text-muted small" th:if="${item.variant != null}">
+          <span th:text="'Màu: ' + ${item.variant.color}"></span>
+          <span th:if="${item.variant.storage != null}"
+                th:text="' | SSD: ' + ${item.variant.storage}"></span>
+        </div>
+
+        <div class="text-muted small">
+          Số lượng: <span th:text="${item.quantity}"></span>
+        </div>
+      </div>
+
+      <!-- Giá -->
+      <div class="text-end">
+        <div th:text="${#numbers.formatDecimal(item.price,0,'COMMA',0,'POINT')} + ' ₫'"></div>
+        <strong th:text="${#numbers.formatDecimal(item.lineTotal,0,'COMMA',0,'POINT')} + ' ₫'"></strong>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- THANH TOÁN -->
+  <h4 class="fw-bold mt-4 mb-3">Thông tin thanh toán</h4>
+
+  <div class="order-box">
+
+    <div th:if="${payment != null}">
+      <div class="mb-2">
+        <strong>Phương thức:</strong>
+        <span th:text="${payment.method}"></span>
+      </div>
+
+      <div class="mb-2">
+        <strong>Trạng thái:</strong>
+        <span class="badge"
+              th:classappend="${payment.status == 'PENDING'  ? 'bg-warning text-dark' :
+                               payment.status == 'SUCCESS'  ? 'bg-success' :
+                               payment.status == 'FAILED'   ? 'bg-danger' :
+                                                              'bg-secondary'}"
+              th:text="${payment.status}"></span>
+      </div>
+
+      <div class="mb-2">
+        <strong>Số tiền:</strong>
+        <span th:text="${#numbers.formatDecimal(payment.amount,0,'COMMA',0,'POINT')} + ' ₫'"></span>
+      </div>
+    </div>
+
+    <div th:if="${payment == null}">
+      <p class="text-muted">Đơn hàng chưa có thông tin thanh toán.</p>
+    </div>
+
+  </div>
+
+  <!-- TỔNG KẾT -->
+  <h4 class="fw-bold mt-4">Tổng kết</h4>
+
+  <div class="order-box">
+
+    <div class="d-flex justify-content-between mb-2">
+      <span>Tổng phụ</span>
+      <strong th:text="${#numbers.formatDecimal(order.totalAmount + order.discount,0,'COMMA',0,'POINT')} + ' ₫'"></strong>
+    </div>
+
+    <div class="d-flex justify-content-between mb-2">
+      <span>Giảm giá</span>
+      <strong th:text="'-' + ${#numbers.formatDecimal(order.discount,0,'COMMA',0,'POINT')} + ' ₫'"></strong>
+    </div>
+
+    <hr>
+
+    <div class="d-flex justify-content-between fs-5 fw-bold">
+      <span>Tổng thanh toán</span>
+      <span th:text="${#numbers.formatDecimal(order.totalAmount,0,'COMMA',0,'POINT')} + ' ₫'"></span>
+    </div>
+
+  </div>
+
+  <!-- Nút quay lại -->
+  <a th:href="@{/orders}" class="btn btn-outline-primary mt-3">
+    <i class="bi bi-arrow-left"></i> Quay về danh sách đơn
+  </a>
+
+</main>
+
+<div th:replace="fragments/footer :: siteFooter"></div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+</body>
+</html>

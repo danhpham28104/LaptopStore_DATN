@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle}">Thanh toán - LaptopStore</title>
+
+  <!-- Favicon -->
+  <link th:href="@{/assets/img/favicon.png}" rel="icon">
+  <link th:href="@{/assets/img/apple-touch-icon.png}" rel="apple-touch-icon">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+  <link th:href="@{/css/bootstrap-icons.css}" rel="stylesheet">
+  <link th:href="@{/css/swiper-bundle.min.css}" rel="stylesheet">
+  <link th:href="@{/css/aos.css}" rel="stylesheet">
+  <link th:href="@{/css/glightbox.min.css}" rel="stylesheet">
+  <link th:href="@{/css/main.css}" rel="stylesheet">
+  <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+
+<body class="checkout-page">
+
+<!-- ✅ Header -->
+<div th:replace="fragments/header :: siteHeader"></div>
+
+<main class="main">
+
+  <!-- Page Title -->
+  <div class="page-title light-background">
+    <div class="container d-lg-flex justify-content-between align-items-center">
+      <h1>Thanh toán</h1>
+      <nav class="breadcrumbs">
+        <ol>
+          <li><a th:href="@{/}">Trang chủ</a></li>
+          <li class="current">Thanh toán</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Checkout Section -->
+  <section id="checkout" class="checkout section">
+    <div class="container" data-aos="fade-up">
+
+      <div class="row">
+        <!-- 🧾 Thông tin khách hàng -->
+        <div class="col-lg-7">
+          <form th:action="@{/checkout/place}" method="post" class="checkout-form">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+            <!-- 🧾 CHỌN ĐỊA CHỈ -->
+            <div class="checkout-section mb-4">
+              <div class="section-header">
+                <div class="section-number">1</div>
+                <h3>Chọn địa chỉ giao hàng</h3>
+              </div>
+
+              <div class="section-content">
+
+                <!-- Nếu chưa có địa chỉ -->
+                <div th:if="${#lists.isEmpty(addresses)}" class="alert alert-warning">
+                  Bạn chưa có địa chỉ giao hàng.
+                  <a th:href="@{/user/account}" class="btn btn-primary btn-sm ms-2">+ Thêm địa chỉ</a>
+                </div>
+
+                <!-- Nếu có địa chỉ -->
+                <div th:if="${!#lists.isEmpty(addresses)}">
+
+                  <select id="addressSelect" name="addressId" class="form-select" required>
+                    <option value="">— Chọn địa chỉ giao hàng —</option>
+
+                    <option th:each="a : ${addresses}"
+                            th:value="${a.id}"
+                            th:selected="${a.default}"
+                            th:text="${a.fullName + ' (' + a.phone + ') - '
+                             + a.addressLine + ', '
+                             + a.ward + ', '
+                             + a.district + ', '
+                             + a.city}">
+                    </option>
+
+                  </select>
+
+                  <small class="text-muted d-block mt-2">
+                    Muốn thêm địa chỉ mới?
+                    <a th:href="@{/user/account}">Thêm ngay</a>
+                  </small>
+
+                </div>
+
+              </div>
+            </div>
+
+
+            <!-- Phương thức thanh toán -->
+            <div class="checkout-section" id="payment-method">
+              <div class="section-header">
+                <div class="section-number">2</div>
+                <h3>Phương thức thanh toán</h3>
+              </div>
+
+              <div class="section-content">
+
+                <!-- COD -->
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="radio" id="cod" name="paymentMethod" value="COD" checked>
+                  <label class="form-check-label" for="cod">Thanh toán khi nhận hàng (COD)</label>
+                </div>
+
+                <!-- ⭐ SePay -->
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="radio" id="sepay" name="paymentMethod" value="SEPAY">
+                  <label class="form-check-label" for="sepay">
+                    Thanh toán qua <img src="/images/sepay_logo.png" alt="SePay" style="height:20px;"> SePay
+                  </label>
+                </div>
+
+              </div>
+            </div>
+
+
+            <!-- Mã giảm giá -->
+            <div class="checkout-section">
+              <div class="section-header">
+                <div class="section-number">3</div>
+                <h3>Mã giảm giá</h3>
+              </div>
+
+              <div class="d-flex">
+                <input type="text" id="voucherInput" class="form-control" placeholder="Nhập mã giảm giá">
+
+                <button type="button" id="applyVoucherBtn" class="btn btn-primary ms-2">
+                  Áp dụng
+                </button>
+
+                <!-- 🔥 Nút XÓA voucher (ẩn ban đầu) -->
+                <button type="button" id="clearVoucherBtn" class="btn btn-outline-danger ms-2" style="display:none;">
+                  Xóa
+                </button>
+              </div>
+
+              <p id="voucherMessage" class="mt-2"></p>
+
+            </div>
+
+            <!-- Đặt hàng -->
+            <div class="checkout-section" id="order-review">
+              <div class="section-header">
+                <div class="section-number">4</div>
+                <h3>Xác nhận đặt hàng</h3>
+              </div>
+              <div class="section-content">
+                <div class="form-check mb-3">
+                  <input class="form-check-input" type="checkbox" id="terms" required>
+                  <label class="form-check-label" for="terms">
+                    Tôi đồng ý với <a href="#">Điều khoản & Chính sách</a>
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Đặt hàng ngay</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- 🧮 Tóm tắt đơn hàng -->
+        <div class="col-lg-5">
+          <div class="order-summary" data-aos="fade-left">
+            <div class="order-summary-header d-flex justify-content-between align-items-center mb-3">
+              <h3>Tóm tắt đơn hàng</h3>
+              <span th:text="${#lists.size(cart.items)} + ' sản phẩm'"></span>
+            </div>
+
+            <div class="order-summary-content">
+              <div class="order-items">
+                <div th:each="item : ${cart.items}" class="order-item d-flex align-items-center mb-3 border-bottom pb-2">
+                  <div class="order-item-image me-3">
+                    <img th:src="${item.product.images}" alt="Product" style="width:70px; height:70px; object-fit:cover;">
+                  </div>
+                  <div class="order-item-details flex-grow-1">
+                    <h6 th:text="${item.product.name}"></h6>
+
+                    <!-- 🔹 Hiển thị biến thể người dùng chọn -->
+                    <p class="text-muted mb-1" th:if="${item.variant != null}">
+                      <span th:text="'Màu: ' + ${item.variant.color}"></span>
+                      <span th:if="${item.variant.storage != null}" th:text="' | SSD: ' + ${item.variant.storage}"></span>
+                    </p>
+
+                    <p class="mb-1">Số lượng: <span th:text="${item.quantity}"></span></p>
+                    <p class="fw-bold text-end mb-0" th:text="${#numbers.formatDecimal(item.lineTotal, 0, 'POINT', 0, 'COMMA')} + ' ₫'"></p>
+                  </div>
+                </div>
+              </div>
+
+
+              <div class="d-flex justify-content-between">
+                <span>Tạm tính</span>
+                <span id="subtotalDisplay"
+                      th:text="${#numbers.formatDecimal(cart.subtotal, 0, 'POINT', 0, 'COMMA')} + ' ₫'">
+                </span>
+              </div>
+
+              <div class="d-flex justify-content-between">
+                <span>Giảm giá</span>
+                <span id="discountDisplay"
+                      th:text="${#numbers.formatDecimal(cart.discount, 0, 'POINT', 0, 'COMMA')} + ' ₫'">
+                </span>
+              </div>
+
+              <div class="d-flex justify-content-between fw-bold mt-2">
+                <span>Tổng cộng</span>
+                <span id="totalDisplay" class="text-primary fs-5"
+                      th:text="${#numbers.formatDecimal(cart.total, 0, 'POINT', 0, 'COMMA')} + ' ₫'">
+                </span>
+              </div>
+
+            </div>
+          </div>
+        </div> <!-- End Summary -->
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<!-- ✅ Footer -->
+<div th:replace="fragments/footer :: siteFooter"></div>
+
+<!-- Scroll Top -->
+<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+  <i class="bi bi-arrow-up-short"></i>
+</a>
+
+<!-- JS -->
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/swiper-bundle.min.js}"></script>
+<script th:src="@{/js/aos.js}"></script>
+<script th:src="@{/js/glightbox.min.js}"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:inline="javascript">
+  const subtotal = /*[[${cart.subtotal}]]*/ 0;
+</script>
+
+
+
+<script>
+  const input = document.getElementById("voucherInput");
+  const msg = document.getElementById("voucherMessage");
+  const discountDisplay = document.getElementById("discountDisplay");
+  const totalDisplay = document.getElementById("totalDisplay");
+  const applyBtn = document.getElementById("applyVoucherBtn");
+  const clearBtn = document.getElementById("clearVoucherBtn");
+
+  // =============================
+  // 👉 Áp dụng voucher
+  // =============================
+  applyBtn.addEventListener('click', function () {
+
+    const code = input.value.trim();
+    if (code === "") {
+      msg.innerHTML = "<span class='text-danger'>Vui lòng nhập mã!</span>";
+      return;
+    }
+
+    fetch(`/api/voucher/check?code=${code}&subtotal=${subtotal}`)
+      .then(res => res.json())
+      .then(data => {
+
+        if (!data.valid) {
+          msg.innerHTML = `<span class='text-danger'>${data.message}</span>`;
+          discountDisplay.innerText = "0 ₫";
+          totalDisplay.innerText = subtotal.toLocaleString("vi-VN") + " ₫";
+
+          // Ẩn nút xóa
+          clearBtn.style.display = "none";
+        } else {
+
+          msg.innerHTML = `<span class='text-success fw-bold'>${data.message}</span>`;
+
+          const discount = data.discount;
+          const total = subtotal - discount;
+
+          discountDisplay.innerText = discount.toLocaleString("vi-VN") + " ₫";
+          totalDisplay.innerText = total.toLocaleString("vi-VN") + " ₫";
+
+          // 🔥 Hiện nút xóa voucher
+          clearBtn.style.display = "block";
+        }
+      });
+  });
+
+  // =============================
+  // 👉 Xóa voucher — reset mọi thứ
+  // =============================
+  clearBtn.addEventListener('click', function () {
+
+    // Xóa input
+    input.value = "";
+
+    // Xóa message
+    msg.innerHTML = "";
+
+    // Reset về mặc định
+    discountDisplay.innerText = "0 ₫";
+    totalDisplay.innerText = subtotal.toLocaleString("vi-VN") + " ₫";
+
+    // Ẩn nút xóa
+    clearBtn.style.display = "none";
+  });
+</script>
+
+
+</body>
+</html>

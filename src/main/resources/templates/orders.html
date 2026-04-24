@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle}">Đơn hàng của tôi</title>
+
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link th:href="@{/css/main.css}" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+
+    <style>
+        .order-card {
+            border-radius: 12px;
+            border: 1px solid #eee;
+            padding: 20px;
+            transition: .2s;
+        }
+
+        .order-card:hover {
+            border-color: #0d6efd;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .status-badge {
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 40px 10px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+<div th:replace="fragments/header :: siteHeader"></div>
+
+<main class="main container py-4">
+
+    <h2 class="fw-bold mb-4">Đơn hàng của tôi</h2>
+    <div th:if="${param.cancelSuccess}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill"></i>
+        Đơn hàng đã được hủy thành công!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Nếu không có đơn -->
+    <div th:if="${#lists.isEmpty(orders)}" class="no-orders">
+        <i class="bi bi-bag-x" style="font-size: 50px"></i>
+        <p class="mt-3">Bạn chưa có đơn hàng nào.</p>
+        <a th:href="@{/}" class="btn btn-primary mt-2">Mua sắm ngay</a>
+    </div>
+
+    <!-- Danh sách đơn -->
+    <div class="row g-4" th:if="${!#lists.isEmpty(orders)}">
+
+        <div class="col-lg-6" th:each="order : ${orders}">
+            <div class="order-card">
+
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold">
+                        <i class="bi bi-receipt"></i> Đơn hàng
+                    </h5>
+
+                    <span class="status-badge"
+                          th:classappend="${
+                              order.orderStatus == 'Pending'   ? 'bg-warning text-dark' :
+                              order.orderStatus == 'Paid'      ? 'bg-info text-dark' :
+                              order.orderStatus == 'Shipped'   ? 'bg-primary text-white' :
+                              order.orderStatus == 'Delivered' ? 'bg-success text-white' :
+                                                                 'bg-secondary text-white'
+                          }"
+                           th:text="${
+                              order.orderStatus == 'Pending'   ? 'Chờ xử lý' :
+                              order.orderStatus == 'Paid'      ? 'Đã thanh toán' :
+                              order.orderStatus == 'Shipped'   ? 'Đang giao hàng' :
+                              order.orderStatus == 'Delivered' ? 'Đã giao' :
+                                                                 'Không xác định'
+                          }">
+                    </span>
+
+                </div>
+
+                <!-- Nội dung -->
+                <div class="mb-2">
+                    <span class="text-muted">Ngày đặt: </span>
+                    <strong th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></strong>
+                </div>
+
+                <div class="mb-2">
+                    <span class="text-muted">Tổng tiền: </span>
+                    <strong th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></strong>
+                </div>
+
+                <div class="mb-2" th:if="${order.voucher != null}">
+                    <span class="text-muted">Mã giảm giá: </span>
+                    <strong th:text="${order.voucher.code}"></strong>
+                </div>
+
+                <div class="mb-2">
+                    <span class="text-muted">Người nhận: </span>
+                    <strong th:text="${order.receiverName}"></strong>
+                </div>
+
+                <div class="mb-4">
+                    <span class="text-muted">Địa chỉ: </span>
+                    <strong th:text="${order.shippingAddress}"></strong>
+                </div>
+
+                <!-- Footer actions -->
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <!-- Xem chi tiết -->
+                    <a th:href="@{'/orders/' + ${order.id}}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-eye"></i> Xem chi tiết
+                    </a>
+
+                    <!-- Nút mở modal hủy đơn -->
+                    <button th:if="${order.orderStatus == 'Pending'}"
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            data-bs-toggle="modal"
+                            th:data-bs-target="'#cancelModal-' + ${order.id}">
+                        <i class="bi bi-x-circle"></i> Hủy đơn
+                    </button>
+
+                    <!-- Trạng thái -->
+                    <button class="btn btn-outline-secondary btn-sm" disabled>
+                        <i class="bi bi-clock-history"></i>
+                        <span th:text="${order.orderStatus}"></span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- MODAL HỦY ĐƠN -->
+            <div th:id="'cancelModal-' + ${order.id}" class="modal fade" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+
+                        <div class="modal-header">
+                            <h5 class="modal-title">Xác nhận hủy đơn hàng</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <p>Bạn có chắc chắn muốn hủy đơn hàng
+                                <strong>#<span th:text="${order.id}"></span></strong> không?</p>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Không
+                            </button>
+
+                            <form th:action="@{'/orders/cancel/' + ${order.id}}" method="post">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="btn btn-danger">Hủy đơn</button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <!-- END MODAL -->
+
+        </div>
+
+    </div>
+
+</main>
+
+<div th:replace="fragments/footer :: siteFooter"></div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+</body>
+</html>
