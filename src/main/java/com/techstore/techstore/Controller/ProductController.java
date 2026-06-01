@@ -3,6 +3,7 @@ package com.techstore.techstore.Controller;
 import com.techstore.techstore.Service.BrandService;
 import com.techstore.techstore.Service.ProductService;
 import com.techstore.techstore.Service.ProductVariantService;
+import com.techstore.techstore.Service.RecommendationService;
 import com.techstore.techstore.entity.Product;
 import com.techstore.techstore.entity.ProductVariant;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -21,6 +23,7 @@ public class ProductController {
     @Autowired private ProductService productService;
     @Autowired private BrandService brandService;
     @Autowired private ProductVariantService productVariantService;
+    @Autowired private RecommendationService recommendationService;
 
 
     //  Danh sách sản phẩm (Thymeleaf)
@@ -55,9 +58,13 @@ public class ProductController {
 // chi tiết sản phẩm
 
     @GetMapping("/{id}")
-    public String productDetail(@PathVariable Long id, Model model) {
+    public String productDetail(@PathVariable Long id, Model model, Principal principal) {
         Product product = productService.getProductById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        if (principal != null) {
+            recommendationService.recordView(principal.getName(), product);
+        }
 
         List<String> imageList = List.of(product.getImages().split(","));
         List<String> variantImages = product.getVariants()
@@ -74,6 +81,9 @@ public class ProductController {
         model.addAttribute("product", product);
         model.addAttribute("variants", productVariantService.getVariantsByProduct(id));
         model.addAttribute("brands", brandService.getAllBrands());
+        model.addAttribute("recommendedProducts", principal != null
+                ? recommendationService.getRecommendationsForUser(principal.getName(), 4)
+                : recommendationService.getSimilarProducts(product, 4));
 
         return "product_detail";
     }

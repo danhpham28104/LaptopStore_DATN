@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Lỗi hệ thống</title>
+  <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+</head>
+<body class="text-center py-5">
+<h1 class="text-danger">😢 Đã xảy ra lỗi hệ thống</h1>
+<p th:text="${message} ?: 'Vui lòng thử lại sau hoặc quay về trang chủ.'"></p>
+<a th:href="@{/home}" class="btn btn-primary mt-3">Quay lại trang chủ</a>
+</body>
+</html>
