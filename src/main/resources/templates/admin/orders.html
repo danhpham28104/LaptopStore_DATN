@@ -1,0 +1,207 @@
+  <!DOCTYPE html>
+  <html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'Quản lý đơn hàng - TechStore Admin'">Quản lý đơn hàng</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+      body { background-color: #f6f7fb; font-family: 'Segoe UI', sans-serif; }
+      .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1e1f26; color: #fff; padding-top: 60px; }
+      .sidebar a { color: #bbb; text-decoration: none; padding: 10px 20px; display: block; }
+      .sidebar a.active, .sidebar a:hover { background: #343541; color: #fff; }
+      .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #ddd; }
+      .content { margin-left: 240px; padding: 80px 20px 40px; }
+      .brand-logo { font-weight: bold; color: #fff; font-size: 1.2rem; padding: 10px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
+    </style>
+  </head>
+
+  <body>
+  <div class="brand-logo">⚙️ TechStore Admin</div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'"><i class="bi bi-box"></i> Sản phẩm</a>
+    <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'"><i class="bi bi-receipt"></i> Đơn hàng</a>
+    <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'"><i class="bi bi-people"></i> Người dùng</a>
+    <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'"><i class="bi bi-ticket-perforated"></i> Voucher</a>
+    <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-light bg-white shadow-sm">
+    <div class="container-fluid justify-content-end align-items-center">
+
+    <span class="me-3 text-secondary fw-semibold">
+      👋 Xin chào, Admin
+    </span>
+
+      <a href="/logout" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-box-arrow-right"></i> Đăng xuất
+      </a>
+
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold">Quản lý đơn hàng</h4>
+      <form class="search-form desktop-search-form me-3"
+            th:action="@{/admin/orders/search}"
+            method="get"
+            style="min-width: 350px;">
+
+        <div class="input-group">
+          <input type="text"
+                 class="form-control"
+                 name="q"
+                 placeholder="Tìm theo tên hoặc ID…"
+                 th:value="${q}">
+
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body table-responsive">
+        <table class="table align-middle table-hover">
+          <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Người đặt</th>
+            <th>SĐT</th>
+            <th>Ngày đặt</th>
+            <th>Tổng tiền</th>
+            <th>Trạng thái</th>
+            <th class="text-center">Hành động</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="o : ${orders}">
+            <td th:text="${o.id}"></td>
+            <td th:text="${o.receiverName}"></td>
+            <td th:text="${o.receiverPhone}"></td>
+            <td th:text="${#temporals.format(o.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td>
+              <!-- ❌ Nếu đơn hàng đã bị hủy -->
+              <span th:if="${o.orderStatus == 'Cancelled'}" class="badge bg-danger">
+                  Cancelled
+              </span>
+
+              <!-- ✔ Nếu đơn hàng chưa hủy → cho phép cập nhật -->
+              <form th:if="${o.orderStatus != 'Cancelled'}"
+                    th:action="@{'/admin/orders/update-status/' + ${o.id}}"
+                    method="post"
+                    class="d-flex align-items-center">
+
+                <select name="status" class="form-select form-select-sm me-2">
+                  <option value="Pending" th:selected="${o.orderStatus == 'Pending'}">Chờ xử lý</option>
+                  <option value="Paid" th:selected="${o.orderStatus == 'Paid'}">Đã thanh toán</option>
+                  <option value="Shipped" th:selected="${o.orderStatus == 'Shipped'}">Đang giao</option>
+                  <option value="Delivered" th:selected="${o.orderStatus == 'Delivered'}">Đã giao</option>
+
+                </select>
+
+                <button class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-check2"></i>
+                </button>
+              </form>
+            </td>
+
+            <td class="text-center">
+              <a th:href="@{'/admin/orders/' + ${o.id}}" class="btn btn-info btn-sm"><i class="bi bi-eye"></i></a>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(orders)}">
+            <td colspan="7" class="text-center text-muted">Không có đơn hàng nào</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <nav th:if="${!searchMode}">
+    <ul class="pagination justify-content-center">
+
+      <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+        <a class="page-link" th:href="@{'/admin/orders?page=' + ${currentPage - 1}}">«</a>
+      </li>
+
+      <li class="page-item"
+          th:each="p : ${#numbers.sequence(0, totalPages-1)}"
+          th:classappend="${p == currentPage} ? 'active'">
+        <a class="page-link" th:text="${p + 1}"
+           th:href="@{'/admin/orders?page=' + ${p}}"></a>
+      </li>
+
+      <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+        <a class="page-link" th:href="@{'/admin/orders?page=' + ${currentPage + 1}}">»</a>
+      </li>
+
+    </ul>
+  </nav>
+
+  <!-- 🔔 Toast thông báo -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="toastMessage" class="toast align-items-center text-white bg-success border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastText">Thành công!</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const params = new URLSearchParams(window.location.search);
+
+      let message = "";
+      let type = "success";
+
+      if (params.get("added") === "true") {
+        message = "Đã thêm sản phẩm thành công!";
+      }
+      if (params.get("updated") === "true") {
+        message = "Đã cập nhật sản phẩm thành công!";
+      }
+      if (params.get("deleted") === "true") {
+        message = "Đã xoá sản phẩm!";
+        type = "danger";
+      }
+      if (params.get("error") === "brand") {
+        message = "Không tìm thấy thương hiệu!";
+        type = "danger";
+      }
+      if (params.get("error") === "notfound") {
+        message = "Không tìm thấy sản phẩm!";
+        type = "danger";
+      }
+
+      if (message !== "") {
+        const toastEl = document.getElementById("toastMessage");
+        const toastText = document.getElementById("toastText");
+
+        toastText.textContent = message;
+
+        toastEl.classList.remove("bg-success", "bg-danger");
+        toastEl.classList.add(type === "danger" ? "bg-danger" : "bg-success");
+
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+  </html>

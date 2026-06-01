@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle} ?: 'Quản lý sản phẩm - LaptopStore Admin'">Quản lý sản phẩm - LaptopStore Admin</title>
+
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #f6f7fb;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .sidebar {
+      width: 240px;
+      height: 100vh;
+      position: fixed;
+      top: 0; left: 0;
+      background: #1e1f26;
+      color: #fff;
+      padding-top: 60px;
+    }
+    .sidebar a {
+      color: #bbb;
+      text-decoration: none;
+      padding: 10px 20px;
+      display: block;
+    }
+    .sidebar a.active, .sidebar a:hover {
+      background: #343541;
+      color: #fff;
+    }
+    .navbar {
+      position: fixed;
+      left: 240px;
+      right: 0;
+      top: 0;
+      z-index: 10;
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+    }
+    .content {
+      margin-left: 240px;
+      padding: 80px 20px 40px;
+    }
+    .brand-logo {
+      font-weight: bold;
+      color: #fff;
+      font-size: 1.2rem;
+      padding: 10px 20px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: #111;
+      width: 240px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="brand-logo">⚙️ LaptopStore Admin</div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'">
+      <i class="bi bi-box"></i> Sản phẩm
+    </a>
+    <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'">
+      <i class="bi bi-receipt"></i> Đơn hàng
+    </a>
+    <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'">
+      <i class="bi bi-people"></i> Người dùng
+    </a>
+    <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'">
+      <i class="bi bi-ticket-perforated"></i> Voucher
+    </a>
+    <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-light bg-white shadow-sm">
+    <div class="container-fluid justify-content-end align-items-center">
+
+    <span class="me-3 text-secondary fw-semibold">
+      👋 Xin chào, Admin
+    </span>
+
+      <a href="/logout" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-box-arrow-right"></i> Đăng xuất
+      </a>
+
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- 🔹 Tiêu đề & nút thêm -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="fw-bold m-0">Quản lý sản phẩm</h4>
+
+      <!-- Search Box -->
+      <form class="search-form desktop-search-form me-3"
+            th:action="@{/admin/products/search}"
+            method="get"
+            style="min-width: 350px;">
+
+        <div class="input-group">
+          <input type="text"
+                 class="form-control"
+                 name="q"
+                 placeholder="Tìm theo ID hoặc tên sản phẩm…"
+                 th:value="${q}">
+
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+
+      </form>
+
+
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="bi bi-plus-circle"></i> Thêm sản phẩm
+      </button>
+    </div>
+
+    <!-- 🔹 Bảng sản phẩm -->
+    <div class="card shadow-sm">
+      <div class="card-body table-responsive">
+        <table class="table align-middle table-hover">
+          <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Ảnh</th>
+            <th>Tên</th>
+            <th>Thương hiệu</th>
+            <th>Giá</th>
+            <th>Tồn kho</th>
+            <th>Biến thể</th>
+            <th class="text-center">Hành động</th>
+          </tr>
+          </thead>
+          <tbody th:each="p : ${products}">
+          <tr class="product-row">
+            <td th:text="${p.id}"></td>
+            <td>
+              <img th:if="${p.images != null}"
+                   th:src="@{${#strings.arraySplit(p.images, ',')[0]}}"
+                   class="img-thumbnail"
+                   style="width:60px;">
+
+              <span th:if="${p.images == null}" class="text-muted">Không có</span>
+            </td>
+            <td>
+              <strong th:text="${p.name}"></strong>
+
+              <!-- HOT -->
+              <span class="badge rounded-pill bg-danger ms-2"
+                    th:if="${p.badge != null and p.badge.equalsIgnoreCase('HOT')}">
+                  🔥 HOT
+              </span>
+
+              <!-- SALE -->
+              <span class="badge rounded-pill bg-warning text-dark ms-1"
+                    th:if="${p.salePercent != null and p.salePercent > 0}">
+                  -<span th:text="${p.salePercent}"></span>%
+              </span>
+            </td>
+
+            <td th:text="${p.brand != null ? p.brand.name : 'Không rõ'}"></td>
+            <td th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+            <td th:text="${p.stock}"></td>
+            <td>
+              <ul class="list-unstyled mb-0" th:if="${p.variants != null}">
+                <li th:each="v : ${p.variants}" th:text="${v.color + ' - ' + v.storage}"></li>
+              </ul>
+            </td>
+            <td class="text-center">
+              <button class="btn btn-warning btn-sm" data-bs-toggle="modal" th:data-bs-target="'#editModal_' + ${p.id}">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <form th:action="@{'/admin/products/delete/' + ${p.id}}" method="post" style="display:inline;">
+                <button class="btn btn-danger btn-sm" onclick="return confirm('Xóa sản phẩm này?')">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          <!-- ROW DETAILS (ẩn mặc định) -->
+          <tr class="detail-row" style="display: none;">
+            <td colspan="8">
+              <div class="p-3 bg-light rounded shadow-sm">
+
+                <h6 class="fw-bold mb-3">Thông tin chi tiết</h6>
+
+                <div class="row mb-2">
+                  <div class="col-md-4"><strong>RAM:</strong> <span th:text="${p.ram}"></span></div>
+                  <div class="col-md-4"><strong>Màn hình:</strong> <span th:text="${p.display}"></span></div>
+                  <div class="col-md-4"><strong>CPU:</strong> <span th:text="${p.cpu}"></span></div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-4"><strong>Pin:</strong> <span th:text="${p.battery}"></span></div>
+                  <div class="col-md-4"><strong>Kích thước:</strong> <span th:text="${p.dimensions}"></span></div>
+                  <div class="col-md-4"><strong>GPU:</strong> <span th:text="${p.gpu}"></span></div>
+                </div>
+
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PHÂN TRANG -->
+    <nav th:if="${totalPages > 1}" class="mt-3">
+      <ul class="pagination justify-content-center">
+
+        <!-- Nút Previous -->
+        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+          <a class="page-link"
+             th:href="@{'/admin/products?page=' + ${currentPage - 1}}">&laquo;</a>
+        </li>
+
+        <!-- Danh sách trang -->
+        <li class="page-item"
+            th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+            th:classappend="${i == currentPage} ? 'active'">
+          <a class="page-link"
+             th:text="${i + 1}"
+             th:href="@{'/admin/products?page=' + ${i}}"></a>
+        </li>
+
+        <!-- Nút Next -->
+        <li class="page-item"
+            th:classappend="${currentPage + 1 == totalPages} ? 'disabled'">
+          <a class="page-link"
+             th:href="@{'/admin/products?page=' + ${currentPage + 1}}">&raquo;</a>
+        </li>
+
+      </ul>
+    </nav>
+
+
+    <!-- 🔹 Modal thêm sản phẩm -->
+    <div class="modal fade" id="addModal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <form th:action="@{/admin/products/add}" method="post" enctype="multipart/form-data">
+            <div class="modal-header">
+              <h5 class="modal-title">Thêm sản phẩm mới</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+              <!-- 🔹 THÔNG TIN CHUNG -->
+              <h6 class="fw-bold mb-3">Thông tin sản phẩm</h6>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label">Tên sản phẩm</label>
+                  <input type="text" name="name" class="form-control" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Model</label>
+                  <input type="text" name="modelName" class="form-control" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Giá cơ bản</label>
+                  <input type="number" name="price" class="form-control" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Tồn kho tổng</label>
+                  <input type="number" name="stock" class="form-control" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Thương hiệu</label>
+                  <select name="brandId" class="form-select" required>
+                    <option value="" disabled selected>-- Chọn thương hiệu --</option>
+                    <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Ảnh đại diện</label>
+                  <input type="file" name="imageFiles" class="form-control" multiple onchange="previewMainImages(event)">
+
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Badge hiển thị</label>
+                  <select name="badge" class="form-select">
+                    <option value="" selected>— Không có —</option>
+                    <option value="HOT">🔥 HOT</option>>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Giảm giá (%)</label>
+                  <input type="number" name="salePercent" class="form-control" min="0" max="90">
+                </div>
+
+                <div id="mainImagePreview" class="mt-2 d-flex gap-2"></div>
+
+              </div>
+
+              <hr>
+
+              <!-- 🔹 THÔNG SỐ KỸ THUẬT -->
+              <h6 class="fw-bold mb-3">Thông số kỹ thuật</h6>
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">RAM</label>
+                  <input type="text" name="ram" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Màn hình</label>
+                  <input type="text" name="display" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">CPU</label>
+                  <input type="text" name="cpu" class="form-control" placeholder="VD: Intel Core i5-13420H">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">GPU</label>
+                  <input type="text" name="gpu" class="form-control" placeholder="VD: RTX 4060 / Iris Xe">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Pin</label>
+                  <input type="text" name="battery" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Kích thước</label>
+                  <input type="text" name="dimensions" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Chất liệu</label>
+                  <input type="text" name="material" class="form-control">
+                </div>
+              </div>
+
+              <hr>
+
+              <!-- 🔹 MÔ TẢ -->
+              <h6 class="fw-bold mb-3">Mô tả sản phẩm</h6>
+              <textarea name="description" class="form-control mb-3" rows="3"></textarea>
+
+              <hr>
+
+              <!-- 🔹 BIẾN THỂ -->
+              <h6 class="fw-bold mb-3">Biến thể sản phẩm</h6>
+
+              <table class="table table-bordered align-middle">
+                <thead>
+                <tr>
+                  <th style="width: 20%">Màu</th>
+                  <th style="width: 20%">SSD</th>
+                  <th style="width: 15%">Tồn kho</th>
+                  <th style="width: 25%">Ảnh</th>
+                  <th style="width: 10%"></th>
+                </tr>
+                </thead>
+                <tbody id="variantTableBody">
+                <tr>
+                  <td><input type="text" name="variantColors" class="form-control"></td>
+                  <td><input type="text" name="variantStorages" class="form-control"></td>
+                  <td><input type="number" name="variantStocks" class="form-control"></td>
+                  <td><input type="file" name="variantImages" class="form-control"></td>
+                  <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>
+                  </td>
+                </tr>
+                </tbody>
+              </table>
+
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addVariantRow()">
+                <i class="bi bi-plus-circle"></i> Thêm biến thể
+              </button>
+
+            </div>
+
+
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">Lưu</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔹 Modal sửa sản phẩm -->
+    <div th:each="p : ${products}" th:id="'editModal_' + ${p.id}" class="modal fade" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <form th:action="@{'/admin/products/edit/' + ${p.id}}" method="post" enctype="multipart/form-data">
+            <div class="modal-header">
+              <h5 class="modal-title">Chỉnh sửa sản phẩm</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+              <!-- 🔹 THÔNG TIN CHUNG -->
+              <h6 class="fw-bold mb-3">Thông tin sản phẩm</h6>
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">Tên sản phẩm</label>
+                  <input type="text" name="name" class="form-control" th:value="${p.name}" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Model</label>
+                  <input type="text" name="modelName" class="form-control" th:value="${p.model}" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Giá cơ bản</label>
+                  <input type="number" name="price" class="form-control" th:value="${p.price}" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Tồn kho tổng</label>
+                  <input type="number" name="stock" class="form-control" th:value="${p.stock}" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Thương hiệu</label>
+                  <select name="brandId" class="form-select">
+                    <option th:each="b : ${brands}"
+                            th:value="${b.id}"
+                            th:text="${b.name}"
+                            th:selected="${b.id == p.brand.id}">
+                    </option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Cập nhật ảnh đại diện</label>
+                  <input type="file" name="imageFiles" class="form-control" multiple onchange="previewMainImagesEdit(event, '[[${p.id}]]')">
+                  <div id="mainImagePreviewEdit_[[${p.id}]]" class="mt-2 d-flex gap-2"></div>
+
+
+                  <!-- Xem ảnh hiện tại -->
+                  <div class="mt-2">
+                    <div class="mt-2 d-flex gap-2 flex-wrap">
+                      <img th:each="img : ${#strings.arraySplit(p.images, ',')}"
+                           th:src="@{${img}}"
+                           style="width: 80px; border-radius: 5px;">
+                    </div>
+
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Badge hiển thị</label>
+                  <select name="badge" class="form-select">
+                    <option value="" th:selected="${p.badge == null}">— Không có —</option>
+                    <option value="HOT" th:selected="${p.badge == 'HOT'}">🔥 HOT</option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Giảm giá (%)</label>
+                  <input type="number" name="salePercent" class="form-control" th:value="${p.salePercent}">
+                </div>
+
+
+              </div>
+
+              <hr>
+
+              <!-- 🔹 THÔNG SỐ KỸ THUẬT -->
+              <h6 class="fw-bold mb-3">Thông số kỹ thuật</h6>
+              <div class="row g-3">
+
+                <div class="col-md-6">
+                  <label class="form-label">RAM</label>
+                  <input type="text" name="ram" class="form-control" th:value="${p.ram}">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Màn hình</label>
+                  <input type="text" name="display" class="form-control" th:value="${p.display}">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">CPU</label>
+                  <input type="text" name="cpu" class="form-control" th:value="${p.cpu}">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">GPU</label>
+                  <input type="text" name="gpu" class="form-control" th:value="${p.gpu}">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Pin</label>
+                  <input type="text" name="battery" class="form-control" th:value="${p.battery}">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Kích thước</label>
+                  <input type="text" name="dimensions" class="form-control" th:value="${p.dimensions}">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Chất liệu</label>
+                  <input type="text" name="material" class="form-control" th:value="${p.material}">
+                </div>
+
+              </div>
+
+              <hr>
+
+              <!-- 🔹 MÔ TẢ -->
+              <h6 class="fw-bold mb-3">Mô tả sản phẩm</h6>
+              <textarea name="description" class="form-control mb-3" rows="3" th:text="${p.description}"></textarea>
+
+              <hr>
+
+              <!-- 🔹 BIẾN THỂ HIỆN TẠI -->
+              <h6 class="fw-bold mb-3">Biến thể hiện tại</h6>
+
+              <table class="table table-bordered align-middle">
+                <thead>
+                <tr>
+                  <th>Màu</th>
+                  <th>SSD</th>
+                  <th>Tồn kho</th>
+                  <th>Ảnh</th>
+                  <th>Cập nhật ảnh</th>
+                  <th></th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="v, i : ${p.variants}">
+
+                  <!-- ID biến thể (ẩn) -->
+                  <input type="hidden" name="variantIds" th:value="${v.id}">
+
+                  <td>
+                    <input type="text" class="form-control"
+                           name="variantOldColors"
+                           th:value="${v.color}">
+                  </td>
+
+                  <td>
+                    <input type="text" class="form-control"
+                           name="variantOldStorages"
+                           th:value="${v.storage}">
+                  </td>
+
+                  <td>
+                    <input type="number" class="form-control"
+                           name="variantOldStocks"
+                           th:value="${v.stock}">
+                  </td>
+
+                  <td>
+                    <img th:if="${v.image}" th:src="@{${v.image}}" style="width:60px;">
+                  </td>
+
+                  <td>
+                    <input type="file" name="variantOldImages" class="form-control">
+                  </td>
+
+                  <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm"
+                            onclick="removeOldVariant(this)">
+                      ✕
+                    </button>
+                    <input type="hidden" name="deleteOldVariant" value="0">
+                  </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(p.variants)}">
+                  <td colspan="6" class="text-center text-muted">Chưa có biến thể</td>
+                </tr>
+
+                </tbody>
+              </table>
+
+
+              <hr>
+
+              <!-- 🔹 THÊM BIẾN THỂ MỚI -->
+              <h6 class="fw-bold mb-3">Thêm biến thể mới</h6>
+
+              <table class="table table-bordered align-middle">
+                <thead>
+                  <tr>
+                    <th>Màu</th>
+                    <th>SSD</th>
+                    <th>Tồn kho</th>
+                    <th>Ảnh</th>
+                    <th></th>
+                  </tr>
+                </thead>
+
+                <tbody th:id="'variantTableBodyEdit_' + ${p.id}">
+                  <tr>
+                    <td><input type="text" name="variantColors" class="form-control"></td>
+                    <td><input type="text" name="variantStorages" class="form-control"></td>
+                    <td><input type="number" name="variantStocks" class="form-control"></td>
+                    <td><input type="file" name="variantImages" class="form-control"></td>
+                    <td class="text-center">
+                      <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <button type="button" class="btn btn-outline-primary btn-sm" onclick="addVariantRowEdit('[[${p.id}]]')">
+                <i class="bi bi-plus-circle"></i> Thêm biến thể
+              </button>
+
+            </div>
+
+
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- /content -->
+
+  <!-- 🔔 Toast thông báo -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="toastMessage" class="toast align-items-center text-white bg-success border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastText">Thành công!</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const params = new URLSearchParams(window.location.search);
+
+      let message = "";
+      let type = "success";
+
+      if (params.get("added") === "true") {
+        message = "Đã thêm sản phẩm thành công!";
+      }
+      if (params.get("updated") === "true") {
+        message = "Đã cập nhật sản phẩm thành công!";
+      }
+      if (params.get("deleted") === "true") {
+        message = "Đã xoá sản phẩm!";
+        type = "danger";
+      }
+      if (params.get("error") === "brand") {
+        message = "Không tìm thấy thương hiệu!";
+        type = "danger";
+      }
+      if (params.get("error") === "notfound") {
+        message = "Không tìm thấy sản phẩm!";
+        type = "danger";
+      }
+
+      if (message !== "") {
+        const toastEl = document.getElementById("toastMessage");
+        const toastText = document.getElementById("toastText");
+
+        toastText.textContent = message;
+
+        toastEl.classList.remove("bg-success", "bg-danger");
+        toastEl.classList.add(type === "danger" ? "bg-danger" : "bg-success");
+
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+      }
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function addVariantRow() {
+      const row = `
+        <tr>
+          <td><input type="text" name="variantColors" class="form-control"></td>
+          <td><input type="text" name="variantStorages" class="form-control"></td>
+          <td><input type="number" name="variantStocks" class="form-control"></td>
+          <td><input type="file" name="variantImages" class="form-control"></td>
+          <td class="text-center"><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+        </tr>`;
+      document.querySelector("#variantTableBody").insertAdjacentHTML('beforeend', row);
+    }
+
+    function addVariantRowEdit(productId) {
+      const tbody = document.getElementById("variantTableBodyEdit_" + productId);
+      if (!tbody) return;
+
+      const row = `
+        <tr>
+          <td><input type="text" name="variantColors" class="form-control"></td>
+          <td><input type="text" name="variantStorages" class="form-control"></td>
+          <td><input type="number" name="variantStocks" class="form-control"></td>
+          <td><input type="file" name="variantImages" class="form-control"></td>
+          <td class="text-center"><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✕</button></td>
+        </tr>`;
+
+      tbody.insertAdjacentHTML('beforeend', row);
+    }
+
+    function removeRow(btn) {
+      btn.closest('tr').remove();
+    }
+  </script>
+  <script>
+    function removeOldVariant(btn) {
+        const row = btn.closest("tr");
+
+        // đánh dấu xoá
+        row.querySelector('input[name="deleteOldVariant"]').value = "1";
+
+        // làm mờ row
+        row.style.opacity = "0.4";
+        row.style.pointerEvents = "none";
+
+        btn.classList.remove("btn-danger");
+        btn.classList.add("btn-secondary");
+        btn.innerText = "Đã xoá";
+    }
+  </script>
+  <script>
+    function previewMainImages(event) {
+        const preview = document.getElementById("mainImagePreview");
+        preview.innerHTML = "";
+
+        [...event.target.files].forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.innerHTML += `
+                    <img src="${e.target.result}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 5px;">
+                `;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+  </script>
+  <script>
+    function previewMainImagesEdit(event, id) {
+        let previewBox = document.getElementById("mainImagePreviewEdit_" + id);
+        previewBox.innerHTML = "";
+
+        [...event.target.files].forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                previewBox.innerHTML += `
+                    <img src="${e.target.result}"
+                         style="width: 70px; height: 70px; object-fit: cover; border-radius: 5px;">
+                `;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const rows = document.querySelectorAll(".product-row");
+
+        rows.forEach(row => {
+            row.addEventListener("click", function () {
+                const detailRow = row.nextElementSibling;
+
+                if (detailRow.style.display === "none" || detailRow.style.display === "") {
+                    detailRow.style.display = "table-row";
+                } else {
+                    detailRow.style.display = "none";
+                }
+            });
+        });
+    });
+  </script>
+
+
+</body>
+</html>

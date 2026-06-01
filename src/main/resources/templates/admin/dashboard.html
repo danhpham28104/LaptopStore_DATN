@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'Dashboard - TechStore Admin'">Dashboard</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body { background-color: #f6f7fb; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1e1f26; color: #fff; padding-top: 60px; }
+        .sidebar a { color: #bbb; text-decoration: none; padding: 10px 20px; display: block; }
+        .sidebar a.active, .sidebar a:hover { background: #343541; color: #fff; }
+        .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #ddd; }
+        .content { margin-left: 240px; padding: 80px 20px 40px; }
+
+        .brand-logo { font-weight: bold; color: #fff; font-size: 1.2rem; padding: 10px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
+
+        .stat-card {
+          border-radius: 12px;
+          padding: 25px;
+          color: #fff;
+          position: relative;
+          overflow: hidden;
+          transition: 0.2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+
+        .stat-icon {
+          position: absolute;
+          right: 20px;
+          bottom: 15px;
+          opacity: 0.25;
+          font-size: 55px;
+        }
+
+        .chart-box {
+          background: #fff;
+          border-radius: 12px;
+          padding: 20px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+    </style>
+</head>
+
+<body>
+<div class="brand-logo">⚙️ TechStore Admin</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'"><i class="bi bi-box"></i> Sản phẩm</a>
+    <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'"><i class="bi bi-receipt"></i> Đơn hàng</a>
+    <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'"><i class="bi bi-people"></i> Người dùng</a>
+    <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'"><i class="bi bi-ticket-perforated"></i> Voucher</a>
+    <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm">
+    <div class="container-fluid justify-content-end align-items-center">
+
+        <span class="me-3 text-secondary fw-semibold">
+          👋 Xin chào, Admin
+        </span>
+
+        <form th:action="@{/logout}" method="post">
+            <button class="btn btn-outline-danger w-100" type="submit">
+                <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+            </button>
+        </form>
+
+    </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="content">
+
+    <h4 class="fw-bold mb-4">Dashboard tổng quan</h4>
+
+    <!-- STAT CARDS -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#4e73df,#224abe);">
+                <h6>Doanh thu hôm nay</h6>
+                <h3 class="fw-bold"
+                    th:text="${todayRevenue != null ? #numbers.formatDecimal(todayRevenue, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}">
+                </h3>
+                <i class="bi bi-cash stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#1cc88a,#0e7b52);">
+                <h6>Đơn hàng mới</h6>
+                <h3 class="fw-bold" th:text="${newOrders ?: 32}"></h3>
+                <i class="bi bi-cart-check stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#f6c23e,#c7961d);">
+                <h6>Người dùng</h6>
+                <h3 class="fw-bold" th:text="${userCount ?: 150}"></h3>
+                <i class="bi bi-people stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card" style="background:linear-gradient(135deg,#e74a3b,#be2617);">
+                <h6>Sản phẩm tồn kho</h6>
+                <h3 class="fw-bold" th:text="${stockCount ?: 82}"></h3>
+                <i class="bi bi-box-seam stat-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="row g-4">
+
+        <!-- MONTHLY REVENUE CHART -->
+        <div class="col-lg-8">
+            <div class="chart-box">
+                <h5 class="fw-bold mb-3">📊 Doanh thu 7 ngày gần nhất</h5>
+                <canvas id="dailyChart" height="140"></canvas>
+            </div>
+        </div>
+
+        <!-- BEST SELLERS -->
+        <div class="col-lg-4">
+            <div class="chart-box">
+                <h5 class="fw-bold mb-3">🔥 Top 5 sản phẩm bán chạy</h5>
+                <ul class="list-group">
+
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        th:each="b : ${bestSellers}">
+                        <span th:text="${b.productName}"></span>
+                        <span class="badge bg-primary rounded-pill" th:text="${b.totalSold}"></span>
+                    </li>
+
+                    <li th:if="${#lists.isEmpty(bestSellers)}" class="list-group-item text-center text-muted">
+                        Không có dữ liệu
+                    </li>
+
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RECENT ORDERS -->
+    <div class="row g-4 mt-4">
+        <div class="col-lg-12">
+            <div class="chart-box">
+                <h5 class="fw-bold mb-3">🛒 Đơn hàng gần đây</h5>
+
+                <table class="table align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Người đặt</th>
+                        <th>Tổng</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="o : ${recentOrders}">
+                        <td th:text="${o.id}"></td>
+                        <td th:text="${o.receiverName}"></td>
+                        <td th:text="${#numbers.formatDecimal(o.totalAmount,0,'COMMA',0,'POINT')} + ' ₫'"></td>
+                        <td th:text="${o.orderStatus}"></td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(recentOrders)}">
+                        <td colspan="4" class="text-center text-muted">Chưa có đơn hàng</td>
+                    </tr>
+
+                    </tbody>
+                </table>
+
+                <a th:href="@{/admin/orders}" class="btn btn-primary btn-sm w-100">
+                    Xem tất cả →
+                </a>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<script th:inline="javascript">
+
+    const labels = /*[[${dailyLabels}]]*/ [];
+    const data7Days = /*[[${dailyRevenue}]]*/ [];
+
+    console.log("Labels:", labels);
+    console.log("Revenue:", data7Days);
+
+    new Chart(document.getElementById('dailyChart'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Doanh thu (₫)",
+                data: data7Days,
+                borderColor: "#4e73df",
+                backgroundColor: "rgba(78,115,223,0.3)",
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 4,
+                pointBackgroundColor: "#4e73df"
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: value => value.toLocaleString("vi-VN") + " ₫"
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

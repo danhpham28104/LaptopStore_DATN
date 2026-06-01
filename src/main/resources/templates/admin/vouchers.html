@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle} ?: 'Quản lý Voucher - TechStore Admin'">Quản lý Voucher</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    body { background-color: #f6f7fb; font-family: 'Segoe UI', sans-serif; }
+    .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1e1f26; color: #fff; padding-top: 60px; }
+    .sidebar a { color: #bbb; text-decoration: none; padding: 10px 20px; display: block; }
+    .sidebar a.active, .sidebar a:hover { background: #343541; color: #fff; }
+    .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #ddd; }
+    .content { margin-left: 240px; padding: 80px 20px 40px; }
+    .brand-logo { font-weight: bold; color: #fff; font-size: 1.2rem; padding: 10px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
+  </style>
+</head>
+
+<body>
+<div class="brand-logo">⚙️ TechStore Admin</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+  <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'"><i class="bi bi-box"></i> Sản phẩm</a>
+  <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'"><i class="bi bi-receipt"></i> Đơn hàng</a>
+  <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'"><i class="bi bi-people"></i> Người dùng</a>
+  <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'"><i class="bi bi-ticket-perforated"></i> Voucher</a>
+  <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm">
+  <div class="container-fluid justify-content-end align-items-center">
+
+    <span class="me-3 text-secondary fw-semibold">
+      👋 Xin chào, Admin
+    </span>
+
+    <a href="/logout" class="btn btn-sm btn-outline-danger">
+      <i class="bi bi-box-arrow-right"></i> Đăng xuất
+    </a>
+
+  </div>
+</nav>
+
+<!-- Content -->
+<div class="content">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold">Quản lý Voucher</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+      <i class="bi bi-plus-circle"></i> Thêm Voucher
+    </button>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body table-responsive">
+      <table class="table align-middle table-hover">
+        <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Mã</th>
+          <th>Loại giảm</th>
+          <th>Giá trị</th>
+          <th>Tối thiểu</th>
+          <th>Ngày bắt đầu</th>
+          <th>Ngày kết thúc</th>
+          <th>Còn lại</th>
+          <th>Trạng thái</th>
+          <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="v : ${vouchers}">
+          <td th:text="${v.id}"></td>
+          <td th:text="${v.code}"></td>
+          <td th:text="${v.discountType}"></td>
+          <td th:text="${v.discountValue}"></td>
+          <td th:text="${v.minOrderValue}"></td>
+          <td th:text="${#temporals.format(v.startDate, 'dd/MM/yyyy')}"></td>
+          <td th:text="${#temporals.format(v.endDate, 'dd/MM/yyyy')}"></td>
+          <td th:text="${v.quantity}"></td>
+          <td>
+            <span th:text="${v.active ? 'Hoạt động' : 'Ngừng'}"
+                  th:classappend="${v.active} ? 'text-success' : 'text-danger'"></span>
+          </td>
+          <td>
+            <button class="btn btn-warning btn-sm" data-bs-toggle="modal" th:data-bs-target="'#editModal_' + ${v.id}">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <form th:action="@{'/admin/vouchers/delete/' + ${v.id}}" method="post" style="display:inline;">
+              <button class="btn btn-danger btn-sm" onclick="return confirm('Xóa voucher này?')"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(vouchers)}">
+          <td colspan="10" class="text-center text-muted">Không có voucher nào</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal thêm voucher -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form th:action="@{/admin/vouchers/add}" method="post">
+        <div class="modal-header">
+          <h5 class="modal-title">Thêm Voucher mới</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Mã Voucher</label>
+            <input name="code" type="text" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Loại giảm</label>
+            <select name="discountType" class="form-select" required>
+              <option value="PERCENT">Phần trăm (%)</option>
+              <option value="AMOUNT">Giá trị (₫)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Giá trị giảm</label>
+            <input name="discountValue" type="number" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Đơn hàng tối thiểu</label>
+            <input name="minOrderValue" type="number" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ngày bắt đầu</label>
+            <input name="startDate" type="datetime-local" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ngày kết thúc</label>
+            <input name="endDate" type="datetime-local" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Số lượng</label>
+            <input name="quantity" type="number" class="form-control" required>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label">Mô tả</label>
+            <textarea name="description" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary">Lưu</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!-- Modal sửa voucher -->
+<div th:each="v : ${vouchers}">
+  <div class="modal fade" th:id="'editModal_' + ${v.id}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form th:action="@{'/admin/vouchers/edit/' + ${v.id}}" method="post">
+
+          <div class="modal-header">
+            <h5 class="modal-title">Sửa Voucher</h5>
+            <button class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Mã Voucher</label>
+              <input name="code" type="text" class="form-control"
+                     th:value="${v.code}" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Loại giảm</label>
+              <select name="discountType" class="form-select" required>
+                <option value="PERCENT" th:selected="${v.discountType == 'PERCENT'}">Phần trăm (%)</option>
+                <option value="AMOUNT" th:selected="${v.discountType == 'AMOUNT'}">Giá trị (₫)</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Giá trị giảm</label>
+              <input name="discountValue" type="number" class="form-control"
+                     th:value="${v.discountValue}" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Đơn hàng tối thiểu</label>
+              <input name="minOrderValue" type="number" class="form-control"
+                     th:value="${v.minOrderValue}">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Ngày bắt đầu</label>
+              <input name="startDate" type="datetime-local" class="form-control"
+                     th:value="${#temporals.format(v.startDate, 'yyyy-MM-dd''T''HH:mm')}" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Ngày kết thúc</label>
+              <input name="endDate" type="datetime-local" class="form-control"
+                     th:value="${#temporals.format(v.endDate, 'yyyy-MM-dd''T''HH:mm')}" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Số lượng</label>
+              <input name="quantity" type="number" class="form-control"
+                     th:value="${v.quantity}" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Trạng thái</label>
+              <select name="active" class="form-select">
+                <option value="true" th:selected="${v.active}">Hoạt động</option>
+                <option value="false" th:selected="${!v.active}">Ngừng</option>
+              </select>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label">Mô tả</label>
+              <textarea name="description" class="form-control" rows="2"
+                        th:text="${v.description}"></textarea>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-primary">Cập nhật</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Toast thông báo -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div id="toastMessage" class="toast align-items-center text-white bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toastText">Thành công!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
+
+    let message = "";
+    let type = "success";
+
+    if (params.get("success") === "added") {
+      message = "Đã thêm voucher thành công!";
+    }
+    if (params.get("success") === "updated") {
+      message = "Đã cập nhật voucher thành công!";
+    }
+    if (params.get("success") === "deleted") {
+      message = "Đã xoá voucher!";
+      type = "danger";
+    }
+    if (params.get("error") === "exists") {
+      message = "Mã voucher đã tồn tại!";
+      type = "danger";
+    }
+    if (params.get("error") === "notfound") {
+      message = "Không tìm thấy voucher!";
+      type = "danger";
+    }
+
+    if (message !== "") {
+      const toastEl = document.getElementById("toastMessage");
+      const toastText = document.getElementById("toastText");
+
+      toastText.textContent = message;
+
+      // đổi màu
+      toastEl.classList.remove("bg-success", "bg-danger");
+      toastEl.classList.add(type === "danger" ? "bg-danger" : "bg-success");
+
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+    }
+  });
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
