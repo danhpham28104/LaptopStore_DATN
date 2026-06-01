@@ -2,7 +2,7 @@ package com.techstore.techstore.Controller;
 
 import com.techstore.techstore.Service.BrandService;
 import com.techstore.techstore.Service.ProductService;
-import com.techstore.techstore.Service.RecommendationService;
+import com.techstore.techstore.Service.VoucherService;
 import com.techstore.techstore.entity.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -10,8 +10,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.security.Principal;
 
 /**
  * Controller cho trang chủ và danh sách sản phẩm
@@ -25,12 +23,9 @@ public class HomeController {
     @Autowired
     private BrandService brandService;
 
-    @Autowired
-    private RecommendationService recommendationService;
-
     /** Trang chủ: hiển thị sản phẩm + thương hiệu */
     @GetMapping({"/", "/home"})
-    public String home(@RequestParam(defaultValue = "0") int page, Model model, Principal principal) {
+    public String home(@RequestParam(defaultValue = "0") int page, Model model) {
         int pageSize = 12;
         Page<Product> productPage = productService.getPaginatedProducts(page, pageSize);
         model.addAttribute("brands", brandService.getAllBrands());
@@ -38,9 +33,6 @@ public class HomeController {
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", productPage.getTotalPages());
         model.addAttribute("siteName", "LaptopStore");
-        model.addAttribute("recommendedProducts", principal != null
-                ? recommendationService.getRecommendationsForUser(principal.getName(), 4)
-                : java.util.List.of());
 
         return "home";
     }

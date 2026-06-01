@@ -285,22 +285,6 @@
         </div>
       </div>
 
-      <!-- Personalized Recommendations -->
-      <section class="recommended-products mt-5"
-               th:if="${recommendedProducts != null and !#lists.isEmpty(recommendedProducts)}">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h3 class="fw-bold mb-1">Sản phẩm phù hợp với bạn</h3>
-            <p class="text-muted mb-0 small">Dựa trên lịch sử xem và cấu hình sản phẩm tương tự</p>
-          </div>
-          <a th:href="@{/product}" class="btn btn-outline-dark btn-sm">Xem thêm</a>
-        </div>
-
-        <div class="row g-4" th:with="products=${recommendedProducts}"
-             th:insert="fragments/product_list :: productList">
-        </div>
-      </section>
-
       <!-- Information Tabs -->
       <div class="row mt-5" data-aos="fade-up" data-aos-delay="300">
         <div class="col-12">

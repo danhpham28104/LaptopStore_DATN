@@ -86,22 +86,6 @@
         </div>
     </section>
 
-    <!-- Personalized Recommendations -->
-    <section class="recommended-products container py-4"
-             th:if="${recommendedProducts != null and !#lists.isEmpty(recommendedProducts)}">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h5 class="fw-bold mb-1">Gợi ý cho bạn</h5>
-                <p class="text-muted mb-0 small">Dựa trên các sản phẩm bạn xem nhiều gần đây</p>
-            </div>
-            <a th:href="@{/product}" class="btn btn-outline-dark btn-sm">Xem thêm</a>
-        </div>
-
-        <div class="row g-4" th:with="products=${recommendedProducts}"
-             th:insert="fragments/product_list :: productList">
-        </div>
-    </section>
-
     <!-- Bộ lọc sản phẩm -->
     <section class="filter-bar container py-3 border-bottom">
         <h6 class="fw-bold mb-3">Chọn laptop theo tiêu chí</h6>
