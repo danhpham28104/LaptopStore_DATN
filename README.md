@@ -35,40 +35,24 @@ LaptopStore là một **website bán laptop trực tuyến** được xây dựn
 
 ## 📂 Cấu trúc thư mục chính
 
-## Project Structure
 ```text
 LaptopStore
-├── src
-│   ├── main
-│   │   ├── java/com/techstore/techstore
-│   │   │   ├── config
-│   │   │   ├── Controller
-│   │   │   ├── dto
-│   │   │   ├── entity
-│   │   │   ├── enums
-│   │   │   ├── Repository
-│   │   │   ├── security
-│   │   │   ├── Service
-│   │   │   └── TechstoreApplication.java
-│   │   └── resources
-│   │       ├── static
-│   │       │   ├── css
-│   │       │   ├── images
-│   │       │   └── js
-│   │       ├── templates
-│   │       │   ├── admin
-│   │       │   ├── auth
-│   │       │   └── fragments
-│   │       └── application.properties
-│   └── test
-│       └── java/com/techstore/techstore
-│           └── TechstoreApplicationTests.java
-├── .mvn/wrapper
-├── .vscode
-├── .gitattributes
-├── .gitignore
-├── mvnw
-├── mvnw.cmd
+├── src/main/java/com/techstore/techstore
+│   ├── Controller
+│   ├── Service
+│   ├── Repository
+│   ├── entity
+│   ├── security
+│   └── config
+│
+├── src/main/resources
+│   ├── static
+│   │   ├── css
+│   │   ├── js
+│   │   └── images
+│   ├── templates
+│   └── application.properties
+│
 ├── pom.xml
 └── README.md
 ```
