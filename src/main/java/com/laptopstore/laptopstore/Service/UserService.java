@@ -55,9 +55,10 @@ public class UserService {
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
-    @Transactional
+    @Transactional(readOnly = true)
     public Optional<User> findByUsername(String loginName) {
-        return userRepository.findByUsername(loginName);
+        return userRepository.findByUsername(loginName)
+                .or(() -> userRepository.findByEmail(loginName));
     }
     public long countUsers() {
         return userRepository.count();

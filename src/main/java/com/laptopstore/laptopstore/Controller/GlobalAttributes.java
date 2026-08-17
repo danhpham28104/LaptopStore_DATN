@@ -6,6 +6,7 @@ import com.laptopstore.laptopstore.Service.VoucherService;
 import com.laptopstore.laptopstore.entity.User;
 import com.laptopstore.laptopstore.entity.Voucher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,12 +32,20 @@ public class GlobalAttributes {
 //        return voucherService.getAvailableVouchers(user.getId());
 //    }
 
+    @Value("${demo.mode:false}")
+    private boolean demoMode;
+
     @Autowired
     private VoucherService voucherService;
     @Autowired
     private UserService userService;
     @Autowired
     private CartService cartService;
+
+    @ModelAttribute("demoMode")
+    public boolean isDemoMode() {
+        return demoMode;
+    }
 
     @ModelAttribute("vouchers")
     public List<Voucher> userVouchers() {

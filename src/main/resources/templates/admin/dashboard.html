@@ -82,6 +82,15 @@
 <!-- CONTENT -->
 <div class="content">
 
+    <!-- DEMO MODE BADGE -->
+    <div th:if="${demoMode}" class="alert alert-warning border-warning shadow-sm py-2 px-3 mb-4 rounded-3 d-flex align-items-center justify-content-between">
+        <div>
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Demo Environment</strong> &mdash; Dữ liệu tại đây chỉ dùng cho kiểm thử. Thanh toán và dịch vụ bên ngoài có thể bị vô hiệu hóa.
+        </div>
+        <span class="badge bg-warning text-dark px-2 py-1">DEMO MODE</span>
+    </div>
+
     <!-- HEADER & DATE FILTER BAR -->
     <div class="chart-box mb-4">
         <form th:action="@{/admin}" method="get" class="row g-3 align-items-end">

@@ -1,0 +1,15 @@
+target/
+.git/
+.github/
+.idea/
+.vscode/
+.claude/
+techstore.worktrees/
+*.log
+.env
+.env.*
+*.env
+HELP.md
+README.md
+Dockerfile
+.dockerignore

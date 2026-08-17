@@ -1,5 +1,6 @@
 package com.laptopstore.laptopstore.Service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +17,14 @@ import java.util.Map;
 @Service
 public class PaymentService {
 
-    // 🔹 SEPAY Config (thay bằng của bạn)
-    private final String SEPAY_QR_BASE = "https://qr.sepay.vn/img";
-    private final String VA_ACCOUNT = "5282587777"; // Thay bằng Virtual Account của bạn
-    private final String BANK_CODE = "MBBank"; // Thay bằng mã ngân hàng
+    @Value("${payment.sepay.qr-base-url:https://qr.sepay.vn/img}")
+    private String sepayQrBase;
+
+    @Value("${payment.sepay.va-account:5282587777}")
+    private String vaAccount;
+
+    @Value("${payment.sepay.bank-code:MBBank}")
+    private String bankCode;
 
     /**
      * Tạo QR code thanh toán
@@ -29,9 +34,9 @@ public class PaymentService {
      * @return URL của QR code
      */
     public String generatePaymentQR(long amount, String orderCode) {
-        return SEPAY_QR_BASE
-                + "?acc=" + VA_ACCOUNT
-                + "&bank=" + BANK_CODE
+        return sepayQrBase
+                + "?acc=" + vaAccount
+                + "&bank=" + bankCode
                 + "&amount=" + amount
                 + "&des=" + orderCode;
     }
