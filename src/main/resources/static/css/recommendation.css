@@ -1,0 +1,90 @@
+/* Styling cho Section Đề Cử Sản Phẩm (Personalized Recommendations) */
+
+.recommendation-section {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-radius: 16px;
+    padding: 30px 20px;
+    margin-bottom: 40px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+    position: relative;
+    overflow: hidden;
+}
+
+.recommendation-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, #667eea, #764ba2);
+}
+
+.recommendation-title {
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 25px;
+}
+
+.recommendation-title i {
+    color: #764ba2;
+    -webkit-text-fill-color: #764ba2;
+    animation: pulse-sparkle 1.8s infinite ease-in-out;
+}
+
+@keyframes pulse-sparkle {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 5px rgba(118, 75, 162, 0.5)); }
+}
+
+/* Badge đề cử đặc biệt trên Product Card */
+.product-item {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.recommendation-section .product-item {
+    border: 1px solid rgba(118, 75, 162, 0.1);
+}
+
+.recommendation-section .product-item:hover {
+    border-color: rgba(118, 75, 162, 0.3);
+    box-shadow: 0 15px 30px rgba(118, 75, 162, 0.1);
+    transform: translateY(-5px);
+}
+
+.badge-recommended {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3);
+    z-index: 5;
+    letter-spacing: 0.5px;
+    animation: subtle-glow 2s infinite ease-in-out;
+}
+
+@keyframes subtle-glow {
+    0%, 100% { box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3); }
+    50% { box-shadow: 0 4px 15px rgba(102, 126, 234, 0.6); }
+}
+
+/* Custom CSS cho trang chi tiết sản phẩm */
+.detail-recommendations {
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    padding-top: 40px;
+    margin-top: 40px;
+}

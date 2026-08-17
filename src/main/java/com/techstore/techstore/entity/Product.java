@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,6 +20,8 @@ import java.util.List;
                 @UniqueConstraint(name = "uk_product_model", columnNames = "model")
         }
 )
+@SQLDelete(sql = "UPDATE product SET is_deleted = true WHERE id = ?")
+@SQLRestriction("is_deleted = false")
 public class Product {
 
     @Id

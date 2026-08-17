@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  fragments/chatbot.html
+  Fragment chatbot floating panel - include vào footer hoặc page trực tiếp.
+  Chỉ render 1 lần, không duplicate.
+-->
+<th:block th:fragment="aiChatbot">
+
+  <!-- CSS chỉ load một lần (th:if dựa vào class body để không duplicate nếu include 2 lần) -->
+  <link th:href="@{/css/ai-chat.css}" rel="stylesheet">
+
+  <!-- Overlay (click để đóng) -->
+  <div class="ai-panel-overlay" id="aiPanelOverlay"></div>
+
+  <!-- Slide-in Chat Panel -->
+  <div class="ai-chat-panel" id="aiChatPanel" role="dialog" aria-modal="true" aria-label="Tư vấn laptop bằng AI">
+
+    <!-- Header -->
+    <div class="ai-panel-header">
+      <div class="ai-panel-avatar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.2)"/>
+          <path d="M8 10C8 9.44772 8.44772 9 9 9H15C15.5523 9 16 9.44772 16 10V13C16 13.5523 15.5523 14 15 14H9C8.44772 14 8 13.5523 8 13V10Z" fill="white"/>
+          <circle cx="10" cy="11.5" r="1" fill="#e63946"/>
+          <circle cx="14" cy="11.5" r="1" fill="#e63946"/>
+          <path d="M10 15L12 17L14 15" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="ai-panel-title-group">
+        <p class="ai-panel-title">Tư vấn laptop bằng AI</p>
+        <p class="ai-panel-subtitle">
+          <span class="ai-panel-online-dot"></span>Sẵn sàng tư vấn
+        </p>
+      </div>
+      <button class="ai-panel-clear-history" id="aiPanelClearHistory"
+              title="Xóa lịch sử chat" aria-label="Xóa lịch sử chat">
+        <i class="bi bi-trash3"></i>
+      </button>
+      <button class="ai-panel-close" id="aiPanelClose" aria-label="Đóng" title="Đóng (Esc)">&times;</button>
+    </div>
+
+    <!-- Scrollable body -->
+    <div class="ai-panel-body">
+
+      <!-- Welcome screen -->
+      <div class="ai-welcome" id="aiWelcome">
+        <div class="ai-welcome-icon">🤖</div>
+        <h3>Xin chào! Tôi là AI tư vấn laptop</h3>
+        <p>Hãy cho tôi biết nhu cầu của bạn, tôi sẽ gợi ý laptop phù hợp nhất!</p>
+        <div class="ai-suggestions">
+          <button class="ai-suggestion-chip" type="button"
+                  data-text="Laptop gaming dưới 25 triệu, RAM 16GB, màn hình 144Hz">
+            🎮 Gaming 25 triệu
+          </button>
+          <button class="ai-suggestion-chip" type="button"
+                  data-text="Laptop văn phòng mỏng nhẹ, pin trâu, dưới 20 triệu">
+            💼 Văn phòng
+          </button>
+          <button class="ai-suggestion-chip" type="button"
+                  data-text="Laptop cho lập trình viên, RAM 16GB, SSD 512GB">
+            💻 Lập trình
+          </button>
+          <button class="ai-suggestion-chip" type="button"
+                  data-text="Laptop đồ họa thiết kế, màn hình 4K, GPU rời mạnh">
+            🎨 Đồ họa
+          </button>
+          <button class="ai-suggestion-chip" type="button"
+                  data-text="Laptop cho sinh viên học online, giá rẻ dưới 15 triệu">
+            🎓 Sinh viên
+          </button>
+        </div>
+      </div>
+
+      <!-- Chat history container -->
+      <div class="ai-history-container" id="aiChatHistoryContainer"></div>
+
+      <!-- Loading state -->
+      <div class="ai-loading" id="aiLoading">
+        <div class="ai-loading-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="ai-loading-text">Đang phân tích và tư vấn...</div>
+      </div>
+
+      <!-- Error state -->
+      <div class="ai-error-box" id="aiErrorBox">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span id="aiErrorMsg"></span>
+      </div>
+
+    </div>
+
+    <!-- Footer / Input -->
+    <div class="ai-panel-footer">
+      <div class="ai-input-row">
+        <textarea id="aiChatInput"
+                  class="ai-panel-textarea"
+                  rows="1"
+                  placeholder="Nhập nhu cầu của bạn..."></textarea>
+        <button id="aiSendBtn" class="ai-panel-send" type="button" title="Gửi (Enter)">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+      <div class="ai-input-hint">Enter để gửi · Shift+Enter xuống dòng</div>
+    </div>
+  </div>
+
+  <!-- FAB button -->
+  <div class="ai-fab" id="aiFabContainer">
+    <button class="ai-fab-btn" id="aiFabBtn" type="button"
+            title="Tư vấn laptop bằng AI" aria-label="Mở tư vấn AI">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="rgba(255,255,255,0.15)"/>
+        <path d="M7 9.5C7 8.67 7.67 8 8.5 8H15.5C16.33 8 17 8.67 17 9.5V13.5C17 14.33 16.33 15 15.5 15H8.5C7.67 15 7 14.33 7 13.5V9.5Z" fill="white"/>
+        <circle cx="9.5" cy="11.5" r="1" fill="#e63946"/>
+        <circle cx="14.5" cy="11.5" r="1" fill="#e63946"/>
+        <path d="M10 16L12 18L14 16" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="ai-fab-badge" id="aiFabBadge"></span>
+    </button>
+    <span class="ai-fab-label">Tư vấn AI</span>
+  </div>
+
+  <!-- Toast notification -->
+  <div class="ai-toast" id="aiToast"></div>
+
+  <!-- AI Chat JS -->
+  <script th:src="@{/js/ai-chat.js}"></script>
+
+</th:block>
+</body>
+</html>

@@ -7,6 +7,8 @@ import com.techstore.techstore.entity.Cart;
 import com.techstore.techstore.entity.CartItem;
 import com.techstore.techstore.entity.Product;
 import com.techstore.techstore.entity.ProductVariant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,8 @@ import java.util.Optional;
 
 @Service
 public class CartService {
+
+    private static final Logger log = LoggerFactory.getLogger(CartService.class);
 
     @Autowired
     private CartRepository cartRepository;
@@ -31,6 +35,19 @@ public class CartService {
     @Transactional(readOnly = true)
     public Optional<Cart> getCartByUserId(Long userId) {
         return cartRepository.findByUser_Id(userId);
+    }
+
+    /**
+     * Tạo cart mới cho user (dùng khi user chưa có cart — e.g. user mới hoặc
+     * được tạo thủ công mà chưa qua luồng đăng ký có init cart).
+     */
+    @Transactional
+    public Cart createCartForUser(com.techstore.techstore.entity.User user) {
+        Cart cart = new Cart();
+        cart.setUser(user);
+        Cart saved = cartRepository.save(cart);
+        log.info("[CartService] Tạo cart mới cho user={} → cartId={}", user.getUsername(), saved.getId());
+        return saved;
     }
 
     /**

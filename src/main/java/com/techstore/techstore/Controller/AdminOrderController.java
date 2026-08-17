@@ -45,6 +45,30 @@ public class AdminOrderController {
         return "redirect:/admin/orders?updated=true";
     }
 
+    /** 🔹 Cập nhật ghi chú nội bộ Admin */
+    @PostMapping("/{id}/note")
+    public String updateNote(
+            @PathVariable Long id,
+            @RequestParam(required = false) String adminNote,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
+    ) {
+        orderService.updateAdminNote(id, adminNote);
+        redirectAttributes.addFlashAttribute("successMessage", "Đã lưu ghi chú nội bộ thành công!");
+        return "redirect:/admin/orders/" + id;
+    }
+
+    /** 🔹 In hóa đơn HTML */
+    @GetMapping("/{id}/print")
+    public String printOrder(@PathVariable Long id, Model model) {
+        Order order = orderService.getOrderById(id).orElse(null);
+        if (order == null) return "redirect:/admin/orders?error=notfound";
+
+        model.addAttribute("order", order);
+        model.addAttribute("items", order.getOrderItems());
+        model.addAttribute("pageTitle", "In hóa đơn - " + (order.getOrderCode() != null ? order.getOrderCode() : "#" + id));
+        return "admin/order_print";
+    }
+
     /** 🔹 Xem chi tiết đơn hàng */
     @GetMapping("/{id}")
     public String viewOrder(@PathVariable Long id, Model model) {

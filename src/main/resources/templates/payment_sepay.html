@@ -3,27 +3,378 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${pageTitle}"></title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .payment-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .payment-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .payment-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .payment-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .order-code {
+            font-size: 16px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .amount-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .amount-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .amount-value {
+            font-size: 32px;
+            color: #e74c3c;
+            font-weight: bold;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .qr-section {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .qr-image {
+            max-width: 100%;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            padding: 10px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box h5 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .spinner-border-sm {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status-success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .countdown {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .countdown .time {
+            font-weight: bold;
+            color: #ff6b6b;
+            font-size: 18px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-action {
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-check {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-check:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-back:hover {
+            background: #d0d0d0;
+        }
+
+        .alert-custom {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .alert-success-custom {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+
+        .alert-warning-custom {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+        }
+
+        @media (max-width: 576px) {
+            .payment-container {
+                padding: 20px;
+            }
+
+            .amount-value {
+                font-size: 24px;
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
-<body class="bg-light">
+<body>
 
-<div class="container text-center mt-5">
+<div class="payment-container">
+    
+    <!-- Header -->
+    <div class="payment-header">
+        <div class="payment-icon">💳</div>
+        <div class="payment-title">Thanh toán đơn hàng</div>
+        <div class="order-code" th:text="'Mã: ' + ${order.orderCode}"></div>
+    </div>
 
-    <h3 class="mb-3">Thanh toán đơn hàng <span class="text-primary" th:text="${order.orderCode}"></span></h3>
-    <p>Số tiền cần thanh toán:</p>
-    <h2 class="text-danger fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 0, 'POINT')}"></h2>
+    <!-- Amount -->
+    <div class="amount-section">
+        <div class="amount-label">Tổng tiền thanh toán</div>
+        <div class="amount-value" th:text="${#numbers.formatCurrency(order.totalAmount)}"></div>
+    </div>
 
-    <img th:src="${qrUrl}" alt="QR thanh toán" class="img-fluid mt-3" width="320">
+    <!-- QR Code -->
+    <div class="qr-section">
+        <p style="color: #666; margin-bottom: 15px;">Quét mã QR để thanh toán</p>
+        <img th:src="${qrUrl}" alt="QR code thanh toán" class="qr-image">
+    </div>
 
-    <p class="mt-3">Quét QR bằng App MBBank, Vietcombank, Vietin, BIDV, v.v...</p>
+    <!-- Payment Info -->
+    <div class="info-box">
+        <h5>📱 Cách thanh toán</h5>
+        <p>✓ Mở ứng dụng ngân hàng hoặc ví điện tử</p>
+        <p>✓ Chọn "Quét mã QR"</p>
+        <p>✓ Quét mã ở trên</p>
+        <p>✓ Xác nhận giao dịch</p>
+    </div>
 
-    <div class="alert alert-warning mt-4">
-        Sau khi thanh toán, hệ thống sẽ tự động cập nhật trạng thái đơn hàng!
+    <!-- Countdown -->
+    <div class="countdown">
+        Thời hạn thanh toán: <span class="time" id="countdown">15:00</span>
+    </div>
+
+    <!-- Status Check -->
+    <div class="status-indicator">
+        <div class="spinner-border spinner-border-sm text-primary" id="spinner" style="display: none;"></div>
+        <span class="status-text" id="statusText">Đang kiểm tra trạng thái thanh toán...</span>
+    </div>
+
+    <!-- Alerts -->
+    <div id="successAlert" class="alert-custom alert-success-custom">
+        ✓ Thanh toán thành công! Chuyển hướng...
+    </div>
+
+    <div id="warningAlert" class="alert-custom alert-warning-custom">
+        ⏰ Chưa nhận được thanh toán. Vui lòng quét QR hoặc thử lại!
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn-action btn-check" onclick="checkPaymentStatus()">
+            <i class="bi bi-arrow-clockwise"></i> Kiểm tra
+        </button>
+        <button class="btn-action btn-back" onclick="goBack()">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </button>
+    </div>
+
+    <!-- Info -->
+    <div class="info-box" style="margin-top: 25px; background: #f0f0f0; border-left-color: #666;">
+        <h5>ℹ️ Thông tin chuyển khoản</h5>
+        <p>Nội dung: <strong th:text="${order.orderCode}"></strong></p>
+        <p>Số tiền: <strong th:text="${#numbers.formatCurrency(order.totalAmount)}"></strong></p>
+        <p style="font-size: 12px; color: #999; margin-top: 10px;">
+            💡 Hệ thống sẽ tự động cập nhật khi nhận được thanh toán
+        </p>
     </div>
 
 </div>
 
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const orderId = new URLSearchParams(window.location.search).get('orderId');
+    let countdownTime = 15 * 60; // 15 phút
+    let checkInterval;
+    let countdownInterval;
+
+    // ========== Khởi tạo ==========
+    function init() {
+        startCountdown();
+        checkPaymentStatusAuto();
+    }
+
+    // ========== Đếm ngược thời gian ==========
+    function startCountdown() {
+        countdownInterval = setInterval(() => {
+            countdownTime--;
+            const minutes = Math.floor(countdownTime / 60);
+            const seconds = countdownTime % 60;
+            document.getElementById('countdown').textContent = 
+                `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+            if (countdownTime <= 0) {
+                clearInterval(countdownInterval);
+                showWarning('⏰ Thời hạn thanh toán đã hết!');
+                document.getElementById('statusText').textContent = 'Thời hạn thanh toán đã hết';
+            }
+        }, 1000);
+    }
+
+    // ========== Kiểm tra trạng thái tự động (mỗi 5 giây) ==========
+    function checkPaymentStatusAuto() {
+        checkInterval = setInterval(() => {
+            checkPaymentStatus();
+        }, 5000); // 5 giây
+    }
+
+    // ========== Kiểm tra trạng thái thanh toán ==========
+    function checkPaymentStatus() {
+        fetch('/payment/check?orderId=' + orderId, {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Sau 1 giây, tải lại trang để cập nhật status
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    // ========== Hiển thị thông báo thành công ==========
+    function showSuccess() {
+        clearInterval(checkInterval);
+        clearInterval(countdownInterval);
+        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('statusText').textContent = '';
+        document.getElementById('successAlert').style.display = 'block';
+        
+        setTimeout(() => {
+            window.location.href = '/orders/' + orderId;
+        }, 2000);
+    }
+
+    // ========== Hiển thị cảnh báo ==========
+    function showWarning(message) {
+        document.getElementById('warningAlert').textContent = message;
+        document.getElementById('warningAlert').style.display = 'block';
+    }
+
+    // ========== Quay lại ==========
+    function goBack() {
+        history.back();
+    }
+
+    // Kiểm tra khi load trang (nếu đã thanh toán)
+    window.addEventListener('load', () => {
+        init();
+    });
+</script>
+
 </body>
 </html>
+

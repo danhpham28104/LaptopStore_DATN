@@ -56,8 +56,8 @@ public class CartController {
 
         //  Truyền dữ liệu sang view
         model.addAttribute("cart", cart);
-        model.addAttribute("siteName", "TechStore");
-        model.addAttribute("pageTitle", "Giỏ hàng – TechStore");
+        model.addAttribute("siteName", "LaptopStore");
+        model.addAttribute("pageTitle", "Giỏ hàng – LaptopStore");
 
         return "cart";
     }

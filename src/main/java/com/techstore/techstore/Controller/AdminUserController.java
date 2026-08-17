@@ -20,7 +20,7 @@ public class AdminUserController {
     public String listUser(Model model){
         List<User> users = userService.getAllUser();
         model.addAttribute("users", users);
-        model.addAttribute("pageTitle", "Quản lý Người dùng - TechStore Admin");
+        model.addAttribute("pageTitle", "Quản lý Người dùng - LaptopStore Admin");
         model.addAttribute("active", "users");
         return "admin/users";
     }

@@ -3,10 +3,13 @@ package com.techstore.techstore.Controller;
 import com.techstore.techstore.Service.BrandService;
 import com.techstore.techstore.Service.ProductService;
 import com.techstore.techstore.Service.ProductVariantService;
+import com.techstore.techstore.Service.RagIntegrationService;
 import com.techstore.techstore.entity.Brand;
 import com.techstore.techstore.entity.Product;
 import com.techstore.techstore.entity.ProductVariant;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.domain.Page;
@@ -14,11 +17,16 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,23 +34,38 @@ import java.util.Optional;
 @RequestMapping("/admin/products")
 public class AdminProductController {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminProductController.class);
+
     @Autowired private ProductService productService;
     @Autowired private BrandService brandService;
     @Autowired private ProductVariantService variantService;
+    @Autowired private RagIntegrationService ragIntegrationService;
 
     /** 🔹 Danh sách sản phẩm */
     @GetMapping
     public String listProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
             Model model
     ) {
-        Page<Product> productPage = productService.getPaginatedProducts(page, size);
+        long lowStockCount = productService.countLowStockProducts(3);
+        model.addAttribute("lowStockCount", lowStockCount);
+        model.addAttribute("lowStockOnly", lowStockOnly);
 
-        model.addAttribute("products", productPage.getContent());
-        model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", productPage.getTotalPages());
-        model.addAttribute("pageSize", size);
+        if (lowStockOnly) {
+            List<Product> lowStockProducts = productService.getLowStockProducts(3);
+            model.addAttribute("products", lowStockProducts);
+            model.addAttribute("currentPage", 0);
+            model.addAttribute("totalPages", 1);
+            model.addAttribute("pageSize", lowStockProducts.size());
+        } else {
+            Page<Product> productPage = productService.getPaginatedProducts(page, size);
+            model.addAttribute("products", productPage.getContent());
+            model.addAttribute("currentPage", page);
+            model.addAttribute("totalPages", productPage.getTotalPages());
+            model.addAttribute("pageSize", size);
+        }
 
         model.addAttribute("brands", brandService.getAllBrands());
         model.addAttribute("active", "products");
@@ -154,6 +177,10 @@ public class AdminProductController {
             }
         }
 
+        // Đồng bộ sang RAG
+        Product freshProduct = productService.getProductById(p.getId()).orElse(p);
+        ragIntegrationService.syncProduct(freshProduct);
+
         return "redirect:/admin/products?added=true";
 
     }
@@ -191,7 +218,12 @@ public class AdminProductController {
             @RequestParam(required = false) String[] variantColors,
             @RequestParam(required = false) String[] variantStorages,
             @RequestParam(required = false) Integer[] variantStocks,
-            @RequestParam(required = false) MultipartFile[] variantImages
+            @RequestParam(required = false) MultipartFile[] variantImages,
+
+            // Giữ phân trang & tìm kiếm
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String q,
+            RedirectAttributes redirectAttributes
     ) throws IOException {
 
         Product p = productService.getProductById(id).orElse(null);
@@ -285,17 +317,43 @@ public class AdminProductController {
             }
         }
 
-        return "redirect:/admin/products?updated=true";
+        // Đồng bộ sang RAG
+        Product freshProduct = productService.getProductById(p.getId()).orElse(p);
+        ragIntegrationService.syncProduct(freshProduct);
+
+        redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật sản phẩm ID=" + id + " thành công!");
+
+        if (q != null && !q.isBlank()) {
+            return "redirect:/admin/products/search?q=" + java.net.URLEncoder.encode(q, StandardCharsets.UTF_8) + "&page=" + page;
+        }
+        return "redirect:/admin/products?page=" + page;
 
     }
 
 
     /** 🔹 Xoá sản phẩm */
     @PostMapping("/delete/{id}")
-    public String deleteProduct(@PathVariable Long id) {
-        productService.delete(id);
-        return "redirect:/admin/products?deleted=true";
+    public String deleteProduct(@PathVariable Long id,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(required = false) String q,
+                                RedirectAttributes redirectAttributes) {
+        try {
+            // Xóa khỏi RAG AI
+            ragIntegrationService.deleteProductFromRag(id);
 
+            // Xóa sản phẩm khỏi DB (Soft delete)
+            productService.delete(id);
+
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xóa sản phẩm ID=" + id + " thành công!");
+        } catch (Exception e) {
+            log.error("[Admin] Lỗi khi xóa sản phẩm ID={}: {}", id, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra khi xóa sản phẩm: " + e.getMessage());
+        }
+
+        if (q != null && !q.isBlank()) {
+            return "redirect:/admin/products/search?q=" + java.net.URLEncoder.encode(q, StandardCharsets.UTF_8) + "&page=" + page;
+        }
+        return "redirect:/admin/products?page=" + page;
     }
 
     @GetMapping("/search")
@@ -330,6 +388,245 @@ public class AdminProductController {
         return "admin/products";
     }
 
+    /** 🔹 Đồng bộ toàn bộ sản phẩm sang RAG AI */
+    @GetMapping("/sync-rag")
+    public String syncAllProductsToRag(RedirectAttributes redirectAttributes) {
+        try {
+            List<Product> products = productService.getAllProducts();
+            ragIntegrationService.syncAllProducts(products);
+            redirectAttributes.addFlashAttribute("successMessage", "Đồng bộ toàn bộ " + products.size() + " sản phẩm sang AI RAG thành công!");
+            return "redirect:/admin/products?syncSuccess=true";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Đồng bộ thất bại: " + e.getMessage());
+            return "redirect:/admin/products?syncError=true";
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    /** 🔹 Đồng bộ sản phẩm đã chọn sang RAG AI */
+    @PostMapping("/sync-rag-selected")
+    public String syncSelectedProductsToRag(
+            @RequestParam(required = false) List<Long> productIds,
+            RedirectAttributes redirectAttributes) {
+
+        if (productIds == null || productIds.isEmpty()) {
+            redirectAttributes.addFlashAttribute("warningMessage",
+                    "Vui lòng chọn ít nhất 1 sản phẩm để đồng bộ.");
+            return "redirect:/admin/products";
+        }
+
+        int success = 0;
+        int failed = 0;
+        List<Product> toSync = productService.getProductsByIds(productIds);
+
+        for (Product p : toSync) {
+            try {
+                ragIntegrationService.syncProduct(p);
+                success++;
+                log.info("[Admin] Đồng bộ sản phẩm ID={} ({}) sang RAG thành công.", p.getId(), p.getName());
+            } catch (Exception e) {
+                failed++;
+                log.error("[Admin] Lỗi sync sản phẩm ID={}: {}", p.getId(), e.getMessage());
+            }
+        }
+
+        if (failed == 0) {
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã đồng bộ thành công " + success + "/" + productIds.size() + " sản phẩm sang AI RAG!");
+        } else {
+            redirectAttributes.addFlashAttribute("warningMessage",
+                    "Đồng bộ " + success + " thành công, " + failed + " thất bại. Xem log để biết chi tiết.");
+        }
+        return "redirect:/admin/products";
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    /** 🔹 Import sản phẩm từ file CSV */
+    @PostMapping("/import-csv")
+    public String importCsv(@RequestParam("csvFile") MultipartFile csvFile,
+                             RedirectAttributes redirectAttributes) {
+        if (csvFile == null || csvFile.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Vui lòng chọn file CSV.");
+            return "redirect:/admin/products";
+        }
+
+        int added = 0, skipped = 0, errors = 0;
+        List<Product> newlyAddedProducts = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(csvFile.getInputStream(), StandardCharsets.UTF_8))) {
+
+            String headerLine = reader.readLine(); // bỏ qua header
+            if (headerLine == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "File CSV rỗng.");
+                return "redirect:/admin/products";
+            }
+            if (headerLine.startsWith("\uFEFF")) {
+                headerLine = headerLine.substring(1);
+            }
+
+            String line;
+            int lineNum = 1;
+            while ((line = reader.readLine()) != null) {
+                lineNum++;
+                if (line.isBlank()) continue;
+                try {
+                    String[] cols = parseCsvLine(line);
+                    if (cols.length < 16) {
+                        log.warn("[CSV Import] Dòng {} thiếu cột ({}): {}", lineNum, cols.length, line);
+                        errors++;
+                        continue;
+                    }
+
+                    String rawName = cols[0].trim();
+                    if (rawName.startsWith("\uFEFF")) {
+                        rawName = rawName.substring(1).trim();
+                    }
+                    if (rawName.isBlank()) {
+                        errors++;
+                        continue;
+                    }
+                    final String name = rawName;
+                    String brandName = cols[1].trim();
+                    BigDecimal price = new BigDecimal(cols[2].trim().replace(",", ""));
+                    int salePct = parseIntSafe(cols[3], 0);
+                    String cpu = cols[4].trim();
+                    String ram = cols[5].trim();
+                    String gpu = cols[6].trim();
+                    String storage = cols[7].trim();
+                    String screenSize = cols[8].trim();
+                    String screenRes = cols[9].trim();
+                    // cols[10] = weight (bỏ qua)
+                    String battery = cols[11].trim();
+                    // cols[12] = OS (bỏ qua vì Product không có field này)
+                    String description = cols[13].trim();
+                    String images = cols[14].trim();
+                    int stock = parseIntSafe(cols[15], 0);
+
+                    // Bỏ qua nếu trùng tên (kiểm tra đơn giản)
+                    List<Product> existing = productService.searchByName(name);
+                    boolean exactMatch = existing.stream()
+                            .anyMatch(p -> p.getName().equalsIgnoreCase(name));
+                    if (exactMatch) {
+                        log.info("[CSV Import] Dòng {} - Bỏ qua (đã tồn tại): {}", lineNum, name);
+                        skipped++;
+                        continue;
+                    }
+
+                    // Lấy hoặc tạo Brand
+                    Brand brand = brandService.getAllBrands().stream()
+                            .filter(b -> b.getName().equalsIgnoreCase(brandName))
+                            .findFirst()
+                            .orElseGet(() -> {
+                                Brand newBrand = new Brand();
+                                newBrand.setName(brandName);
+                                return brandService.save(newBrand);
+                            });
+
+                    // Tạo Product
+                    Product p = new Product();
+                    p.setName(name);
+                    p.setModel(generateModel(name));
+                    p.setPrice(price);
+                    p.setSalePercent(salePct);
+                    p.setCpu(cpu);
+                    p.setRam(ram);
+                    p.setGpu(gpu);
+                    p.setDisplay(screenSize + (screenRes.isBlank() ? "" : " " + screenRes));
+                    p.setBattery(battery);
+                    p.setDescription(description);
+                    p.setImages(images);
+                    p.setStock(stock);
+                    p.setBrand(brand);
+                    productService.save(p);
+
+                    // Tạo ProductVariant mặc định
+                    ProductVariant variant = new ProductVariant();
+                    variant.setProduct(p);
+                    variant.setColor("Mặc định");
+                    variant.setStorage(storage.isBlank() ? "256GB" : storage);
+                    variant.setStock(stock);
+                    variantService.save(variant);
+
+                    // Cập nhật tổng stock từ variant
+                    p.updateTotalStock();
+                    productService.save(p);
+
+                    // Gom sản phẩm để đồng bộ bulk
+                    Product freshProduct = productService.getProductById(p.getId()).orElse(p);
+                    newlyAddedProducts.add(freshProduct);
+
+                    added++;
+                    log.info("[CSV Import] Dòng {} - Thêm mới thành công: {}", lineNum, name);
+
+                } catch (Exception e) {
+                    errors++;
+                    log.error("[CSV Import] Lỗi dòng {}: {} | {}", lineNum, e.getMessage(), line);
+                }
+            }
+        } catch (IOException e) {
+            log.error("[CSV Import] Lỗi đọc file: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi đọc file CSV: " + e.getMessage());
+            return "redirect:/admin/products";
+        }
+
+        // Đồng bộ bất đồng bộ sang RAG hàng loạt để tránh treo UI
+        if (!newlyAddedProducts.isEmpty()) {
+            List<Product> finalProductsToSync = new ArrayList<>(newlyAddedProducts);
+            new Thread(() -> {
+                try {
+                    log.info("[CSV Import] Bắt đầu đồng bộ bất đồng bộ {} sản phẩm mới lên RAG...", finalProductsToSync.size());
+                    ragIntegrationService.syncAllProducts(finalProductsToSync);
+                    log.info("[CSV Import] Đồng bộ bất đồng bộ thành công {} sản phẩm mới lên RAG.", finalProductsToSync.size());
+                } catch (Exception e) {
+                    log.error("[CSV Import] Lỗi đồng bộ bất đồng bộ lên RAG: {}", e.getMessage());
+                }
+            }).start();
+        }
+
+        redirectAttributes.addFlashAttribute("successMessage",
+                String.format("Import CSV hoàn tất: %d thêm mới (đang đồng bộ RAG ngầm), %d bỏ qua (trùng), %d lỗi.",
+                        added, skipped, errors));
+        return "redirect:/admin/products";
+    }
+
+    /** Parse 1 dòng CSV an toàn với dấu ngoặc kép */
+    private String[] parseCsvLine(String line) {
+        List<String> result = new ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    sb.append('"');
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (c == ',' && !inQuotes) {
+                result.add(sb.toString());
+                sb.setLength(0);
+            } else {
+                sb.append(c);
+            }
+        }
+        result.add(sb.toString());
+        return result.toArray(new String[0]);
+    }
+
+    private int parseIntSafe(String s, int defaultVal) {
+        try { return Integer.parseInt(s.trim()); } catch (Exception e) { return defaultVal; }
+    }
+
+    /** Tạo model ngắn từ tên sản phẩm (dùng để tránh trùng unique constraint) */
+    private String generateModel(String name) {
+        String base = name.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+        if (base.length() > 20) base = base.substring(0, 20);
+        return base + "_" + System.currentTimeMillis() % 100000;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     private String saveImage(MultipartFile file) throws IOException {
         if (file == null || file.isEmpty()) return null;
 

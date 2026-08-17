@@ -41,6 +41,13 @@ public class Payment {
     @Column(length = 100, unique = true)
     private String transactionId;
 
+    // 🔹 QR Code URL và Data (cho hiển thị QR)
+    @Column(length = 500)
+    private String qrCodeUrl;
+
+    @Column(columnDefinition = "LONGTEXT")
+    private String qrCodeData;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -64,6 +71,12 @@ public class Payment {
 
     public String getTransactionId() { return transactionId; }
     public void setTransactionId(String transactionId) { this.transactionId = transactionId; }
+
+    public String getQrCodeUrl() { return qrCodeUrl; }
+    public void setQrCodeUrl(String qrCodeUrl) { this.qrCodeUrl = qrCodeUrl; }
+
+    public String getQrCodeData() { return qrCodeData; }
+    public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

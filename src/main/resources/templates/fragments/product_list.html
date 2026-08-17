@@ -8,79 +8,102 @@
   <div class="col-lg-3 col-md-6" th:each="p : ${products}">
     <div class="product-item">
 
+      <!-- Product Image -->
       <div class="product-image">
-
-        <!-- HOT -->
-        <span class="my-badge badge-hot"
-              th:if="${p.badge != null and p.badge.equalsIgnoreCase('HOT')}">
+        <a th:href="@{'/product/' + ${p.id}}">
+          <!-- HOT badge -->
+          <span class="my-badge badge-hot"
+                th:if="${p.badge != null and p.badge.equalsIgnoreCase('HOT')}">
             <i class="bi bi-fire"></i> HOT
-        </span>
+          </span>
 
-        <!-- NEW -->
-        <span class="my-badge badge-new"
-              th:if="${p.createdAt != null and p.createdAt.isAfter(T(java.time.LocalDateTime).now().minusDays(7))}">
+          <!-- NEW badge -->
+          <span class="my-badge badge-new"
+                th:if="${p.createdAt != null and p.createdAt.isAfter(T(java.time.LocalDateTime).now().minusDays(7))}">
             <i class="bi bi-stars"></i> NEW
-        </span>
+          </span>
 
-        <!-- LIMITED -->
-        <span class="my-badge badge-limited"
-              th:if="${p.stock < 10}">
-            <i class="bi bi-exclamation-triangle-fill"></i> LIMITED
-        </span>
+          <!-- LIMITED badge -->
+          <span class="my-badge badge-limited"
+                th:if="${p.stock < 10 and p.stock > 0}">
+            <i class="bi bi-exclamation-triangle-fill"></i> SẮP HẾT
+          </span>
 
-        <img th:if="${p.images != null}" th:src="${#strings.arraySplit(p.images, ',')[0]}" class="img-fluid" loading="lazy">
-        <img th:if="${p.images == null}" th:src="@{/images/default-avatar.png}" class="img-fluid" loading="lazy" alt="Laptop">
+          <!-- Product image -->
+          <img th:if="${p.images != null and !p.images.isEmpty()}"
+               th:src="${#strings.arraySplit(p.images, ',')[0]}"
+               th:alt="${p.name}"
+               loading="lazy"
+               onerror="this.src='/images/default-avatar.png'">
+          <img th:if="${p.images == null or p.images.isEmpty()}"
+               th:src="@{/images/default-avatar.png}"
+               loading="lazy"
+               alt="Laptop">
+        </a>
       </div>
 
-
+      <!-- Product Info -->
       <div class="product-info">
-        <div class="product-category" th:text="${p.brand != null ? p.brand.name : 'Hãng'}">Hãng</div>
 
+        <!-- Brand name -->
+        <div class="product-category" th:text="${p.brand != null ? p.brand.name : 'Khác'}">Hãng</div>
+
+        <!-- Product name + sale badge -->
         <h4 class="product-name">
-          <a th:href="@{'/product/' + ${p.id}}" th:text="${p.name}">Tên laptop</a>
-          <!-- SALE % -->
-          <span class="sale-badge" th:if="${p.salePercent != null and p.salePercent > 0}">
-              -[[${p.salePercent}]]%
-          </span>
+          <a th:href="@{'/product/' + ${p.id}}"
+             th:text="${p.name}"
+             th:title="${p.name}">Tên laptop</a>
+          <span class="sale-badge"
+                th:if="${p.salePercent != null and p.salePercent > 0}"
+                th:text="'-' + ${p.salePercent} + '%'">-10%</span>
         </h4>
 
-        <!-- Tags nhanh: CPU / RAM / SSD -->
-        <div class="display-tags mb-3">
-          <span class="spec-tag" th:if="${p.cpu != null and !p.cpu.isBlank()}" th:text="${p.cpu}"></span>
-          <span class="spec-tag" th:if="${p.ram != null and !p.ram.isBlank()}" th:text="${p.ram}"></span>
-
-          <!-- SSD lấy từ biến thể đầu tiên (nếu có) -->
+        <!-- Quick spec tags -->
+        <div class="display-tags">
+          <span class="spec-tag"
+                th:if="${p.cpu != null and !p.cpu.isBlank()}"
+                th:text="${p.cpu}"></span>
+          <span class="spec-tag"
+                th:if="${p.ram != null and !p.ram.isBlank()}"
+                th:text="${p.ram}"></span>
           <span class="spec-tag"
                 th:if="${!#lists.isEmpty(p.variants)}"
-                th:text="${p.variants[0].storage}">
-          </span>
-
-          <!-- GPU chỉ hiện khi có -->
-          <span class="spec-tag" th:if="${p.gpu != null and !p.gpu.isBlank()}" th:text="${p.gpu}"></span>
+                th:text="${p.variants[0].storage}"></span>
+          <span class="spec-tag"
+                th:if="${p.gpu != null and !p.gpu.isBlank()}"
+                th:text="${p.gpu}"></span>
         </div>
 
+        <!-- Pricing -->
         <div class="product-price">
-          <!-- Giá sau giảm -->
           <span class="price-final"
-                th:text="${#numbers.formatDecimal(p.price * (100 - p.salePercent) / 100, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-          </span>
-
-          <!-- Giá gốc (gạch ngang) -->
+                th:text="${#numbers.formatDecimal(p.price * (100 - p.salePercent) / 100, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
           <span class="price-old"
-                th:if="${p.salePercent > 0}"
-                th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-          </span>
+                th:if="${p.salePercent != null and p.salePercent > 0}"
+                th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
         </div>
 
-
-        <div class="buy-now mt-2 text-center">
-          <a th:href="@{'/product/' + ${p.id}}"
-             class="btn btn-primary w-100 fw-semibold">
-            <i class="bi bi-lightning-charge-fill me-1"></i> Xem chi tiết
-          </a>
+        <!-- Dual CTA Buttons: + Giỏ hàng (AJAX) + Mua ngay (Quick Modal / Checkout) -->
+        <div class="card-btn-group">
+          <!-- + Giỏ hàng -->
+          <button type="button"
+                  class="card-btn card-btn-view btn-quick-add-cart"
+                  th:data-product-id="${p.id}"
+                  th:data-product-name="${p.name}">
+            <i class="bi bi-cart-plus"></i>
+            <span>+ Giỏ hàng</span>
+          </button>
+          <!-- Mua ngay -->
+          <button type="button"
+                  class="card-btn card-btn-buy"
+                  th:data-product-id="${p.id}"
+                  th:data-product-name="${p.name}">
+            <i class="bi bi-lightning-charge-fill"></i>
+            <span>Mua ngay</span>
+          </button>
         </div>
+
       </div>
-
     </div>
   </div>
 </th:block>

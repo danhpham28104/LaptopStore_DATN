@@ -1,147 +1,129 @@
 <!DOCTYPE html>
-<html lang="en"
+<html lang="vi"
       xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Product Details - NiceShop Bootstrap Template</title>
-  <meta name="description" content="">
-  <meta name="keywords" content="">
-
-  <!-- Favicons -->
-  <link href="assets/img/favicon.png" rel="icon">
-  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+  <title th:text="${product.name} + ' – LaptopStore'">Chi tiết sản phẩm – LaptopStore</title>
+  <meta name="description" th:content="${product.description != null ? product.description : 'Xem chi tiết thông số và mua laptop tại LaptopStore'}">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
   <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
 
-  <!-- Vendor CSS Files -->
+  <!-- Vendor CSS -->
   <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
-  <link th:href="@{/css/bootstrap-icons.css}" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link th:href="@{/css/swiper-bundle.min.css}" rel="stylesheet">
   <link th:href="@{/css/aos.css}" rel="stylesheet">
   <link th:href="@{/css/glightbox.min.css}" rel="stylesheet">
   <link th:href="@{/css/drift-basic.css}" rel="stylesheet">
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
-  <!-- Main CSS File -->
+  <!-- Main CSS -->
   <link th:href="@{/css/main.css}" rel="stylesheet">
   <link th:href="@{/css/style.css}" rel="stylesheet">
-
-
+  <link th:href="@{/css/recommendation.css}" rel="stylesheet">
 </head>
 
-<body class="product-details-page">
+<body class="product-details-page" style="background:var(--bg);">
 
-<!-- Gọi fragment header -->
+<!-- Header -->
 <div th:replace="fragments/header :: siteHeader"></div>
-
 
 <main class="main">
 
-  <!-- Page Title -->
-  <div class="page-title light-background">
-    <div class="container d-lg-flex justify-content-between align-items-center">
-      <h1 class="mb-2 mb-lg-0">Chi tiết sản phẩm</h1>
+  <!-- Page Title / Breadcrumb -->
+  <div class="page-title">
+    <div class="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
+      <h1 class="mb-0" style="font-size:1rem;" th:text="${product.name}">Chi tiết sản phẩm</h1>
       <nav class="breadcrumbs">
         <ol>
-          <li>
-            <a th:href="@{/}"
-                 th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI == '/'} ? 'active' : ''">
-              Trang chủ
-            </a>
-          </li>
-          <li class="current">Chi tiết sản phẩm</li>
+          <li><a th:href="@{/}">Trang chủ</a></li>
+          <li><a th:href="@{/product}">Laptop</a></li>
+          <li class="current" th:text="${product.brand != null ? product.brand.name : 'Sản phẩm'}">Hãng</li>
         </ol>
       </nav>
     </div>
-  </div><!-- End Page Title -->
+  </div>
 
   <!-- Product Details Section -->
-  <section id="product-details" class="product-details section">
-    <div class="container" data-aos="fade-up" data-aos-delay="100">
+  <section id="product-details" class="product-details section py-4">
+    <div class="container">
       <div class="row g-4">
 
-        <!-- Product Gallery -->
-        <div class="col-lg-7" data-aos="zoom-in" data-aos-delay="150">
+        <!-- ── LEFT: Gallery ── -->
+        <div class="col-lg-7">
           <div class="product-gallery">
-            <div class="main-showcase">
-              <div class="image-zoom-container">
-                <!-- Ảnh chính -->
+            <!-- Main image -->
+            <div class="main-showcase position-relative" style="text-align:center;">
+              <div style="position:relative;display:inline-block;width:100%;">
                 <img th:src="@{${allImages[0]}}"
-                     class="img-fluid main-product-image drift-zoom"
+                     class="main-product-image drift-zoom"
                      id="main-product-image"
-                     th:data-zoom="@{${allImages[0]}}">
+                     th:data-zoom="@{${allImages[0]}}"
+                     th:alt="${product.name}"
+                     onerror="this.src='/images/default-avatar.png'">
 
-
-                <div class="image-navigation">
-                  <button class="nav-arrow prev-image image-nav-btn" type="button">
+                <!-- Nav arrows -->
+                <div class="image-navigation"
+                     style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;padding:0 8px;">
+                  <button class="nav-arrow prev-image image-nav-btn" type="button"
+                          style="pointer-events:all;background:rgba(255,255,255,0.9);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-sm);transition:var(--transition);">
                     <i class="bi bi-chevron-left"></i>
                   </button>
-                  <button class="nav-arrow next-image image-nav-btn" type="button">
+                  <button class="nav-arrow next-image image-nav-btn" type="button"
+                          style="pointer-events:all;background:rgba(255,255,255,0.9);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-sm);transition:var(--transition);">
                     <i class="bi bi-chevron-right"></i>
                   </button>
                 </div>
               </div>
             </div>
 
-            <!-- Thumbnail list -->
+            <!-- Thumbnails -->
             <div class="thumbnail-grid">
               <div class="thumbnail-wrapper thumbnail-item"
                    th:each="img, iterStat : ${allImages}"
                    th:classappend="${iterStat.index == 0} ? ' active'">
-
                 <img th:src="@{${img}}"
-                     class="img-fluid"
-                     th:alt="'View ' + ${iterStat.count}">
+                     th:alt="'Ảnh ' + ${iterStat.count}"
+                     onerror="this.src='/images/default-avatar.png'">
               </div>
             </div>
-
           </div>
 
-          <!-- ✅ CAM KẾT SẢN PHẨM -->
+          <!-- Cam kết sản phẩm -->
           <div class="product-guarantee mt-4">
-            <h4 class="fw-bold mb-3">Cam kết sản phẩm</h4>
+            <h4><i class="bi bi-patch-check-fill me-2" style="color:var(--primary);"></i>Cam kết sản phẩm</h4>
             <div class="guarantee-grid">
-
               <div class="guarantee-item">
                 <i class="bi bi-shield-check icon"></i>
-                <p>
-                  Laptop mới 100%, chính hãng. LaptopStore cam kết sản phẩm đúng mô tả, nguyên seal/brand new (tuỳ sản phẩm) và đầy đủ hoá đơn/phiếu bảo hành.
-                </p>
+                <p>Laptop mới 100%, chính hãng. Đúng mô tả, đầy đủ hoá đơn/phiếu bảo hành.</p>
               </div>
-
               <div class="guarantee-item">
                 <i class="bi bi-arrow-repeat icon"></i>
-                <p>
-                  1 đổi 1 trong 15 ngày nếu có lỗi phần cứng do nhà sản xuất (theo chính sách cửa hàng). Bảo hành theo tiêu chuẩn của hãng hoặc trung tâm uỷ quyền.
-                  <a href="#" class="text-primary fw-semibold">Xem chi tiết</a>
-                </p>
+                <p>1 đổi 1 trong 15 ngày nếu có lỗi phần cứng do nhà sản xuất.
+                  <a href="#" class="text-primary fw-semibold">Xem chi tiết</a></p>
               </div>
-
               <div class="guarantee-item">
                 <i class="bi bi-box-seam icon"></i>
-                <p>Hộp, sách hướng dẫn, sạc &amp; phụ kiện đi kèm đầy đủ (tuỳ mẫu laptop).</p>
+                <p>Hộp, sách hướng dẫn, sạc &amp; phụ kiện đi kèm đầy đủ.</p>
               </div>
-
               <div class="guarantee-item">
                 <i class="bi bi-receipt icon"></i>
-                <p>Giá sản phẩm <strong>đã bao gồm thuế VAT</strong>, giúp bạn yên tâm khi thanh toán.</p>
+                <p>Giá sản phẩm <strong>đã bao gồm thuế VAT</strong>.</p>
               </div>
             </div>
           </div>
         </div>
 
-
-        <!-- Product Details -->
-        <div class="col-lg-5" data-aos="fade-left" data-aos-delay="200">
+        <!-- ── RIGHT: Product Info ── -->
+        <div class="col-lg-5">
           <div class="product-details">
 
+            <!-- Brand + rating -->
             <div class="product-badge-container">
               <span class="badge-category" th:text="${product.brand != null ? product.brand.name : 'Thương hiệu'}">Brand</span>
               <div class="rating-group">
@@ -155,75 +137,78 @@
               </div>
             </div>
 
+            <!-- Product name -->
+            <h1 class="product-name detail-name" th:text="${product.name}">Tên sản phẩm</h1>
+
+            <!-- Pricing -->
             <div class="pricing-section">
-              <div class="price-display">
-                <h1 class="product-name mb-2" th:text="${product.name}">Tên sản phẩm</h1>
+              <div class="product-price-box mb-2 d-flex align-items-center flex-wrap gap-2">
+                <!-- Giá sau giảm -->
+                <span class="sale-price fw-bold"
+                      th:if="${product.salePercent != null and product.salePercent > 0}"
+                      th:text="${#numbers.formatDecimal(product.finalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
 
-                <div class="product-price-box mb-2">
+                <!-- Giá gốc -->
+                <span class="original-price text-muted"
+                      th:classappend="${product.salePercent != null and product.salePercent > 0} ? 'text-decoration-line-through' : 'sale-price'"
+                      th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
 
-                  <!-- Giá sau giảm -->
-                  <span class="sale-price fw-bold text-danger fs-3"
-                        th:if="${product.salePercent != null and product.salePercent > 0}"
-                        th:text="${#numbers.formatDecimal(product.finalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-                  </span>
-
-                  <!-- Giá gốc (gạch ngang nếu giảm) -->
-                  <span class="original-price text-muted ms-2"
-                        th:classappend="${product.salePercent != null and product.salePercent > 0} ? 'text-decoration-line-through' : ''"
-                        th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'">
-                  </span>
-
-                  <!-- Badge giảm giá -->
-                  <span class="badge bg-danger ms-2"
-                        th:if="${product.salePercent != null and product.salePercent > 0}"
-                        th:text="'-' + ${product.salePercent} + '%'">
-                  </span>
-
-                </div>
-
+                <!-- Badge giảm giá -->
+                <span class="sale-badge"
+                      th:if="${product.salePercent != null and product.salePercent > 0}"
+                      th:text="'-' + ${product.salePercent} + '%'"></span>
               </div>
+
               <div class="savings-info">
-                <span class="save-amount" th:if="${product.stock > 0}">Còn hàng</span>
-                <span class="discount-percent" th:if="${product.stock == 0}">(Hết hàng)</span>
+                <span class="save-amount" th:if="${product.stock > 0}">
+                  <i class="bi bi-check-circle-fill"></i> Còn hàng
+                </span>
+                <span class="discount-percent" th:if="${product.stock == 0}">
+                  <i class="bi bi-x-circle-fill"></i> Hết hàng
+                </span>
               </div>
             </div>
 
-            <!-- MÀU SẮC -->
+            <!-- Màu sắc -->
             <div class="variant-section mt-3">
-              <label class="fw-bold d-block mb-2">Màu sắc:</label>
+              <label class="fw-bold d-block mb-2">
+                <i class="bi bi-palette me-1"></i> Màu sắc:
+              </label>
               <div id="colorOptions" class="d-flex flex-wrap gap-2">
                 <button type="button"
-                  class="btn btn-outline-dark color-btn"
-                  th:each="v : ${variants}"
-                  th:text="${v.color}"
-                  th:data-color="${v.color}"
-                  th:data-image="@{${v.image}}"
-                  th:data-variant-id="${v.id}"
-                  th:data-storage="${v.storage}">
+                        class="btn btn-outline-dark color-btn"
+                        th:each="v : ${variants}"
+                        th:text="${v.color}"
+                        th:data-color="${v.color}"
+                        th:data-image="@{${v.image}}"
+                        th:data-variant-id="${v.id}"
+                        th:data-storage="${v.storage}">
                 </button>
               </div>
             </div>
 
-            <!-- DUNG LƯỢNG -->
+            <!-- Dung lượng SSD -->
             <div class="variant-section mt-3">
-              <label class="fw-bold d-block mb-2">SSD:</label>
+              <label class="fw-bold d-block mb-2">
+                <i class="bi bi-device-ssd me-1"></i> SSD:
+              </label>
               <div class="d-flex flex-wrap gap-2" id="storageOptions"></div>
             </div>
 
+            <!-- Tình trạng kho -->
             <div class="availability-status">
               <div class="stock-indicator">
                 <i class="bi bi-check-circle-fill" th:if="${product.stock > 0}"></i>
                 <i class="bi bi-x-circle-fill" th:if="${product.stock == 0}"></i>
                 <span class="stock-text"
-                      th:text="${product.stock > 0 ? 'Available' : 'Out of Stock'}">Available</span>
+                      th:text="${product.stock > 0 ? 'Còn hàng' : 'Hết hàng'}">Còn hàng</span>
               </div>
               <div class="quantity-left"
-                   th:text="'Còn ' + ${product.stock} + ' sản phẩm trong kho'">Only 18 items remaining
-              </div>
+                   th:text="'Còn ' + ${product.stock} + ' sản phẩm trong kho'"></div>
             </div>
 
-            <!-- Purchase Options -->
-            <div class="purchase-section">
+            <!-- Số lượng -->
+            <div class="purchase-section mt-3">
               <div class="quantity-control">
                 <label class="control-label">Số lượng:</label>
                 <div class="quantity-input-group">
@@ -231,7 +216,8 @@
                     <button class="quantity-btn decrease" type="button">
                       <i class="bi bi-dash"></i>
                     </button>
-                    <input type="number" class="quantity-input" value="1" min="1" th:attr="max=${product.stock}">
+                    <input type="number" class="quantity-input" value="1" min="1"
+                           th:attr="max=${product.stock}">
                     <button class="quantity-btn increase" type="button">
                       <i class="bi bi-plus"></i>
                     </button>
@@ -239,41 +225,49 @@
                 </div>
               </div>
 
-              <!-- Nếu đã đăng nhập -->
+              <!-- Nút CTA (chỉ khi đã đăng nhập) -->
               <div sec:authorize="isAuthenticated()" class="action-buttons d-flex gap-3 mt-3 w-100">
 
                 <!-- Thêm vào giỏ -->
                 <form th:action="@{/cart/add}" method="post" class="flex-grow-1">
                   <input type="hidden" name="productId" th:value="${product.id}">
                   <input type="hidden" name="variantId" id="selectedVariantId">
-
-                  <button type="submit" class="btn add-cart-btn w-100">
-                    <i class="bi bi-cart-plus me-2"></i>
+                  <button type="submit" class="add-cart-btn w-100">
+                    <i class="bi bi-cart-plus"></i> Thêm vào giỏ
                   </button>
                 </form>
 
                 <!-- Mua ngay -->
                 <a id="buyNowBtn"
-                   class="btn buy-now-btn w-100 flex-grow-1"
-                   th:data-product-id="${product.id}">
-                  ⚡ Mua ngay
+                   class="buy-now-btn flex-grow-1"
+                   th:data-product-id="${product.id}"
+                   style="cursor:pointer;text-decoration:none;">
+                  <i class="bi bi-lightning-charge-fill"></i> Mua ngay
+                </a>
+              </div>
+
+              <!-- Chưa đăng nhập -->
+              <div sec:authorize="isAnonymous()" class="mt-3">
+                <a th:href="@{/login}" class="btn w-100 fw-bold"
+                   style="background:var(--primary);color:#fff;border-radius:var(--radius-sm);padding:13px;font-size:0.97rem;">
+                  <i class="bi bi-person-circle me-2"></i> Đăng nhập để mua hàng
                 </a>
               </div>
             </div>
 
-            <!-- Benefits List -->
+            <!-- Benefits -->
             <div class="benefits-list">
               <div class="benefit-item">
                 <i class="bi bi-truck"></i>
                 <span>Miễn phí vận chuyển</span>
               </div>
               <div class="benefit-item">
-                <i class="bi bi-arrow-clockwise"></i>
+                <i class="bi bi-shield-check"></i>
                 <span>Bảo hành 3 năm</span>
               </div>
               <div class="benefit-item">
-                <i class="bi bi-shield-check"></i>
-                <span>Đảm bảo chất lượng</span>
+                <i class="bi bi-arrow-clockwise"></i>
+                <span>Đổi trả 15 ngày</span>
               </div>
               <div class="benefit-item">
                 <i class="bi bi-headset"></i>
@@ -285,70 +279,66 @@
         </div>
       </div>
 
-      <!-- Information Tabs -->
-      <div class="row mt-5" data-aos="fade-up" data-aos-delay="300">
+      <!-- ── Information Tabs ── -->
+      <div class="row mt-4">
         <div class="col-12">
           <div class="info-tabs-container">
             <nav class="tabs-navigation nav">
-              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview" type="button">Thông tin</button>
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#technical" type="button">Cấu hình</button>
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+                <i class="bi bi-info-circle me-1"></i> Thông tin
+              </button>
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#technical" type="button">
+                <i class="bi bi-cpu me-1"></i> Thông số kỹ thuật
+              </button>
             </nav>
 
             <div class="tab-content">
-              <!-- Overview -->
+              <!-- Mô tả -->
               <div class="tab-pane fade show active" id="overview">
-                <div class="overview-content p-3">
-                  <h3>Mô tả</h3>
-                  <p th:text="${product.description}">Thông tin mô tả sản phẩm...</p>
-                </div>
+                <h3 style="font-size:1rem;font-weight:700;margin-bottom:12px;color:var(--text);">Mô tả sản phẩm</h3>
+                <p th:text="${product.description}"
+                   style="font-size:0.9rem;color:var(--muted);line-height:1.8;">Thông tin mô tả sản phẩm...</p>
               </div>
 
-              <!-- Technical Details -->
+              <!-- Cấu hình -->
               <div class="tab-pane fade" id="technical">
-                <div class="technical-content p-3">
-                  <div class="tech-group">
-                    <h4 class="fw-bold mb-3 border-bottom pb-2">Thông số kỹ thuật</h4>
-                    <div class="spec-table border rounded-3 overflow-hidden">
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <span class="spec-name fw-semibold">RAM</span>
-                        <span class="spec-value text-muted" th:text="${product.ram}">12GB</span>
-                      </div>
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <span class="spec-name fw-semibold">SSD</span>
-                        <span class="spec-value text-muted"
-                              th:text="${#lists.isEmpty(variants) ? '—' : variants.get(0).storage}"> 256GB
-                        </span>
-                      </div>
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <span class="spec-name fw-semibold">Màn hình</span>
-                        <span class="spec-value text-muted" th:text="${product.display}">6.5 inch AMOLED</span>
-                      </div>
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <span class="spec-name fw-semibold">CPU</span>
-                        <span class="spec-value text-muted" th:text="${product.cpu}">Intel Core i7</span>
-                      </div>
-
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <span class="spec-name fw-semibold">GPU</span>
-                        <span class="spec-value text-muted" th:text="${product.gpu}">RTX 4060</span>
-                      </div>
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <span class="spec-name fw-semibold">Pin</span>
-                        <span class="spec-value text-muted" th:text="${product.battery}">5000mAh</span>
-                      </div>
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <span class="spec-name fw-semibold">Kích thước</span>
-                        <span class="spec-value text-muted" th:text="${product.dimensions}">---</span>
-                      </div>
-                      <div class="spec-row d-flex justify-content-between align-items-center p-3">
-                        <span class="spec-name fw-semibold">Chất liệu</span>
-                        <span class="spec-value text-muted" th:text="${product.material}">---</span>
-                      </div>
-                    </div>
+                <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--text);">Thông số kỹ thuật</h3>
+                <div class="spec-table">
+                  <div class="spec-row">
+                    <span class="spec-name">RAM</span>
+                    <span class="spec-value" th:text="${product.ram}">—</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-name">SSD</span>
+                    <span class="spec-value"
+                          th:text="${#lists.isEmpty(variants) ? '—' : variants.get(0).storage}">—</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-name">Màn hình</span>
+                    <span class="spec-value" th:text="${product.display}">—</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-name">CPU</span>
+                    <span class="spec-value" th:text="${product.cpu}">—</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-name">GPU</span>
+                    <span class="spec-value" th:text="${product.gpu}">—</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-name">Pin</span>
+                    <span class="spec-value" th:text="${product.battery}">—</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-name">Kích thước</span>
+                    <span class="spec-value" th:text="${product.dimensions}">—</span>
+                  </div>
+                  <div class="spec-row">
+                    <span class="spec-name">Chất liệu</span>
+                    <span class="spec-value" th:text="${product.material}">—</span>
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
@@ -357,21 +347,82 @@
     </div>
   </section>
 
+  <!-- Sản phẩm đề xuất -->
+  <section th:if="${recommendations != null and !recommendations.isEmpty()}"
+           class="recommendation-section container my-4">
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <div style="width:4px;height:20px;background:#f59e0b;border-radius:2px;"></div>
+      <h3 class="recommendation-title mb-0">
+        <i class="bi bi-stars"></i> Đề cử dành riêng cho bạn
+      </h3>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-3 col-md-6" th:each="p : ${recommendations}">
+        <div class="product-item" style="position:relative;">
+          <span class="badge-recommended"><i class="bi bi-sparkles"></i> Gợi ý</span>
+          <div class="product-image">
+            <span class="my-badge badge-limited" th:if="${p.stock < 10 and p.stock > 0}">
+              <i class="bi bi-exclamation-triangle-fill"></i> SẮP HẾT
+            </span>
+            <img th:if="${p.images != null and !p.images.isEmpty()}"
+                 th:src="${#strings.arraySplit(p.images, ',')[0]}"
+                 th:alt="${p.name}" loading="lazy"
+                 onerror="this.src='/images/default-avatar.png'">
+            <img th:if="${p.images == null or p.images.isEmpty()}"
+                 th:src="@{/images/default-avatar.png}" loading="lazy" alt="Laptop">
+          </div>
+          <div class="product-info">
+            <div class="product-category" th:text="${p.brand != null ? p.brand.name : 'Khác'}">Hãng</div>
+            <h4 class="product-name">
+              <a th:href="@{'/product/' + ${p.id}}" th:text="${p.name}">Tên laptop</a>
+              <span class="sale-badge" th:if="${p.salePercent != null and p.salePercent > 0}"
+                    th:text="'-' + ${p.salePercent} + '%'"></span>
+            </h4>
+            <div class="display-tags">
+              <span class="spec-tag" th:if="${p.cpu != null and !p.cpu.isBlank()}" th:text="${p.cpu}"></span>
+              <span class="spec-tag" th:if="${p.ram != null and !p.ram.isBlank()}" th:text="${p.ram}"></span>
+              <span class="spec-tag" th:if="${!#lists.isEmpty(p.variants)}" th:text="${p.variants[0].storage}"></span>
+              <span class="spec-tag" th:if="${p.gpu != null and !p.gpu.isBlank()}" th:text="${p.gpu}"></span>
+            </div>
+            <div class="product-price">
+              <span class="price-final"
+                    th:text="${#numbers.formatDecimal(p.price * (100 - p.salePercent) / 100, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+              <span class="price-old" th:if="${p.salePercent > 0}"
+                    th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+            </div>
+            <!-- Dual CTA Buttons: + Giỏ hàng (AJAX) + Mua ngay -->
+            <div class="card-btn-group">
+              <button type="button"
+                      class="card-btn card-btn-view btn-quick-add-cart"
+                      th:data-product-id="${p.id}"
+                      th:data-product-name="${p.name}">
+                <i class="bi bi-cart-plus"></i>
+                <span>+ Giỏ hàng</span>
+              </button>
+              <button type="button"
+                      class="card-btn card-btn-buy"
+                      th:data-product-id="${p.id}"
+                      th:data-product-name="${p.name}">
+                <i class="bi bi-lightning-charge-fill"></i>
+                <span>Mua ngay</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
 </main>
 
 <div th:replace="fragments/footer :: siteFooter"></div>
 
-<!-- Scroll Top -->
-<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+<!-- Scroll top -->
+<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+  <i class="bi bi-arrow-up-short"></i>
+</a>
 
-<!-- Preloader -->
-<div id="preloader"></div>
-
-<!-- Vendor JS Files -->
-
-
-<script th:src="@{/js/main.js}"></script>
+<!-- Scripts -->
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
 <script th:src="@{/js/swiper-bundle.min.js}"></script>
 <script th:src="@{/js/aos.js}"></script>
@@ -379,9 +430,9 @@
 <script th:src="@{/js/Drift.min.js}"></script>
 <script th:src="@{/js/purecounter_vanilla.js}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script th:src="@{/js/main.js}"></script>
 
-
-<!-- ✅ SCRIPT CHO CHỌN BIẾN THỂ -->
+<!-- ✅ SCRIPT CHỌN BIẾN THỂ (giữ nguyên logic) -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const colorButtons = document.querySelectorAll(".color-btn");
@@ -391,7 +442,11 @@
 
     let selectedColor = null;
 
-    // 🎨 Chọn màu
+    // Chọn màu đầu tiên mặc định nếu có
+    if (colorButtons.length > 0) {
+      colorButtons[0].click();
+    }
+
     colorButtons.forEach(btn => {
       btn.addEventListener("click", () => {
         selectedColor = btn.dataset.color;
@@ -401,7 +456,7 @@
         colorButtons.forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
 
-        if (imageUrl) {
+        if (imageUrl && mainImage) {
           mainImage.src = imageUrl;
           mainImage.dataset.zoom = imageUrl;
         }
@@ -411,15 +466,14 @@
       });
     });
 
-    // 💾 Tạo danh sách dung lượng theo màu
     function renderStorages(color) {
+      if (!storageContainer) return;
       storageContainer.innerHTML = "";
-      const filtered = Array.from(colorButtons)
-        .filter(v => v.dataset.color === color);
+      const filtered = Array.from(colorButtons).filter(v => v.dataset.color === color);
 
-      filtered.forEach(v => {
+      filtered.forEach((v, idx) => {
         const storageBtn = document.createElement("button");
-        storageBtn.className = "btn btn-outline-primary storage-btn";
+        storageBtn.className = "btn btn-outline-dark storage-btn" + (idx === 0 ? " active" : "");
         storageBtn.textContent = v.dataset.storage;
         storageBtn.dataset.variantId = v.dataset.variantId;
 
@@ -429,81 +483,97 @@
           variantInput.value = v.dataset.variantId;
         });
 
+        // Set first as default
+        if (idx === 0) variantInput.value = v.dataset.variantId;
+
         storageContainer.appendChild(storageBtn);
+      });
+    }
+
+    // Quantity control
+    const decreaseBtn = document.querySelector(".quantity-btn.decrease");
+    const increaseBtn = document.querySelector(".quantity-btn.increase");
+    const qtyInput    = document.querySelector(".quantity-input");
+
+    if (decreaseBtn && qtyInput) {
+      decreaseBtn.addEventListener("click", () => {
+        const v = parseInt(qtyInput.value) || 1;
+        if (v > 1) qtyInput.value = v - 1;
+      });
+    }
+    if (increaseBtn && qtyInput) {
+      increaseBtn.addEventListener("click", () => {
+        const v    = parseInt(qtyInput.value) || 1;
+        const max  = parseInt(qtyInput.getAttribute("max")) || 9999;
+        if (v < max) qtyInput.value = v + 1;
       });
     }
   });
 </script>
 
+<!-- ✅ SCRIPT GALLERY (giữ nguyên logic) -->
 <script>
-  // 🖼 Điều khiển gallery (thumbnail + prev/next)
   document.addEventListener("DOMContentLoaded", function () {
-    const mainImage = document.getElementById("main-product-image");
+    const mainImage  = document.getElementById("main-product-image");
     const thumbnails = document.querySelectorAll(".thumbnail-item img");
-    const prevBtn = document.querySelector(".prev-image");
-    const nextBtn = document.querySelector(".next-image");
+    const prevBtn    = document.querySelector(".prev-image");
+    const nextBtn    = document.querySelector(".next-image");
 
     let currentIndex = 0;
 
     thumbnails.forEach((thumb, index) => {
-      thumb.addEventListener("click", () => {
-        currentIndex = index;
-        updateMainImage();
-      });
+      thumb.addEventListener("click", () => { currentIndex = index; updateMainImage(); });
     });
 
-    prevBtn.addEventListener("click", () => {
+    if (prevBtn) prevBtn.addEventListener("click", () => {
       currentIndex = (currentIndex - 1 + thumbnails.length) % thumbnails.length;
       updateMainImage();
     });
 
-    nextBtn.addEventListener("click", () => {
+    if (nextBtn) nextBtn.addEventListener("click", () => {
       currentIndex = (currentIndex + 1) % thumbnails.length;
       updateMainImage();
     });
 
     function updateMainImage() {
+      if (!thumbnails[currentIndex] || !mainImage) return;
       const newSrc = thumbnails[currentIndex].src;
       mainImage.src = newSrc;
       mainImage.dataset.zoom = newSrc;
-
       thumbnails.forEach(t => t.parentElement.classList.remove("active"));
       thumbnails[currentIndex].parentElement.classList.add("active");
     }
   });
 </script>
 
+<!-- ✅ SCRIPT MUA NGAY (giữ nguyên logic) -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const buyNowBtn = document.getElementById("buyNowBtn");
     if (!buyNowBtn) return;
 
     buyNowBtn.addEventListener("click", function () {
-
-      const productId = this.dataset.productId;  // ← Lấy từ th:data-product-id
+      const productId = this.dataset.productId;
       const variantId = document.getElementById("selectedVariantId").value;
-      const quantity = document.querySelector(".quantity-input").value || 1;
+      const quantity  = document.querySelector(".quantity-input").value || 1;
 
       if (!variantId || variantId.trim() === "") {
         Swal.fire({
           icon: "warning",
           title: "Vui lòng chọn biến thể",
-          text: "Bạn phải chọn màu và dung lượng trước khi mua."
+          text: "Bạn phải chọn màu và dung lượng trước khi mua.",
+          confirmButtonColor: "var(--primary)"
         });
         return;
       }
 
-      const url =
-        "/checkout/buy-now?productId=" + encodeURIComponent(productId) +
-        "&variantId="   + encodeURIComponent(variantId) +
-        "&quantity="    + encodeURIComponent(quantity);
-
+      const url = "/checkout/buy-now?productId=" + encodeURIComponent(productId) +
+                  "&variantId=" + encodeURIComponent(variantId) +
+                  "&quantity="  + encodeURIComponent(quantity);
       window.location.href = url;
     });
   });
 </script>
 
-
 </body>
-
 </html>

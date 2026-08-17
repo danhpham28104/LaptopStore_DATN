@@ -35,7 +35,7 @@ public class AdminBrandController {
     public String listBrands(Model model) {
         model.addAttribute("brands", brandService.getAllBrands());
         model.addAttribute("active", "brands");
-        model.addAttribute("pageTitle", "Quản lý Thương hiệu - TechStore Admin");
+        model.addAttribute("pageTitle", "Quản lý Thương hiệu - LaptopStore Admin");
         return "admin/brands";
     }
 

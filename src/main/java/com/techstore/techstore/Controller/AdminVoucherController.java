@@ -24,7 +24,7 @@ public class AdminVoucherController {
     public String listVouchers(Model model) {
         List<Voucher> vouchers = voucherService.getAll();
         model.addAttribute("vouchers", vouchers);
-        model.addAttribute("pageTitle", "Quản lý Voucher - TechStore Admin");
+        model.addAttribute("pageTitle", "Quản lý Voucher - LaptopStore Admin");
         model.addAttribute("active", "vouchers");
         return "admin/vouchers";
     }

@@ -12,12 +12,16 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin")
@@ -30,60 +34,87 @@ public class AdminDashboardController {
 
     // ===================== DASHBOARD =====================
     @GetMapping
-    public String dashboard(Model model) {
+    public String dashboard(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Model model
+    ) {
+        LocalDate now = LocalDate.now();
 
-        // 🔵 1. Doanh thu hôm nay
-        BigDecimal todayRevenue = orderService.getRevenueByDate(LocalDate.now());
-        model.addAttribute("todayRevenue", todayRevenue);
-
-        // 🔵 2. Số đơn hàng mới hôm nay
-        int newOrders = orderService.countOrdersByDate(LocalDate.now());
-        model.addAttribute("newOrders", newOrders);
-
-        // 🔵 3. Tổng số người dùng
-        long userCount = userService.countUsers();
-        model.addAttribute("userCount", userCount);
-
-        // 🔵 4. Tổng tồn kho
-        long stockCount = productService.sumTotalStock();
-        model.addAttribute("stockCount", stockCount);
-
-        // ============================================================
-        // 🔵 5. DOANH THU 7 NGÀY GẦN NHẤT (biểu đồ đường)
-        // ============================================================
-        List<String> labels = new ArrayList<>();
-        List<BigDecimal> revenues = new ArrayList<>();
-
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
-        LocalDate today = LocalDate.now();
-
-        for (int i = 6; i >= 0; i--) { // 7 ngày
-            LocalDate day = today.minusDays(i);
-
-            labels.add(day.format(fmt));   // Ví dụ: 09/11, 10/11,...
-
-            BigDecimal rev = orderService.getRevenueByDate(day);
-            revenues.add(rev != null ? rev : BigDecimal.ZERO);
+        // Mặc định 7 ngày gần nhất nếu chưa chọn
+        if (endDate == null) {
+            endDate = now;
+        }
+        if (startDate == null) {
+            startDate = endDate.minusDays(6);
         }
 
-        model.addAttribute("dailyLabels", labels);
-        model.addAttribute("dailyRevenue", revenues);
-        // ============================================================
+        // Đảm bảo startDate <= endDate
+        if (startDate.isAfter(endDate)) {
+            LocalDate temp = startDate;
+            startDate = endDate;
+            endDate = temp;
+        }
 
+        // 🔵 1. Thống kê theo khoảng ngày
+        BigDecimal rangeRevenue = orderService.getRevenueByDateRange(startDate, endDate);
+        long totalOrders = orderService.countOrdersByDateRange(startDate, endDate);
+        long successOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of("Paid", "Completed", "Delivered", "Shipping"));
+        long pendingOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of("Pending", "Processing"));
+        long cancelledOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of("Cancelled"));
 
-        // 🔵 6. Top 5 sản phẩm bán chạy
+        // AOV (Average Order Value)
+        BigDecimal aov = (successOrders > 0)
+                ? rangeRevenue.divide(BigDecimal.valueOf(successOrders), 0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        // 🔵 2. Tổng số người dùng & tồn kho
+        long userCount = userService.countUsers();
+        long stockCount = productService.sumTotalStock();
+        long lowStockCount = productService.countLowStockProducts(3);
+
+        // 🔵 3. Doanh thu hôm nay & Số đơn mới hôm nay (giữ lại compatibility)
+        BigDecimal todayRevenue = orderService.getRevenueByDate(now);
+        int newOrders = orderService.countOrdersByDate(now);
+
+        // 🔵 4. Chuỗi dữ liệu biểu đồ doanh thu theo khoảng ngày
+        Map<String, Object> chartData = orderService.getDailyRevenueDataInRange(startDate, endDate);
+
+        // 🔵 5. Top 5 sản phẩm bán chạy & 5 đơn gần đây & 5 sản phẩm tồn kho thấp
         List<BestSellerDTO> bestSellers = productService.getTopBestSellers(5);
-        model.addAttribute("bestSellers", bestSellers);
-
-        // 🔵 7. 5 đơn hàng gần nhất
         List<Order> recentOrders = orderService.getRecentOrders(5);
+        List<com.techstore.techstore.entity.Product> lowStockProducts = productService.getLowStockProducts(3);
+        if (lowStockProducts.size() > 5) {
+            lowStockProducts = lowStockProducts.subList(0, 5);
+        }
+
+        // Truyền model attributes
+        model.addAttribute("startDate", startDate.toString());
+        model.addAttribute("endDate", endDate.toString());
+
+        model.addAttribute("rangeRevenue", rangeRevenue);
+        model.addAttribute("totalOrders", totalOrders);
+        model.addAttribute("successOrders", successOrders);
+        model.addAttribute("pendingOrders", pendingOrders);
+        model.addAttribute("cancelledOrders", cancelledOrders);
+        model.addAttribute("aov", aov);
+
+        model.addAttribute("todayRevenue", todayRevenue);
+        model.addAttribute("newOrders", newOrders);
+        model.addAttribute("userCount", userCount);
+        model.addAttribute("stockCount", stockCount);
+        model.addAttribute("lowStockCount", lowStockCount);
+
+        model.addAttribute("dailyLabels", chartData.get("labels"));
+        model.addAttribute("dailyRevenue", chartData.get("revenues"));
+
+        model.addAttribute("bestSellers", bestSellers);
         model.addAttribute("recentOrders", recentOrders);
+        model.addAttribute("lowStockProducts", lowStockProducts);
 
         // Active menu
         model.addAttribute("active", "dashboard");
-
-        // Title
-        model.addAttribute("pageTitle", "Dashboard - TechStore Admin");
+        model.addAttribute("pageTitle", "Dashboard Quản Lý & Phân Tích - LaptopStore Admin");
 
         return "admin/dashboard";
     }

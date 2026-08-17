@@ -40,8 +40,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o ORDER BY o.createdAt DESC LIMIT :limit")
     List<Order> findRecentOrders(@Param("limit") int limit);
 
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt < :end AND o.orderStatus = 'Completed'")
-    BigDecimal sumRevenueByDate(LocalDateTime start, LocalDateTime end);
+    @Query("SELECT o FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end ORDER BY o.createdAt DESC")
+    List<Order> findOrdersByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND LOWER(o.orderStatus) IN :statuses")
+    Optional<BigDecimal> sumRevenueByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<String> statuses);
 
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end")
+    long countOrdersByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND LOWER(o.orderStatus) IN :statuses")
+    long countOrdersByDateRangeAndStatuses(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<String> statuses);
 }

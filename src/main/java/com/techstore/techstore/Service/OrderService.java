@@ -41,6 +41,14 @@
                 orderRepository.save(order);
             });
         }
+
+        @Transactional
+        public void updateAdminNote(Long id, String adminNote) {
+            orderRepository.findById(id).ifPresent(order -> {
+                order.setAdminNote(adminNote);
+                orderRepository.save(order);
+            });
+        }
         /**
          * ✅ Tạo đơn hàng từ giỏ hàng
          */
@@ -328,6 +336,71 @@
             String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
             int random = (int)(Math.random() * 9000) + 1000; // random 4 số
             return "DH" + date + "-" + random;
+        }
+
+        // ==========================================
+        // 🔹 DATE RANGE STATS (PHASE 1A)
+        // ==========================================
+        public List<Order> getOrdersByDateRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate == null) startDate = LocalDate.now().minusDays(6);
+            if (endDate == null) endDate = LocalDate.now();
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(23, 59, 59);
+            return orderRepository.findOrdersByDateRange(start, end);
+        }
+
+        public BigDecimal getRevenueByDateRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate == null) startDate = LocalDate.now().minusDays(6);
+            if (endDate == null) endDate = LocalDate.now();
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(23, 59, 59);
+            List<String> successStatuses = List.of("paid", "completed", "delivered", "shipping");
+            return orderRepository.sumRevenueByDateRange(start, end, successStatuses).orElse(BigDecimal.ZERO);
+        }
+
+        public long countOrdersByDateRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate == null) startDate = LocalDate.now().minusDays(6);
+            if (endDate == null) endDate = LocalDate.now();
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(23, 59, 59);
+            return orderRepository.countOrdersByDateRange(start, end);
+        }
+
+        public long countOrdersByStatusesInRange(LocalDate startDate, LocalDate endDate, List<String> statuses) {
+            if (startDate == null) startDate = LocalDate.now().minusDays(6);
+            if (endDate == null) endDate = LocalDate.now();
+            if (statuses == null || statuses.isEmpty()) return 0;
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(23, 59, 59);
+            List<String> lowerStatuses = statuses.stream().map(String::toLowerCase).toList();
+            return orderRepository.countOrdersByDateRangeAndStatuses(start, end, lowerStatuses);
+        }
+
+        public java.util.Map<String, Object> getDailyRevenueDataInRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate == null) startDate = LocalDate.now().minusDays(6);
+            if (endDate == null) endDate = LocalDate.now();
+            if (startDate.isAfter(endDate)) {
+                LocalDate temp = startDate;
+                startDate = endDate;
+                endDate = temp;
+            }
+
+            List<String> labels = new ArrayList<>();
+            List<BigDecimal> revenues = new ArrayList<>();
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
+
+            LocalDate current = startDate;
+            while (!current.isAfter(endDate)) {
+                labels.add(current.format(fmt));
+                BigDecimal rev = getRevenueByDate(current);
+                revenues.add(rev != null ? rev : BigDecimal.ZERO);
+                current = current.plusDays(1);
+            }
+
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("labels", labels);
+            map.put("revenues", revenues);
+            return map;
         }
 
     }

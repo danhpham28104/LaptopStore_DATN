@@ -33,7 +33,7 @@ public class OrderController {
 
         List<Order> orders = orderService.getOrdersByUser(user.getId());
         model.addAttribute("orders", orders);
-        model.addAttribute("pageTitle", "Đơn hàng của bạn – TechStore");
+        model.addAttribute("pageTitle", "Đơn hàng của bạn – LaptopStore");
         return "orders"; // ↔ templates/orders.html
     }
 
@@ -64,7 +64,7 @@ public class OrderController {
     /** 🔹 Trang xác nhận thành công */
     @GetMapping("/success")
     public String orderSuccess(Model model) {
-        model.addAttribute("pageTitle", "Đặt hàng thành công – TechStore");
+        model.addAttribute("pageTitle", "Đặt hàng thành công – LaptopStore");
         return "order_success"; // ↔ templates/order_success.html
     }
 }

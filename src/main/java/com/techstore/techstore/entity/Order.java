@@ -58,6 +58,26 @@ public class Order {
     @OneToOne(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Payment payment;
 
+    // 🔹 OTP Verification
+    @Column(nullable = false)
+    private Boolean otpVerified = false;
+
+    // 🔹 Thời hạn thanh toán (cho QR payment)
+    @Column
+    private LocalDateTime paymentDeadline;
+
+    // 🔹 Ghi chú nội bộ cho Admin
+    @Column(name = "admin_note", columnDefinition = "TEXT")
+    private String adminNote;
+
+    public String getAdminNote() {
+        return adminNote;
+    }
+
+    public void setAdminNote(String adminNote) {
+        this.adminNote = adminNote;
+    }
+
     public Payment getPayment() {
         return payment;
     }
@@ -65,6 +85,22 @@ public class Order {
     public void setPayment(Payment payment) {
         this.payment = payment;
         if (payment != null) payment.setOrder(this);
+    }
+
+    public Boolean getOtpVerified() {
+        return otpVerified;
+    }
+
+    public void setOtpVerified(Boolean otpVerified) {
+        this.otpVerified = otpVerified;
+    }
+
+    public LocalDateTime getPaymentDeadline() {
+        return paymentDeadline;
+    }
+
+    public void setPaymentDeadline(LocalDateTime paymentDeadline) {
+        this.paymentDeadline = paymentDeadline;
     }
 
     public Order() {}

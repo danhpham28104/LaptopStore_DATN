@@ -74,10 +74,13 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    // Xóa sản phẩm
+    // Xóa sản phẩm (Soft delete)
     @Transactional
     public void delete(Long id) {
-        productRepository.deleteById(id);
+        productRepository.findById(id).ifPresent(product -> {
+            product.setDeleted(true);
+            productRepository.save(product);
+        });
     }
 
     // Tìm kiếm nâng cao (Laptop)
@@ -140,7 +143,29 @@ public class ProductService {
         return products;
     }
 
+    /**
+     * Lấy danh sách sản phẩm theo danh sách ID (dùng cho sync-rag-selected).
+     */
+    @Transactional(readOnly = true)
+    public List<Product> getProductsByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return List.of();
+        return productRepository.findAllById(ids);
+    }
 
+    /**
+     * Lấy sản phẩm có tồn kho thấp (Product.stock <= threshold hoặc Variant.stock <= threshold).
+     */
+    @Transactional(readOnly = true)
+    public List<Product> getLowStockProducts(int threshold) {
+        return productRepository.findLowStockProducts(threshold);
+    }
 
+    /**
+     * Đếm số lượng sản phẩm có tồn kho thấp.
+     */
+    @Transactional(readOnly = true)
+    public long countLowStockProducts(int threshold) {
+        return productRepository.countLowStockProducts(threshold);
+    }
 
 }

@@ -61,8 +61,37 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     """)
     List<BestSellerDTO> getTopBestSellers(@Param("limit") int limit);
 
+    @Query("""
+    SELECT DISTINCT p FROM Product p
+    WHERE p.isDeleted = false
+      AND p.id NOT IN :excludeIds
+      AND (
+        p.brand.id IN :brandIds
+        OR (p.price BETWEEN :minPrice AND :maxPrice)
+        OR (:cpuKeyword IS NOT NULL AND LOWER(p.cpu) LIKE LOWER(CONCAT('%', :cpuKeyword, '%')))
+      )
+    """)
+    List<Product> findSimilarProducts(
+            @Param("excludeIds") List<Long> excludeIds,
+            @Param("brandIds") List<Long> brandIds,
+            @Param("minPrice") java.math.BigDecimal minPrice,
+            @Param("maxPrice") java.math.BigDecimal maxPrice,
+            @Param("cpuKeyword") String cpuKeyword
+    );
 
+    @Query("""
+    SELECT DISTINCT p FROM Product p
+    LEFT JOIN p.variants v
+    WHERE p.isDeleted = false
+      AND (p.stock <= :threshold OR v.stock <= :threshold)
+    """)
+    List<Product> findLowStockProducts(@Param("threshold") int threshold);
 
-
-
+    @Query("""
+    SELECT COUNT(DISTINCT p) FROM Product p
+    LEFT JOIN p.variants v
+    WHERE p.isDeleted = false
+      AND (p.stock <= :threshold OR v.stock <= :threshold)
+    """)
+    long countLowStockProducts(@Param("threshold") int threshold);
 }

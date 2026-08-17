@@ -46,7 +46,7 @@ public class CheckoutController {
 
         model.addAttribute("user", user);
         model.addAttribute("cart", cart);
-        model.addAttribute("pageTitle", "Thanh toán – TechStore");
+        model.addAttribute("pageTitle", "Thanh toán – LaptopStore");
 
         return "checkout";
     }
@@ -106,7 +106,6 @@ public class CheckoutController {
     /** Xử lý đặt hàng (giỏ hàng hoặc mua ngay) */
     @PostMapping("/place")
     public String placeOrder(@RequestParam(required = false) Long variantId,
-
                              @RequestParam Long addressId,
                              @RequestParam PaymentMethod paymentMethod,
                              @RequestParam(required = false) String voucherCode,
@@ -129,9 +128,8 @@ public class CheckoutController {
                 address.getDistrict(),
                 address.getCity()
         );
-        String receiverName =address.getFullName();
-        String receiverPhone =address.getPhone();
-
+        String receiverName = address.getFullName();
+        String receiverPhone = address.getPhone();
 
         Order order;
         // Mua ngay
@@ -148,26 +146,18 @@ public class CheckoutController {
                         .orElse(null);
             }
 
-            order=orderService.createOrderInstant(user, product,variant, quantity,
+            order = orderService.createOrderInstant(user, product, variant, quantity,
                     receiverName, fullAddress, receiverPhone, paymentMethod, voucherCode);
         }
         // Giỏ hàng
         else {
-            order=orderService.createOrderFromCart(user,
+            order = orderService.createOrderFromCart(user,
                     receiverName, fullAddress, receiverPhone, paymentMethod, voucherCode);
         }
 
-        //  Điều hướng theo phương thức thanh toán
-        if (paymentMethod == PaymentMethod.COD) {
-            return "redirect:/orders/success";
-        }
-
-        if (paymentMethod == PaymentMethod.SEPAY) {
-            return "redirect:/checkout/sepay?orderId=" + order.getId();
-        }
-
-        return "redirect:/orders/success";
-
+        // 🔹 ĐÃ TẠO ORDER, NHƯNG CHƯA HOÀN THÀNH
+        // Bước tiếp theo: OTP Verification
+        return "redirect:/otp/verify?orderId=" + order.getId();
     }
 
 
@@ -178,20 +168,35 @@ public class CheckoutController {
         Order order = orderService.getOrderById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        // Tạo nội dung chuyển khoản (mã đơn)
-        String orderCode = order.getOrderCode(); // ví dụ DH102969
+        // 🔹 Kiểm tra OTP đã xác thực hay chưa
+        if (!order.getOtpVerified()) {
+            return "redirect:/otp/verify?orderId=" + orderId;
+        }
 
-        // Tạo QR
+        // 🔹 Tạo QR code thanh toán
+        String orderCode = order.getOrderCode();
         String qrUrl = paymentService.generatePaymentQR(
                 order.getTotalAmount().longValue(),
                 orderCode
         );
 
+        // 🔹 Lưu QR code vào Payment
+        if (order.getPayment() != null) {
+            order.getPayment().setQrCodeUrl(qrUrl);
+            order.getPayment().setQrCodeData(paymentService.generateQrData(
+                    order.getTotalAmount().longValue(),
+                    orderCode
+            ));
+            // Set payment deadline (15 phút)
+            order.setPaymentDeadline(java.time.LocalDateTime.now().plusMinutes(15));
+            orderService.saveOrder(order);
+        }
+
         model.addAttribute("order", order);
         model.addAttribute("qrUrl", qrUrl);
         model.addAttribute("pageTitle", "Thanh toán SePay – " + orderCode);
 
-        return "payment_sepay"; // trang view
+        return "payment_sepay";
     }
 
 

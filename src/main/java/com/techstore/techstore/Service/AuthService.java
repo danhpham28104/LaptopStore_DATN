@@ -44,7 +44,7 @@ public class AuthService {
         try {
             emailService.sendEmail(
                     email,
-                    "TechStore - Mã khôi phục mật khẩu",
+                    "LaptopStore - Mã khôi phục mật khẩu",
                     "Mã đặt lại mật khẩu của bạn là: " + code + "\nCó hiệu lực trong 10 phút."
             );
         } catch (Exception e) {

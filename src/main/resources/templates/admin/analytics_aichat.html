@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'AI Chatbot Customer Insights - LaptopStore Admin'">AI Chatbot Customer Insights</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body { background-color: #f5f7fb; font-family: 'Segoe UI', sans-serif; color: #1f2937; }
+        .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1a1a2e; color: #fff; padding-top: 60px; z-index: 9; overflow-y: auto; }
+        .sidebar a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 11px 20px; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; }
+        .sidebar a.active, .sidebar a:hover { background: rgba(215,0,24,0.15); color: #fff; border-left: 4px solid #d70018; }
+        .sidebar-heading { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); padding: 15px 20px 5px; font-weight: 700; }
+        .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e5e7eb; height: 60px; }
+        .content { margin-left: 240px; padding: 80px 24px 40px; }
+        .brand-logo { font-weight: 800; color: #fff; font-size: 1.1rem; padding: 15px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
+
+        .stat-card {
+          border-radius: 14px;
+          padding: 20px 22px;
+          color: #fff;
+          position: relative;
+          overflow: hidden;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+        .stat-icon { position: absolute; right: 18px; bottom: 12px; opacity: 0.2; font-size: 50px; }
+
+        .chart-box {
+          background: #fff;
+          border-radius: 14px;
+          padding: 22px;
+          border: 1px solid #e5e7eb;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+    </style>
+</head>
+
+<body>
+<div class="brand-logo">⚙️ LaptopStore Admin</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'"><i class="bi bi-box"></i> Sản phẩm</a>
+    <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'"><i class="bi bi-receipt"></i> Đơn hàng</a>
+    <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'"><i class="bi bi-people"></i> Người dùng</a>
+    <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'"><i class="bi bi-ticket-perforated"></i> Voucher</a>
+    <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
+
+    <div class="sidebar-heading">Phân Tích Nhu Cầu</div>
+    <a th:href="@{/admin/analytics/products}" th:classappend="${active == 'analytics_products'} ? 'active'"><i class="bi bi-eye"></i> Phân Tích Xem SP</a>
+    <a th:href="@{/admin/analytics/ai-chat}" th:classappend="${active == 'analytics_aichat'} ? 'active'"><i class="bi bi-robot"></i> AI Chat Insights</a>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm px-4">
+    <div class="container-fluid d-flex justify-content-between align-items-center p-0">
+        <span class="fw-bold text-dark fs-5">
+            🤖 Phân Tích Nhu Cầu Khách Hàng Từ AI Chatbot (RAG)
+        </span>
+
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Dashboard</a>
+            <form th:action="@{/logout}" method="post">
+                <button class="btn btn-outline-danger btn-sm" type="submit">
+                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="content">
+
+    <!-- SUMMARY CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4 col-xl-2.4" style="width: 20%;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4e73df, #224abe);">
+                <span class="fs-7 opacity-75">Tổng Lượt Hỏi AI</span>
+                <h4 class="fw-bold mt-2 mb-0" th:text="${totalUserQuestions}">0</h4>
+                <i class="bi bi-chat-quote stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-xl-2.4" style="width: 20%;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #36b9cc, #258391);">
+                <span class="fs-7 opacity-75">Phản Hồi Từ RAG</span>
+                <h4 class="fw-bold mt-2 mb-0" th:text="${totalAssistantResponses}">0</h4>
+                <i class="bi bi-robot stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-xl-2.4" style="width: 20%;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f6c23e, #c7961d);">
+                <span class="fs-7 opacity-75">Confidence Thấp</span>
+                <h4 class="fw-bold mt-2 mb-0" th:text="${lowConfidenceCount}">0</h4>
+                <i class="bi bi-exclamation-triangle stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-xl-2.4" style="width: 20%;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #e74a3b, #be2617);">
+                <span class="fs-7 opacity-75">Không Có SP Gợi Ý</span>
+                <h4 class="fw-bold mt-2 mb-0" th:text="${noRecommendationCount}">0</h4>
+                <i class="bi bi-search-heart stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-xl-2.4" style="width: 20%;">
+            <div class="stat-card" style="background: linear-gradient(135deg, #1cc88a, #0e7b52);">
+                <span class="fs-7 opacity-75">SP AI Gợi Ý Nhất</span>
+                <h6 class="fw-bold mt-2 mb-0 text-truncate" th:text="${topRecommendedProductName}">Chưa có dữ liệu</h6>
+                <i class="bi bi-hand-thumbs-up stat-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 1: KEYWORDS & AI RECOMMENDED PRODUCTS -->
+    <div class="row g-4 mb-4">
+        <!-- KEYWORD INSIGHTS -->
+        <div class="col-lg-6">
+            <div class="chart-box">
+                <h6 class="fw-bold mb-3"><i class="bi bi-key-fill text-primary me-2"></i>Top Từ Khóa & Nhu Cầu Khách Hàng Hay Hỏi</h6>
+                <canvas id="keywordChart" height="145"></canvas>
+            </div>
+        </div>
+
+        <!-- TOP AI RECOMMENDED PRODUCTS -->
+        <div class="col-lg-6">
+            <div class="chart-box">
+                <h6 class="fw-bold mb-3"><i class="bi bi-stars text-warning me-2"></i>Top Sản Phẩm Được AI Tư Vấn Gợi Ý Nhất</h6>
+
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 fs-7"
+                        th:each="rec : ${recommendedProductInsights}">
+                        <div>
+                            <a th:href="@{/admin/products/search(q=${rec.productId})}" class="fw-bold text-decoration-none" th:text="${rec.productName}"></a>
+                            <div class="small text-muted" th:text="${rec.model} + ' - ' + ${#numbers.formatDecimal(rec.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+                        </div>
+                        <span class="badge bg-success rounded-pill px-3 py-1" th:text="${rec.count} + ' lần tư vấn'"></span>
+                    </li>
+
+                    <li th:if="${#lists.isEmpty(recommendedProductInsights)}" class="list-group-item text-center text-muted border-0 py-4 fs-7">
+                        <i class="bi bi-info-circle fs-4 text-secondary d-block mb-1"></i>
+                        Chưa đủ dữ liệu thống kê sản phẩm được gợi ý
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE 1: CÂU HỎI KHÔNG CÓ SẢN PHẨM GỢI Ý (UNMATCHED DEMANDS) -->
+    <div class="chart-box mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h6 class="fw-bold text-danger m-0">
+                    <i class="bi bi-x-octagon-fill me-2"></i>Danh Sách Nhu Cầu Khách Hàng AI Chưa Tìm Được Máy Phù Hợp
+                </h6>
+                <small class="text-muted">Các câu hỏi mà RAG AI trả về 0 sản phẩm gợi ý. Giúp Admin biết khách muốn dòng máy nào mà cửa hàng chưa đáp ứng.</small>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle table-hover mb-0">
+                <thead class="table-light fs-7">
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Câu hỏi của khách hàng (User Prompt)</th>
+                    <th>Câu trả lời của AI</th>
+                    <th>Thời gian</th>
+                    <th>Gợi ý hành động Admin</th>
+                </tr>
+                </thead>
+                <tbody class="fs-7">
+                <tr th:each="u, stat : ${unmatchedQueries}">
+                    <td class="fw-bold text-muted" th:text="${stat.index + 1}"></td>
+                    <td class="fw-bold text-primary" th:text="${u.userQuestion}"></td>
+                    <td class="text-truncate" style="max-width: 300px;" th:text="${u.assistantAnswer}"></td>
+                    <td class="text-muted" th:text="${#temporals.format(u.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td>
+                        <span class="badge bg-danger text-white px-2 py-1" th:text="${u.recommendation}"></span>
+                    </td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(unmatchedQueries)}">
+                    <td colspan="5" class="text-center text-muted py-4 fs-7">
+                        <i class="bi bi-check-circle-fill fs-4 text-success d-block mb-1"></i>
+                        Tuyệt vời! Tất cả câu hỏi của khách hàng đều được AI gợi ý sản phẩm phù hợp.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABLE 2: CÂU HỎI CONFIDENCE THẤP -->
+    <div class="chart-box">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h6 class="fw-bold text-warning m-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Danh Sách Câu Hỏi AI Confidence Thấp (< 0.6)
+                </h6>
+                <small class="text-muted">Các phản hồi AI chưa chắc chắn. Cần kiểm tra để cải thiện prompt hoặc bổ sung thông số máy.</small>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle table-hover mb-0">
+                <thead class="table-light fs-7">
+                <tr>
+                    <th style="width: 50px;">#</th>
+                    <th>Câu hỏi khách</th>
+                    <th>Câu trả lời AI</th>
+                    <th class="text-center">Confidence</th>
+                    <th class="text-center">Số SP gợi ý</th>
+                    <th>Thời gian</th>
+                </tr>
+                </thead>
+                <tbody class="fs-7">
+                <tr th:each="l, stat : ${lowConfidenceQueries}">
+                    <td class="fw-bold text-muted" th:text="${stat.index + 1}"></td>
+                    <td class="fw-bold" th:text="${l.userQuestion}"></td>
+                    <td class="text-truncate" style="max-width: 280px;" th:text="${l.assistantAnswer}"></td>
+                    <td class="text-center">
+                        <span class="badge bg-warning text-dark font-monospace" th:text="${l.confidence}"></span>
+                    </td>
+                    <td class="text-center fw-bold" th:text="${l.recommendedCount}"></td>
+                    <td class="text-muted" th:text="${#temporals.format(l.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                </tr>
+
+                <tr th:if="${#lists.isEmpty(lowConfidenceQueries)}">
+                    <td colspan="6" class="text-center text-muted py-4 fs-7">
+                        <i class="bi bi-shield-check fs-4 text-primary d-block mb-1"></i>
+                        Chưa có câu hỏi nào có độ tin cậy thấp.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script th:inline="javascript">
+    const kwData = /*[[${keywordInsights}]]*/ [];
+
+    const kwCtx = document.getElementById('keywordChart');
+    if (kwCtx && kwData.length > 0) {
+        new Chart(kwCtx, {
+            type: 'bar',
+            data: {
+                labels: kwData.map(k => k.keyword),
+                datasets: [{
+                    label: 'Số Lượt Hỏi',
+                    data: kwData.map(k => k.count),
+                    backgroundColor: 'rgba(215, 0, 24, 0.75)',
+                    borderColor: '#d70018',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -21,7 +21,9 @@ public class ProductController {
     @Autowired private ProductService productService;
     @Autowired private BrandService brandService;
     @Autowired private ProductVariantService productVariantService;
-
+    @Autowired private com.techstore.techstore.Service.UserService userService;
+    @Autowired private com.techstore.techstore.Service.ProductViewHistoryService productViewHistoryService;
+    @Autowired private com.techstore.techstore.Service.RecommendationService recommendationService;
 
     //  Danh sách sản phẩm (Thymeleaf)
     @GetMapping
@@ -74,6 +76,21 @@ public class ProductController {
         model.addAttribute("product", product);
         model.addAttribute("variants", productVariantService.getVariantsByProduct(id));
         model.addAttribute("brands", brandService.getAllBrands());
+
+        // Lịch sử xem và gợi ý đề cử sản phẩm
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
+            String username = auth.getName();
+            com.techstore.techstore.entity.User user = userService.findByUsername(username).orElse(null);
+            if (user != null) {
+                // Tự động ghi nhận lượt xem
+                productViewHistoryService.trackView(user, product);
+                
+                // Đề cử sản phẩm tương tự
+                List<Product> recommendations = recommendationService.getRecommendationsForUser(user, 4);
+                model.addAttribute("recommendations", recommendations);
+            }
+        }
 
         return "product_detail";
     }

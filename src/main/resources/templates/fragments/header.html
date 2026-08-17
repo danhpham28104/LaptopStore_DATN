@@ -5,113 +5,130 @@
 >
 <body>
 <header id="header" class="header sticky-top" th:fragment="siteHeader">
-  <!-- Top Bar -->
-  <div class="topbar-loop py-2 bg-light border-bottom">
+
+  <!-- ── Top Bar ── -->
+  <div class="topbar-loop">
     <div class="loop-container">
       <div class="loop-track">
-        <span>🚚 Miễn phí vận chuyển cho đơn hàng trên 500K — 💰 Hoàn tiền trong 30 ngày — 🎁 Giảm 20% cho đơn đầu tiên — ☎ Hỗ trợ 24/7: 0123 456 789 — </span>
-        <span>🚚 Miễn phí vận chuyển cho đơn hàng trên 500K — 💰 Hoàn tiền trong 30 ngày — 🎁 Giảm 20% cho đơn đầu tiên — ☎ Hỗ trợ 24/7: 0123 456 789 — </span>
+        <span>🚚 Miễn phí vận chuyển cho đơn hàng trên 500K &nbsp;—&nbsp; 💰 Hoàn tiền trong 30 ngày &nbsp;—&nbsp; 🎁 Giảm 20% cho đơn đầu tiên &nbsp;—&nbsp; ☎ Hỗ trợ 24/7: 0123 456 789 &nbsp;—&nbsp; </span>
+        <span>🚚 Miễn phí vận chuyển cho đơn hàng trên 500K &nbsp;—&nbsp; 💰 Hoàn tiền trong 30 ngày &nbsp;—&nbsp; 🎁 Giảm 20% cho đơn đầu tiên &nbsp;—&nbsp; ☎ Hỗ trợ 24/7: 0123 456 789 &nbsp;—&nbsp; </span>
       </div>
     </div>
   </div>
 
-  <!-- Main Header -->
+  <!-- ── Main Header ── -->
   <div class="main-header">
     <div class="container-fluid container-xl">
-      <div class="d-flex py-3 align-items-center justify-content-between">
+      <div class="d-flex py-3 align-items-center justify-content-between gap-2">
+
         <!-- Logo -->
-        <a th:href="@{/}" class="logo d-flex align-items-center">
-          <h1 class="sitename">LaptopStore</h1>
+        <a th:href="@{/}" class="logo d-flex align-items-center gap-2 text-decoration-none flex-shrink-0">
+          <div style="width:38px;height:38px;background:var(--primary);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="bi bi-laptop" style="font-size:1.3rem;color:#fff;"></i>
+          </div>
+          <h1 class="sitename mb-0">LaptopStore</h1>
         </a>
 
-        <!-- search -->
-        <form class="search-form desktop-search-form" th:action="@{/product}" method="get">
+        <!-- Search (desktop) -->
+        <form class="search-form desktop-search-form flex-grow-1" th:action="@{/product}" method="get">
           <div class="input-group">
             <input type="text" class="form-control" name="q"
-                   placeholder="Hôm nay bạn muốn mua laptop nào?"
-                   th:value="${searchQuery}">
-            <button class="btn btn-primary" type="submit">
+                   placeholder="Tìm kiếm laptop, thương hiệu, cấu hình..."
+                   th:value="${searchQuery}"
+                   autocomplete="off">
+            <button class="btn btn-primary" type="submit" aria-label="Tìm kiếm">
               <i class="bi bi-search"></i>
             </button>
           </div>
         </form>
 
-        <!-- Actions -->
-        <div class="header-actions d-flex align-items-center justify-content-end">
+        <!-- Header Actions -->
+        <div class="header-actions d-flex align-items-center gap-1 flex-shrink-0">
 
-          <!-- Actions -->
-          <div class="header-actions d-flex align-items-center justify-content-end">
-          <!-- Voucher -->
-          <div class="dropdown voucher-dropdown me-3" sec:authorize="isAuthenticated()">
-            <button class="header-action-btn font-size: 28px !important" data-bs-toggle="dropdown">
-              🎁
+          <!-- Voucher (chỉ khi đã đăng nhập) -->
+          <div class="dropdown voucher-dropdown" sec:authorize="isAuthenticated()">
+            <button class="header-action-btn position-relative" data-bs-toggle="dropdown"
+                    aria-label="Voucher của tôi" title="Voucher của tôi">
+              <i class="bi bi-ticket-perforated"></i>
+              <span class="d-none d-xl-inline ms-1" style="font-size:0.82rem;">Voucher</span>
             </button>
 
             <div class="dropdown-menu dropdown-menu-end voucher-box">
-              <h6 class="fw-bold mb-2">Mã giảm giá của bạn</h6>
+              <h6 class="fw-bold mb-2 px-1" style="font-size:0.88rem;">🎁 Mã giảm giá của bạn</h6>
 
-              <!-- Nếu có voucher -->
+              <!-- Có voucher -->
               <div th:if="${vouchers != null and !vouchers.isEmpty()}">
                 <div th:each="v : ${vouchers}" class="voucher-card">
-
-                  <div class="voucher-code" th:text="${v.code}"></div>
-
+                  <div class="voucher-code" th:text="${v.code}">CODE</div>
                   <div class="voucher-discount">
-                  <span th:if="${v.discountType == 'PERCENT'}"
-                        th:text="'Giảm ' + ${v.discountValue} + '%'"></span>
-
+                    <span th:if="${v.discountType == 'PERCENT'}"
+                          th:text="'Giảm ' + ${v.discountValue} + '%'"></span>
                     <span th:if="${v.discountType == 'AMOUNT'}"
                           th:text="'Giảm ' + ${#numbers.formatDecimal(v.discountValue, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                   </div>
-
                   <div class="voucher-expiry">
                     HSD:
                     <span th:if="${v.endDate != null}"
                           th:text="${#temporals.format(v.endDate,'dd/MM/yyyy')}"></span>
-
                     <span th:if="${v.endDate == null}">Không giới hạn</span>
                   </div>
-
                 </div>
               </div>
 
               <!-- Không có voucher -->
               <div th:if="${vouchers == null or vouchers.isEmpty()}" class="voucher-empty">
-                Không có voucher
+                <i class="bi bi-inbox" style="font-size:1.5rem;display:block;margin-bottom:6px;"></i>
+                Bạn chưa có voucher nào
               </div>
-
             </div>
           </div>
-            <!-- Account -->
+
+          <!-- Account (chưa đăng nhập) -->
           <div class="account-area">
-            <div sec:authorize="isAnonymous()">
-              <a th:href="@{/login}" class="btn btn-outline-primary me-2">Đăng nhập</a>
-              <a th:href="@{/register}" class="btn btn-primary">Đăng ký</a>
+            <div sec:authorize="isAnonymous()" class="d-flex gap-2 align-items-center">
+              <a th:href="@{/login}" class="btn btn-outline-primary btn-sm d-none d-md-inline-flex align-items-center gap-1">
+                <i class="bi bi-person"></i> Đăng nhập
+              </a>
+              <a th:href="@{/register}" class="btn btn-primary btn-sm d-none d-md-inline-flex align-items-center gap-1">
+                <i class="bi bi-person-plus"></i> Đăng ký
+              </a>
+              <!-- Mobile: chỉ icon -->
+              <a th:href="@{/login}" class="header-action-btn d-md-none" aria-label="Đăng nhập">
+                <i class="bi bi-person-circle"></i>
+              </a>
             </div>
 
+            <!-- Account (đã đăng nhập) -->
             <div class="dropdown account-dropdown" sec:authorize="isAuthenticated()">
-              <button class="header-action-btn" data-bs-toggle="dropdown">
-                <i class="bi bi-person-circle"></i>
-                <span class="ms-1" sec:authentication="name"></span>
+              <button class="header-action-btn" data-bs-toggle="dropdown" aria-label="Tài khoản của tôi">
+                <i class="bi bi-person-circle" style="font-size:1.35rem;"></i>
+                <span class="ms-1 d-none d-xl-inline" sec:authentication="name"
+                      style="font-size:0.85rem;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+                <i class="bi bi-chevron-down d-none d-xl-inline" style="font-size:0.7rem;"></i>
               </button>
+
               <div class="dropdown-menu dropdown-menu-end">
                 <div class="dropdown-header">
-                  <h6>Xin chào, <span sec:authentication="name">User</span></h6>
-                  <p class="mb-0">Tài khoản của bạn</p>
+                  <h6>Xin chào, <span sec:authentication="name">Bạn</span> 👋</h6>
+                  <p>Quản lý tài khoản của bạn</p>
                 </div>
                 <div class="dropdown-body">
-                  <a class="dropdown-item d-flex align-items-center" th:href="@{/user/account}">
-                    <i class="bi bi-person-circle me-2"></i> Hồ sơ cá nhân
+                  <a class="dropdown-item d-flex align-items-center gap-2" th:href="@{/user/account}">
+                    <i class="bi bi-person-circle" style="color:var(--primary);"></i>Hồ sơ cá nhân
                   </a>
-                  <a th:href="@{/orders}" class="dropdown-item d-flex align-items-center">
-                    <i class="bi bi-bag-check me-2"></i> Đơn hàng của tôi
+                  <a th:href="@{/orders}" class="dropdown-item d-flex align-items-center gap-2">
+                    <i class="bi bi-bag-check" style="color:var(--primary);"></i>Đơn hàng của tôi
                   </a>
-
+                  <!-- Admin link nếu có quyền -->
+                  <a th:href="@{/admin}" class="dropdown-item d-flex align-items-center gap-2"
+                     sec:authorize="hasRole('ADMIN')">
+                    <i class="bi bi-gear" style="color:var(--primary);"></i>Trang quản trị
+                  </a>
                 </div>
                 <div class="dropdown-footer">
                   <form th:action="@{/logout}" method="post">
-                    <button class="btn btn-outline-danger w-100" type="submit">
-                      <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+                    <button class="btn btn-outline-danger btn-sm w-100 d-flex align-items-center justify-content-center gap-2" type="submit">
+                      <i class="bi bi-box-arrow-right"></i> Đăng xuất
                     </button>
                   </form>
                 </div>
@@ -120,64 +137,292 @@
           </div>
 
           <!-- Cart -->
-            <a th:href="@{/cart}" class="header-action-btn position-relative">
-              <i class="bi bi-cart3"></i>
+          <a th:href="@{/cart}" class="header-action-btn position-relative" aria-label="Giỏ hàng">
+            <i class="bi bi-cart3" style="font-size:1.35rem;"></i>
+            <span class="badge cart-badge"
+                  th:text="${cartCount}"
+                  th:if="${cartCount != null and cartCount > 0}">
+            </span>
+          </a>
 
-              <!-- Badge số lượng giỏ hàng -->
-              <span class="badge cart-badge"
-                    th:text="${cartCount}"
-                    th:if="${cartCount > 0}">
-              </span>
-            </a>
+          <!-- Mobile search toggle -->
+          <button class="header-action-btn d-xl-none" id="mobileSearchToggle"
+                  aria-label="Tìm kiếm" type="button">
+            <i class="bi bi-search" style="font-size:1.2rem;"></i>
+          </button>
 
-
-            <!-- Mobile Navigation Toggle -->
-          <i class="mobile-nav-toggle d-xl-none bi bi-list me-0"></i>
+          <!-- Mobile Navigation Toggle -->
+          <button class="header-action-btn mobile-nav-toggle d-xl-none"
+                  id="mobileNavToggle" aria-label="Menu" type="button">
+            <i class="bi bi-list" style="font-size:1.5rem;" id="mobileNavIcon"></i>
+          </button>
         </div>
+
+      </div>
+
+      <!-- Mobile Search Bar (hidden by default) -->
+      <div class="mobile-search-bar d-xl-none" id="mobileSearchBar" style="display:none!important;">
+        <form th:action="@{/product}" method="get" class="pb-3">
+          <div class="input-group" style="border:2px solid var(--border);border-radius:var(--radius-full);overflow:hidden;">
+            <input type="text" class="form-control" name="q"
+                   placeholder="Tìm kiếm laptop..."
+                   th:value="${searchQuery}"
+                   style="border:none;padding:10px 16px;font-size:0.9rem;box-shadow:none;">
+            <button class="btn" type="submit"
+                    style="background:var(--primary);color:#fff;border:none;padding:0 18px;">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 
-  <!-- Navigation -->
+  <!-- ── Navigation ── -->
   <div class="header-nav">
-    <div class="container-fluid container-xl position-relative">
+    <div class="container-fluid container-xl">
       <nav id="navmenu" class="navmenu">
         <ul>
           <li>
             <a th:href="@{/}"
                th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI == '/'} ? 'active' : ''">
-              Trang chủ
+              <i class="bi bi-house-fill d-xl-none"></i> Trang chủ
             </a>
           </li>
-
           <li>
-            <a th:href="@{/orders}" class="dropdown-item d-flex align-items-center">
-              <i class="bi bi-bag-check me-2"></i> Đơn hàng của tôi
+            <a th:href="@{/product}"
+               th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI.startsWith('/product')} ? 'active' : ''">
+              <i class="bi bi-laptop d-xl-none"></i> Laptop
             </a>
           </li>
-
           <li>
             <a th:href="@{/cart}"
                th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI.startsWith('/cart')} ? 'active' : ''">
-              Giỏ hàng
+              <i class="bi bi-cart3 d-xl-none"></i> Giỏ hàng
+            </a>
+          </li>
+          <li>
+            <a th:href="@{/orders}"
+               th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI.startsWith('/orders')} ? 'active' : ''"
+               sec:authorize="isAuthenticated()">
+              <i class="bi bi-bag-check d-xl-none"></i> Đơn hàng
             </a>
           </li>
         </ul>
       </nav>
 
+      <!-- Mobile Nav Overlay -->
+      <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
 
+      <!-- Mobile Nav Panel -->
+      <div class="mobile-nav-panel" id="mobileNavPanel">
+        <div class="mobile-nav-header">
+          <div class="d-flex align-items-center gap-2">
+            <div style="width:32px;height:32px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-laptop" style="color:#fff;font-size:1rem;"></i>
+            </div>
+            <span style="font-weight:800;font-size:1.1rem;color:var(--text);">LaptopStore</span>
+          </div>
+          <button id="mobileNavClose" class="mobile-nav-close" aria-label="Đóng menu">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <!-- Mobile search in panel -->
+        <div style="padding:16px;">
+          <form th:action="@{/product}" method="get">
+            <div style="display:flex;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
+              <input type="text" name="q" placeholder="Tìm kiếm laptop..."
+                     th:value="${searchQuery}"
+                     style="flex:1;border:none;padding:10px 14px;font-size:0.88rem;outline:none;">
+              <button type="submit" style="background:var(--primary);color:#fff;border:none;padding:0 16px;cursor:pointer;">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <nav style="padding:0 8px;">
+          <a th:href="@{/}" class="mobile-nav-link">
+            <i class="bi bi-house-fill"></i> Trang chủ
+          </a>
+          <a th:href="@{/product}" class="mobile-nav-link">
+            <i class="bi bi-laptop"></i> Tất cả Laptop
+          </a>
+          <a th:href="@{/cart}" class="mobile-nav-link">
+            <i class="bi bi-cart3"></i> Giỏ hàng
+            <span class="badge ms-auto"
+                  style="background:var(--primary);color:#fff;border-radius:99px;padding:2px 8px;font-size:0.72rem;"
+                  th:text="${cartCount}"
+                  th:if="${cartCount != null and cartCount > 0}"></span>
+          </a>
+          <a th:href="@{/orders}" class="mobile-nav-link" sec:authorize="isAuthenticated()">
+            <i class="bi bi-bag-check"></i> Đơn hàng của tôi
+          </a>
+          <a th:href="@{/user/account}" class="mobile-nav-link" sec:authorize="isAuthenticated()">
+            <i class="bi bi-person-circle"></i> Tài khoản
+          </a>
+          <a th:href="@{/admin}" class="mobile-nav-link" sec:authorize="hasRole('ADMIN')">
+            <i class="bi bi-gear"></i> Quản trị
+          </a>
+        </nav>
+
+        <!-- Mobile auth buttons -->
+        <div style="padding:16px;border-top:1px solid var(--border-light);margin-top:auto;" sec:authorize="isAnonymous()">
+          <a th:href="@{/login}" style="display:block;text-align:center;padding:11px;background:var(--primary);color:#fff;border-radius:var(--radius-sm);font-weight:600;text-decoration:none;margin-bottom:8px;">
+            Đăng nhập
+          </a>
+          <a th:href="@{/register}" style="display:block;text-align:center;padding:11px;border:2px solid var(--primary);color:var(--primary);border-radius:var(--radius-sm);font-weight:600;text-decoration:none;">
+            Đăng ký
+          </a>
+        </div>
+
+        <div style="padding:16px;border-top:1px solid var(--border-light);" sec:authorize="isAuthenticated()">
+          <form th:action="@{/logout}" method="post">
+            <button type="submit" style="width:100%;padding:10px;border:1.5px solid #ef4444;background:none;color:#ef4444;border-radius:var(--radius-sm);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+              <i class="bi bi-box-arrow-right"></i> Đăng xuất
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
-  <style>
-    .navmenu a.active {
-  color: #fff !important;
-  background-color: #0d6efd; /* xanh Bootstrap */
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-weight: 600;
-}
 
+  <!-- ── Mobile Nav Styles ── -->
+  <style>
+    /* Mobile overlay */
+    .mobile-nav-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1090;
+      backdrop-filter: blur(2px);
+    }
+    .mobile-nav-overlay.is-open { display: block; }
+
+    /* Mobile slide-in panel */
+    .mobile-nav-panel {
+      position: fixed;
+      top: 0; left: -100%;
+      width: min(300px, 88vw);
+      height: 100vh;
+      background: #fff;
+      z-index: 1100;
+      display: flex;
+      flex-direction: column;
+      transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      overflow-y: auto;
+    }
+    .mobile-nav-panel.is-open { left: 0; }
+
+    .mobile-nav-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border-bottom: 1px solid var(--border-light);
+      flex-shrink: 0;
+    }
+
+    .mobile-nav-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s;
+    }
+    .mobile-nav-close:hover { background: var(--bg); color: var(--text); }
+
+    .mobile-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      font-size: 0.93rem;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      transition: background 0.15s, color 0.15s;
+      margin-bottom: 2px;
+    }
+    .mobile-nav-link:hover {
+      background: var(--bg);
+      color: var(--primary);
+    }
+    .mobile-nav-link i {
+      font-size: 1.1rem;
+      color: var(--muted);
+      width: 22px;
+      flex-shrink: 0;
+    }
+    .mobile-nav-link:hover i { color: var(--primary); }
+
+    /* Mobile search bar toggle */
+    .mobile-search-bar.is-visible {
+      display: block !important;
+    }
+
+    /* Header body overflow prevention */
+    body.mobile-nav-open {
+      overflow: hidden;
+    }
   </style>
+
+  <!-- ── Mobile Nav Script ── -->
+  <script>
+    (function() {
+      const toggleBtn = document.getElementById('mobileNavToggle');
+      const navIcon   = document.getElementById('mobileNavIcon');
+      const closeBtn  = document.getElementById('mobileNavClose');
+      const panel     = document.getElementById('mobileNavPanel');
+      const overlay   = document.getElementById('mobileNavOverlay');
+      const searchBtn = document.getElementById('mobileSearchToggle');
+      const searchBar = document.getElementById('mobileSearchBar');
+
+      function openNav() {
+        panel.classList.add('is-open');
+        overlay.classList.add('is-open');
+        document.body.classList.add('mobile-nav-open');
+        if (navIcon) navIcon.className = 'bi bi-x-lg';
+      }
+
+      function closeNav() {
+        panel.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+        document.body.classList.remove('mobile-nav-open');
+        if (navIcon) navIcon.className = 'bi bi-list';
+      }
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+          panel.classList.contains('is-open') ? closeNav() : openNav();
+        });
+      }
+
+      if (closeBtn)  closeBtn.addEventListener('click', closeNav);
+      if (overlay)   overlay.addEventListener('click', closeNav);
+
+      // Mobile search toggle
+      if (searchBtn && searchBar) {
+        searchBtn.addEventListener('click', function() {
+          if (searchBar.classList.contains('is-visible')) {
+            searchBar.classList.remove('is-visible');
+            searchBar.style.display = 'none';
+          } else {
+            searchBar.classList.add('is-visible');
+            searchBar.style.removeProperty('display');
+            searchBar.querySelector('input').focus();
+          }
+        });
+      }
+    })();
+  </script>
 
 </header>
 </body>

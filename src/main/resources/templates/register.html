@@ -1,130 +1,112 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Register - TechStore</title>
+  <title>Đăng ký tài khoản – LaptopStore</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 
   <!-- CSS -->
   <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link rel="stylesheet" th:href="@{/css/main.css}">
   <link rel="stylesheet" th:href="@{/css/style.css}">
-
-  <!-- Custom Style -->
-  <style>
-    body.register-page {
-        background: linear-gradient(135deg, #0d6efd 0%, #1b1f3b 100%);
-        font-family: 'Roboto', sans-serif;
-    }
-
-    .register-box {
-        background: #fff;
-        padding: 35px 35px;
-        border-radius: 18px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.18);
-        animation: fadeIn 0.6s ease;
-    }
-
-    .page-title h1 {
-        font-weight: 700;
-        color: #fff;
-    }
-
-    .page-title p {
-        color: #e2e6ea;
-    }
-
-    .form-floating > .form-control {
-        border-radius: 12px;
-        padding: 14px 15px;
-    }
-
-    .btn-submit {
-        padding: 12px;
-        font-size: 17px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #0d6efd, #0a58ca);
-        border: none;
-        color: white;
-        transition: 0.25s ease;
-    }
-
-    .btn-submit:hover {
-        background: linear-gradient(135deg, #0a58ca, #084298);
-        transform: translateY(-2px);
-    }
-
-    @keyframes fadeIn {
-        from {opacity: 0; transform: translateY(20px);}
-        to {opacity: 1; transform: translateY(0);}
-    }
-
-    .footer {
-        background: #00000033;
-    }
-  </style>
 </head>
 
 <body class="register-page">
 
-<!-- ======= Main ======= -->
-<main class="main d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+<main class="main d-flex justify-content-center align-items-center" style="min-height:100vh;padding:24px 0;">
   <div class="container">
     <div class="row justify-content-center">
-      <div class="col-lg-5 col-md-7">
+      <div class="col-lg-5 col-md-7 col-sm-10 col-11">
 
-        <!-- Title -->
+        <!-- Logo (above card) -->
         <div class="text-center mb-4">
-          <h1 class="text-white">Create Account</h1>
-          <p class="text-light">Join TechStore and start shopping today!</p>
+          <a th:href="@{/}" class="d-inline-flex align-items-center gap-2 text-decoration-none">
+            <div style="width:40px;height:40px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-laptop" style="color:#fff;font-size:1.3rem;"></i>
+            </div>
+            <span style="font-family:var(--font-heading);font-size:1.4rem;font-weight:800;color:#fff;letter-spacing:-0.3px;">LaptopStore</span>
+          </a>
         </div>
 
-        <!-- Register Container -->
+        <!-- Register card -->
         <div class="register-box">
 
+          <div class="auth-title">
+            <h3>Tạo tài khoản mới 🎉</h3>
+            <p>Đăng ký để bắt đầu mua sắm tại LaptopStore</p>
+          </div>
+
+          <!-- Register Form – giữ nguyên action và input names -->
           <form th:action="@{/auth/register}" method="post">
 
             <!-- Full Name -->
-            <div class="form-floating mb-3">
-              <input type="text" class="form-control" id="fullName" name="fullName" placeholder="Full Name" required>
-              <label for="fullName">Full Name</label>
+            <div class="mb-3">
+              <label for="fullName" class="auth-label">Họ và tên</label>
+              <div class="auth-input-group">
+                <i class="bi bi-person-fill auth-input-icon"></i>
+                <input type="text" class="auth-input" id="fullName" name="fullName"
+                       placeholder="Nhập họ và tên đầy đủ" required autocomplete="name">
+              </div>
             </div>
 
             <!-- Username -->
-            <div class="form-floating mb-3">
-              <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
-              <label for="username">Username</label>
+            <div class="mb-3">
+              <label for="username" class="auth-label">Tên đăng nhập</label>
+              <div class="auth-input-group">
+                <i class="bi bi-at auth-input-icon"></i>
+                <input type="text" class="auth-input" id="username" name="username"
+                       placeholder="Đặt tên đăng nhập" required autocomplete="username">
+              </div>
             </div>
 
             <!-- Email -->
-            <div class="form-floating mb-3">
-              <input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
-              <label for="email">Email Address</label>
+            <div class="mb-3">
+              <label for="email" class="auth-label">Email</label>
+              <div class="auth-input-group">
+                <i class="bi bi-envelope auth-input-icon"></i>
+                <input type="email" class="auth-input" id="email" name="email"
+                       placeholder="Nhập địa chỉ email" required autocomplete="email">
+              </div>
             </div>
 
             <!-- Password -->
-            <div class="form-floating mb-4">
-              <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="6">
-              <label for="password">Password</label>
+            <div class="mb-4">
+              <label for="password" class="auth-label">Mật khẩu</label>
+              <div class="auth-input-group" style="position:relative;">
+                <i class="bi bi-lock-fill auth-input-icon"></i>
+                <input type="password" class="auth-input" id="password" name="password"
+                       placeholder="Tối thiểu 6 ký tự" required minlength="6"
+                       autocomplete="new-password">
+                <button type="button" id="togglePwReg"
+                        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:0;">
+                  <i class="bi bi-eye" id="eyeIconReg"></i>
+                </button>
+              </div>
             </div>
 
+            <!-- Success / Error messages -->
+            <div th:if="${message}" class="auth-success mb-3" th:text="${message}"></div>
+            <div th:if="${error}" class="auth-error mb-3" th:text="${error}"></div>
+
             <!-- Submit -->
-            <button type="submit" class="btn-submit w-100 mb-3">
-              Create Account
+            <button type="submit" class="auth-btn">
+              <i class="bi bi-person-check me-1"></i> Tạo tài khoản
             </button>
 
-            <!-- Message -->
-            <p class="text-center fw-bold text-success" th:text="${message}"></p>
+            <!-- Login redirect -->
+            <div class="text-center mt-4" style="font-size:0.88rem;color:var(--muted);">
+              Đã có tài khoản?
+              <a th:href="@{/login}" class="auth-link ms-1">Đăng nhập ngay</a>
+            </div>
 
-            <!-- Redirect Link -->
-            <p class="text-center mt-2">
-              Already have an account?
-              <a th:href="@{/login}" class="fw-semibold">Sign in here</a>
-            </p>
           </form>
-
         </div>
 
       </div>
@@ -132,15 +114,19 @@
   </div>
 </main>
 
-<!-- ======= Footer ======= -->
-<footer class="footer text-center text-white py-3">
-  © 2025 TechStore. All Rights Reserved.
-</footer>
-
-<!-- JS -->
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
-<script th:src="@{/js/aos.js}"></script>
-<script th:src="@{/js/main.js}"></script>
+<script>
+  const toggleReg = document.getElementById('togglePwReg');
+  const pwReg     = document.getElementById('password');
+  const eyeReg    = document.getElementById('eyeIconReg');
+  if (toggleReg) {
+    toggleReg.addEventListener('click', function () {
+      const isPassword = pwReg.type === 'password';
+      pwReg.type = isPassword ? 'text' : 'password';
+      eyeReg.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+  }
+</script>
 
 </body>
 </html>
