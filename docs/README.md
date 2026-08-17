@@ -1,4 +1,4 @@
-# Product-Comparison-RAG 🤖💻
+﻿# Product-Comparison-RAG 🤖💻
 
 Microservice **RAG (Retrieval-Augmented Generation)** cho hệ thống **Tư vấn và So sánh Laptop**, xây dựng bằng Python. Giao tiếp với hệ thống Web chính (Java Spring Boot) qua REST API.
 
@@ -125,8 +125,8 @@ Content-Type: application/json
   "answer": "Dựa trên nhu cầu gaming của bạn với ngân sách 25 triệu...",
   "confidenceScore": 0.87,
   "citations": [
-    "Thông số kỹ thuật MSI Katana 15 từ TechStore ID #2",
-    "Thông số kỹ thuật Lenovo LOQ 15 từ TechStore ID #3"
+    "Thông số kỹ thuật MSI Katana 15 từ LAPTOPSTORE ID #2",
+    "Thông số kỹ thuật Lenovo LOQ 15 từ LAPTOPSTORE ID #3"
   ],
   "missingInformation": [
     "Bạn ưu tiên màn hình lớn (15.6\") hay màn hình nhỏ hơn để di chuyển?",

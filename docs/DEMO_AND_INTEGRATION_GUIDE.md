@@ -1,4 +1,4 @@
-# DEMO AND INTEGRATION GUIDE - Product-Comparison-RAG
+﻿# DEMO AND INTEGRATION GUIDE - Product-Comparison-RAG
 
 Tài liệu này hướng dẫn chi tiết cách chạy demo, kịch bản trình bày cho Mentor và cách tích hợp microservice **Product-Comparison-RAG** (Python FastAPI) vào hệ thống **Web Laptop Store** chính (Java Spring Boot).
 
@@ -294,8 +294,8 @@ Các biến này cấu hình tại file `.env` ở thư mục gốc của micros
       "answer": "Dựa trên nhu cầu gaming với ngân sách dưới 25 triệu và RAM từ 16GB, dưới đây là các lựa chọn phù hợp nhất cho bạn:\n\n1. **MSI Katana 15 B13VFK (24.990.000 VND)**: Máy được trang bị card đồ họa rời RTX 4060 8GB mạnh mẽ kết hợp cùng CPU Intel i7 thế hệ 13 mang lại khả năng chơi mượt mà các tựa game AAA.\n2. **Lenovo LOQ 15APH9 (21.990.000 VND)**: Đây là lựa chọn cực kỳ tiết kiệm với chip Ryzen 7 và GPU RTX 4060 8GB, đem lại cấu hình tối ưu nhất trong tầm giá dưới 22 triệu.\n\nCả hai máy đều đáp ứng tốt yêu cầu RAM 16GB để bạn đa nhiệm và chơi game mượt mà.",
       "confidenceScore": 0.95,
       "citations": [
-        "Thông số từ TechStore ID #2 - MSI Katana 15 B13VFK",
-        "Thông số từ TechStore ID #3 - Lenovo LOQ 15APH9"
+        "Thông số từ LAPTOPSTORE ID #2 - MSI Katana 15 B13VFK",
+        "Thông số từ LAPTOPSTORE ID #3 - Lenovo LOQ 15APH9"
       ],
       "missingInformation": [
         "Bạn có ưu tiên kích thước màn hình lớn (15.6 inch) hay cần mỏng nhẹ di động hơn?"

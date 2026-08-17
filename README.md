@@ -1,5 +1,5 @@
-# 🛒💻 TechStore - Hệ Thống Bán Lẻ Laptop & Điện Máy Thông Minh
-
+# 🛒💻 LaptopStore - Hệ Thống Bán Lẻ Laptop & Điện Máy Thông Minh
+mvn spring-boot:run
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
 [![Python RAG](https://img.shields.io/badge/AI%20Microservice-FastAPI%20%7C%20ChromaDB-blue.svg)](https://fastapi.tiangolo.com/)
@@ -94,7 +94,7 @@ Dự án được xây dựng theo kiến trúc **Hybrid Microservices**:
 LaptopStore/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/techstore/techstore/
+│   │   ├── java/com/LAPTOPSTORE/LAPTOPSTORE/
 │   │   │   ├── Controller/          # REST & MVC Controllers (Admin, Product, Cart, Order, RAG AI, Webhook)
 │   │   │   ├── Service/             # Xử lý nghiệp vụ chính (Order, Payment, RAG, Auth, OTP, Product...)
 │   │   │   ├── Repository/          # Spring Data JPA Repositories
@@ -136,14 +136,14 @@ cd LaptopStore
 ### 2️⃣ Cấu hình Cơ sở dữ liệu & Biến môi trường
 Tạo cơ sở dữ liệu trong MySQL:
 ```sql
-CREATE DATABASE techstore_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE LAPTOPSTORE_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
 Mở file `src/main/resources/application.properties` và chỉnh sửa các thông tin kết nối DB (hoặc thiết lập biến môi trường tương ứng):
 
 ```properties
 # MySQL Datasource
-spring.datasource.url=jdbc:mysql://localhost:3306/techstore_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Ho_Chi_Minh
+spring.datasource.url=jdbc:mysql://localhost:3306/LAPTOPSTORE_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Ho_Chi_Minh
 spring.datasource.username=root
 spring.datasource.password=your_mysql_password
 
@@ -166,7 +166,7 @@ Sử dụng Maven Wrapper:
 
 **Trên Windows (PowerShell / CMD):**
 ```powershell
-.\mvnw.cmd spring-boot:run
+mvn spring-boot:run
 ```
 
 **Trên Linux / macOS:**

@@ -1,4 +1,4 @@
-# TÀI LIỆU TÍCH HỢP HỆ THỐNG VÀ ĐẶC TẢ API (DÀNH CHO AI)
+﻿# TÀI LIỆU TÍCH HỢP HỆ THỐNG VÀ ĐẶC TẢ API (DÀNH CHO AI)
 ## Hướng dẫn dành cho AI đọc hiểu dự án Product-Comparison-RAG để tích hợp vào Web Laptop Store
 
 Tài liệu này được biên soạn đặc biệt để cung cấp toàn bộ bối cảnh dự án, kiến trúc hệ thống, cơ chế hoạt động bên trong của RAG pipeline, và đặc tả API đầy đủ, chi tiết. Mục tiêu là giúp một AI khác (hoặc lập trình viên) đọc hiểu ngay lập tức và tiến hành tích hợp RAG microservice này vào một hệ thống Web bán Laptop viết bằng Java Spring Boot (hoặc bất kỳ ngôn ngữ nào) một cách trơn tru.
@@ -260,8 +260,8 @@ Mặc định, microservice chạy trên cổng `8000`. Toàn bộ dữ liệu J
     "answer": "Dựa trên nhu cầu gaming với ngân sách dưới 25 triệu và RAM từ 16GB, dưới đây là các lựa chọn phù hợp nhất cho bạn:\n\n1. **MSI Katana 15 B13VFK (24.990.000 VND)**: Máy được trang bị card đồ họa rời RTX 4060 8GB mạnh mẽ kết hợp cùng CPU Intel i7 thế hệ 13 mang lại khả năng chơi mượt mà các tựa game AAA.\n2. **Lenovo LOQ 15APH9 (21.990.000 VND)**: Đây là lựa chọn cực kỳ tiết kiệm với chip Ryzen 7 và GPU RTX 4060 8GB, đem lại cấu hình tối ưu nhất trong tầm giá dưới 22 triệu.\n\nCả hai máy đều đáp ứng tốt yêu cầu RAM 16GB để bạn đa nhiệm và chơi game mượt mà.",
     "confidenceScore": 0.95,
     "citations": [
-      "Thông số từ TechStore ID #2 - MSI Katana 15 B13VFK",
-      "Thông số từ TechStore ID #3 - Lenovo LOQ 15APH9"
+      "Thông số từ LAPTOPSTORE ID #2 - MSI Katana 15 B13VFK",
+      "Thông số từ LAPTOPSTORE ID #3 - Lenovo LOQ 15APH9"
     ],
     "missingInformation": [
       "Bạn có ưu tiên kích thước màn hình lớn (15.6 inch) hay cần mỏng nhẹ di động hơn?"

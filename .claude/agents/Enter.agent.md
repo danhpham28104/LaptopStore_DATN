@@ -1,4 +1,4 @@
-# 🔌 API Documentation - OTP & Payment
+﻿# 🔌 API Documentation - OTP & Payment
 
 ---
 
@@ -402,9 +402,9 @@ payment.sepay.bank-code=...       # Bank code
 ### Enable Debug Logging
 ```properties
 # application.properties
-logging.level.com.techstore.techstore=DEBUG
-logging.level.com.techstore.techstore.Service.OtpService=DEBUG
-logging.level.com.techstore.techstore.Service.PaymentStatusCheckService=DEBUG
+logging.level.com.laptopstore.laptopstore=DEBUG
+logging.level.com.laptopstore.laptopstore.Service.OtpService=DEBUG
+logging.level.com.laptopstore.laptopstore.Service.PaymentStatusCheckService=DEBUG
 ```
 
 ### View Logs
