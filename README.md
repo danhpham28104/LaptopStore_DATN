@@ -1,5 +1,5 @@
 # 🛒💻 LaptopStore - Hệ Thống Bán Lẻ Laptop & Điện Máy Thông Minh
-mvn spring-boot:run
+
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
 [![Python RAG](https://img.shields.io/badge/AI%20Microservice-FastAPI%20%7C%20ChromaDB-blue.svg)](https://fastapi.tiangolo.com/)
