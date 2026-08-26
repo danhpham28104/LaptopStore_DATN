@@ -166,21 +166,31 @@
                                   th:if="${p.salePercent > 0}"
                                   th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
                         </div>
-                        <!-- Dual CTA Buttons: + Giỏ hàng (AJAX) + Mua ngay -->
-                        <div class="card-btn-group">
+                        <!-- Dual CTA Buttons + Compare Button -->
+                        <div class="card-btn-group d-flex gap-2">
                             <button type="button"
-                                    class="card-btn card-btn-view btn-quick-add-cart"
+                                    class="card-btn card-btn-view btn-quick-add-cart flex-grow-1"
                                     th:data-product-id="${p.id}"
                                     th:data-product-name="${p.name}">
                                 <i class="bi bi-cart-plus"></i>
                                 <span>+ Giỏ hàng</span>
                             </button>
                             <button type="button"
-                                    class="card-btn card-btn-buy"
+                                    class="card-btn card-btn-buy flex-grow-1"
                                     th:data-product-id="${p.id}"
                                     th:data-product-name="${p.name}">
                                 <i class="bi bi-lightning-charge-fill"></i>
                                 <span>Mua ngay</span>
+                            </button>
+                            <button type="button"
+                                    class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center btn-compare-toggle"
+                                    style="width: 34px; height: 34px;"
+                                    th:data-product-id="${p.id}"
+                                    th:data-product-name="${p.name}"
+                                    th:data-product-image="${p.images != null and !p.images.isEmpty() ? #strings.arraySplit(p.images, ',')[0] : '/images/default-avatar.png'}"
+                                    onclick="toggleCompareItem(this.getAttribute('data-product-id'), this.getAttribute('data-product-name'), this.getAttribute('data-product-image'))"
+                                    title="So sánh Laptop này">
+                                <i class="bi bi-arrow-left-right"></i>
                             </button>
                         </div>
                     </div>

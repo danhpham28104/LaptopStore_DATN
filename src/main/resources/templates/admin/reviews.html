@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đánh giá - LaptopStore Admin</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body { background-color: #f5f7fb; font-family: 'Segoe UI', sans-serif; color: #1f2937; }
+        .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1a1a2e; color: #fff; padding-top: 60px; z-index: 9; }
+        .sidebar a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-weight: 500; }
+        .sidebar a.active, .sidebar a:hover { background: rgba(215,0,24,0.15); color: #fff; border-left: 4px solid #d70018; }
+        .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e5e7eb; height: 60px; }
+        .content { margin-left: 240px; padding: 80px 24px 40px; }
+        .brand-logo { font-weight: 800; color: #fff; font-size: 1.1rem; padding: 15px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
+
+        .chart-box {
+          background: #fff;
+          border-radius: 14px;
+          padding: 22px;
+          border: 1px solid #e5e7eb;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .star-rating { color: #f59e0b; }
+    </style>
+</head>
+
+<body>
+<div class="brand-logo">⚙️ LaptopStore Admin</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <a th:href="@{/admin}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a th:href="@{/admin/products}"><i class="bi bi-box"></i> Sản phẩm</a>
+    <a th:href="@{/admin/orders}"><i class="bi bi-receipt"></i> Đơn hàng</a>
+    <a th:href="@{/admin/reviews}" class="active"><i class="bi bi-star"></i> Đánh giá sản phẩm</a>
+    <a th:href="@{/admin/users}"><i class="bi bi-people"></i> Người dùng</a>
+    <a th:href="@{/admin/vouchers}"><i class="bi bi-ticket-perforated"></i> Voucher</a>
+    <a th:href="@{/admin/brands}"><i class="bi bi-tags"></i> Thương hiệu</a>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm px-4">
+    <div class="container-fluid d-flex justify-content-between align-items-center p-0">
+        <span class="fw-bold text-dark fs-5">
+            ⭐ Quản Lý Đánh Giá & Nhận Xét Sản Phẩm
+        </span>
+
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-secondary fw-semibold">
+              👋 Admin
+            </span>
+            <form th:action="@{/logout}" method="post">
+                <button class="btn btn-outline-danger btn-sm" type="submit">
+                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="content">
+
+    <!-- Flash Messages -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+      <i class="bi bi-check-circle me-1"></i> <span th:text="${success}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+      <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${error}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Reviews Box -->
+    <div class="chart-box">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="fw-bold m-0"><i class="bi bi-chat-left-text text-primary me-2"></i>Danh sách nhận xét từ khách hàng</h6>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle text-nowrap mb-0">
+          <thead class="table-light fs-7">
+            <tr>
+              <th>ID</th>
+              <th>Sản phẩm</th>
+              <th>Người đánh giá</th>
+              <th>Số sao</th>
+              <th>Nội dung nhận xét</th>
+              <th>Ngày tạo</th>
+              <th>Trạng thái</th>
+              <th class="text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody class="fs-7">
+            <tr th:each="r : ${reviews}">
+              <td th:text="${r.id}">1</td>
+              <td>
+                <a th:href="@{'/product/' + ${r.product.id}}" target="_blank" class="fw-bold text-decoration-none text-dark" th:text="${r.product != null ? r.product.name : 'Unknown'}">Laptop Name</a>
+              </td>
+              <td>
+                <div class="fw-semibold text-dark" th:text="${r.user != null ? r.user.fullName : 'Guest'}">User Name</div>
+                <small class="text-muted" th:text="${r.user != null ? r.user.email : ''}"></small>
+              </td>
+              <td>
+                <span class="star-rating">
+                  <i class="bi bi-star-fill" th:each="i : ${#numbers.sequence(1, r.rating)}"></i>
+                </span>
+                <span class="fw-bold ms-1" th:text="${r.rating}">5</span>/5
+              </td>
+              <td style="max-width: 320px; white-space: normal;">
+                <p class="mb-0 text-break" th:text="${r.comment}">Nội dung nhận xét...</p>
+              </td>
+              <td th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">26/08/2026</td>
+              <td>
+                <span class="badge" th:classappend="${r.status.badgeClass}" th:text="${r.status.displayName}">Approved</span>
+              </td>
+              <td>
+                <div class="d-flex justify-content-center gap-1">
+                  <!-- Approve Button -->
+                  <form th:if="${r.status != T(com.techstore.techstore.enums.ReviewStatus).APPROVED}"
+                        th:action="@{'/admin/reviews/' + ${r.id} + '/status'}" method="post">
+                    <input type="hidden" name="status" value="APPROVED"/>
+                    <button type="submit" class="btn btn-sm btn-success" title="Duyệt đánh giá">
+                      <i class="bi bi-check-lg"></i> Duyệt
+                    </button>
+                  </form>
+
+                  <!-- Reject Button -->
+                  <form th:if="${r.status != T(com.techstore.techstore.enums.ReviewStatus).REJECTED}"
+                        th:action="@{'/admin/reviews/' + ${r.id} + '/status'}" method="post">
+                    <input type="hidden" name="status" value="REJECTED"/>
+                    <button type="submit" class="btn btn-sm btn-warning text-dark" title="Ẩn/Từ chối">
+                      <i class="bi bi-eye-slash"></i> Ẩn
+                    </button>
+                  </form>
+
+                  <!-- Delete Button -->
+                  <form th:action="@{'/admin/reviews/' + ${r.id} + '/delete'}" method="post"
+                        onsubmit="return confirm('Bạn có chắc chắn muốn xóa đánh giá này?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa vĩnh viễn">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+
+            <tr th:if="${reviews == null or reviews.isEmpty()}">
+              <td colspan="8" class="text-center text-muted py-4">Chưa có đánh giá nào từ khách hàng</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

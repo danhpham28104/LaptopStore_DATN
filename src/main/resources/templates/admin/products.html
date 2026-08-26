@@ -369,12 +369,13 @@
             </td>
             <td th:text="${p.id}"></td>
             <td>
-              <img th:if="${p.images != null}"
+              <img th:if="${p.images != null and !#strings.isEmpty(p.images)}"
                    th:src="@{${#strings.arraySplit(p.images, ',')[0]}}"
                    class="img-thumbnail"
-                   style="width:60px;">
+                   style="width:60px;"
+                   onerror="this.src='/images/default-avatar.png'">
 
-              <span th:if="${p.images == null}" class="text-muted">Không có</span>
+              <span th:if="${p.images == null or #strings.isEmpty(p.images)}" class="text-muted">Không có</span>
             </td>
             <td>
               <strong th:text="${p.name}"></strong>
@@ -688,13 +689,13 @@
 
 
                   <!-- Xem ảnh hiện tại -->
-                  <div class="mt-2">
+                  <div class="mt-2" th:if="${p.images != null and !#strings.isEmpty(p.images)}">
                     <div class="mt-2 d-flex gap-2 flex-wrap">
                       <img th:each="img : ${#strings.arraySplit(p.images, ',')}"
                            th:src="@{${img}}"
-                           style="width: 80px; border-radius: 5px;">
+                           style="width: 80px; border-radius: 5px;"
+                           onerror="this.src='/images/default-avatar.png'">
                     </div>
-
                   </div>
                 </div>
                 <div class="col-md-6">

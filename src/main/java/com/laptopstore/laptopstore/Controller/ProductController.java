@@ -1,10 +1,10 @@
 package com.laptopstore.laptopstore.Controller;
 
-import com.laptopstore.laptopstore.Service.BrandService;
-import com.laptopstore.laptopstore.Service.ProductService;
-import com.laptopstore.laptopstore.Service.ProductVariantService;
+import com.laptopstore.laptopstore.Service.*;
 import com.laptopstore.laptopstore.entity.Product;
 import com.laptopstore.laptopstore.entity.ProductVariant;
+import com.laptopstore.laptopstore.entity.Review;
+import com.laptopstore.laptopstore.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,11 +21,13 @@ public class ProductController {
     @Autowired private ProductService productService;
     @Autowired private BrandService brandService;
     @Autowired private ProductVariantService productVariantService;
-    @Autowired private com.laptopstore.laptopstore.Service.UserService userService;
-    @Autowired private com.laptopstore.laptopstore.Service.ProductViewHistoryService productViewHistoryService;
-    @Autowired private com.laptopstore.laptopstore.Service.RecommendationService recommendationService;
+    @Autowired private UserService userService;
+    @Autowired private ProductViewHistoryService productViewHistoryService;
+    @Autowired private RecommendationService recommendationService;
+    @Autowired private ReviewService reviewService;
+    @Autowired private WishlistService wishlistService;
 
-    //  Danh sách sản phẩm (Thymeleaf)
+    // Danh sách sản phẩm (Thymeleaf)
     @GetMapping
     public String listProducts(@RequestParam(required = false) String q,
                                @RequestParam(required = false) String brand,
@@ -54,14 +56,15 @@ public class ProductController {
         return "home";
     }
 
-// chi tiết sản phẩm
-
-    @GetMapping("/{id}")
+    // Chi tiết sản phẩm
+    @GetMapping({"/detail/{id}", "/{id}"})
     public String productDetail(@PathVariable Long id, Model model) {
         Product product = productService.getProductById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-        List<String> imageList = List.of(product.getImages().split(","));
+        List<String> imageList = (product.getImages() != null && !product.getImages().isBlank())
+                ? List.of(product.getImages().split(","))
+                : List.of("/images/default-avatar.png");
         List<String> variantImages = product.getVariants()
                 .stream()
                 .map(ProductVariant::getImage)
@@ -77,11 +80,23 @@ public class ProductController {
         model.addAttribute("variants", productVariantService.getVariantsByProduct(id));
         model.addAttribute("brands", brandService.getAllBrands());
 
+        // Thông tin Đánh giá & Wishlist
+        List<Review> approvedReviews = reviewService.getApprovedReviewsByProduct(id);
+        Double averageRating = reviewService.getAverageRating(id);
+        Long reviewCount = reviewService.getReviewCount(id);
+
+        model.addAttribute("reviews", approvedReviews);
+        model.addAttribute("averageRating", averageRating);
+        model.addAttribute("reviewCount", reviewCount);
+
+        boolean isWishlisted = false;
+        boolean canReview = false;
+
         // Lịch sử xem và gợi ý đề cử sản phẩm
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
             String username = auth.getName();
-            com.laptopstore.laptopstore.entity.User user = userService.findByUsername(username).orElse(null);
+            User user = userService.findByUsername(username).orElse(null);
             if (user != null) {
                 // Tự động ghi nhận lượt xem
                 productViewHistoryService.trackView(user, product);
@@ -89,10 +104,16 @@ public class ProductController {
                 // Đề cử sản phẩm tương tự
                 List<Product> recommendations = recommendationService.getRecommendationsForUser(user, 4);
                 model.addAttribute("recommendations", recommendations);
+
+                // Wishlist & Review status
+                isWishlisted = wishlistService.isWishlisted(user, id);
+                canReview = reviewService.canUserReviewProduct(user, id, null);
             }
         }
 
+        model.addAttribute("isWishlisted", isWishlisted);
+        model.addAttribute("canReview", canReview);
+
         return "product_detail";
     }
-
 }

@@ -333,16 +333,21 @@ public class DemoDataSeeder {
     }
 
 private void upsertAdmin(Role adminRole) {
-    if (userRepository.findByUsername("admin").isPresent()) {
-        return;
-    }
-    User admin = new User();
-    admin.setUsername("admin");
-    admin.setEmail("admin@LAPTOPSTORE.com");
+    User admin = userRepository.findByUsername("admin")
+            .orElseGet(() -> {
+                User u = new User();
+                u.setUsername("admin");
+                u.setEmail("admin@techstore.com");
+                return u;
+            });
+
     admin.setFullName("Administrator");
     admin.setPhone("0000000000");
     admin.setDeleted(false);
+
+    // 🔥 LUÔN reset password
     admin.setPassword(passwordEncoder.encode("admin123"));
+
     admin.setRoles(Set.of(adminRole));
     userRepository.save(admin);
 }

@@ -95,11 +95,128 @@ public class AdminProductController {
             @RequestParam(required = false, defaultValue = "0") Integer salePercent,
             @RequestParam(required = false) MultipartFile[] imageFiles,
             @RequestParam(required = false) MultipartFile[] variantImages,
+            RedirectAttributes redirectAttributes,
             HttpServletRequest request
     ) throws IOException {
 
         Brand brand = brandService.getById(brandId).orElse(null);
-        if (brand == null) return "redirect:/admin/products?error=brand";
+        if (brand == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy thương hiệu!");
+            return "redirect:/admin/products";
+        }
+
+        // --- KIỂM TRA SẢN PHẨM ĐÃ TỒN TẠI (ĐANG HOẠT ĐỘNG HOẶC ĐÃ XÓA MỀM) ---
+        Optional<Product> existingOpt = productService.findAnyByModel(modelName);
+
+        if (existingOpt.isPresent()) {
+            Product p = existingOpt.get();
+            boolean wasDeleted = p.isDeleted();
+
+            // Khôi phục nếu sản phẩm từng bị xóa mềm
+            p.setDeleted(false);
+            p.setModel(modelName); // khôi phục mã model chuẩn
+
+            // Cộng dồn tồn kho
+            int addedStock = (stock != null) ? stock : 0;
+            p.setStock((p.getStock() != null ? p.getStock() : 0) + addedStock);
+
+            // Cập nhật các thuộc tính nếu người dùng nhập mới
+            if (name != null && !name.isBlank()) p.setName(name);
+            if (price != null) p.setPrice(price);
+            if (brand != null) p.setBrand(brand);
+            if (description != null && !description.isBlank()) p.setDescription(description);
+            if (ram != null && !ram.isBlank()) p.setRam(ram);
+            if (display != null && !display.isBlank()) p.setDisplay(display);
+            if (cpu != null && !cpu.isBlank()) p.setCpu(cpu);
+            if (gpu != null && !gpu.isBlank()) p.setGpu(gpu);
+            if (battery != null && !battery.isBlank()) p.setBattery(battery);
+            if (dimensions != null && !dimensions.isBlank()) p.setDimensions(dimensions);
+            if (material != null && !material.isBlank()) p.setMaterial(material);
+            if (badge != null) p.setBadge(badge);
+            if (salePercent != null) p.setSalePercent(salePercent);
+
+            // Cập nhật ảnh chính nếu có tải ảnh mới lên
+            if (imageFiles != null && imageFiles.length > 0) {
+                StringBuilder imageList = new StringBuilder();
+                for (MultipartFile file : imageFiles) {
+                    if (!file.isEmpty()) {
+                        String savedPath = saveImage(file);
+                        imageList.append(savedPath).append(",");
+                    }
+                }
+                if (imageList.length() > 0) {
+                    imageList.setLength(imageList.length() - 1);
+                    p.setImages(imageList.toString());
+                }
+            }
+
+            productService.save(p);
+
+            // --- XỬ LÝ BIẾN THỂ (CỘNG DỒN NẾU ĐÃ CÓ MÀU & SSD, THÊM MỚI NẾU CHƯA CÓ) ---
+            String[] colors = request.getParameterValues("variantColors");
+            String[] storages = request.getParameterValues("variantStorages");
+            String[] stocks = request.getParameterValues("variantStocks");
+
+            if (colors != null) {
+                for (int i = 0; i < colors.length; i++) {
+                    if (colors[i] == null || colors[i].isBlank() || storages == null || storages.length <= i || storages[i].isBlank()) continue;
+
+                    String color = colors[i].trim();
+                    String storage = storages[i].trim();
+                    int vStock = 0;
+                    try { vStock = Integer.parseInt(stocks[i]); } catch (Exception ignored) {}
+
+                    ProductVariant matchingVariant = null;
+                    if (p.getVariants() != null) {
+                        for (ProductVariant v : p.getVariants()) {
+                            if (color.equalsIgnoreCase(v.getColor()) && storage.equalsIgnoreCase(v.getStorage())) {
+                                matchingVariant = v;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (matchingVariant != null) {
+                        matchingVariant.setStock((matchingVariant.getStock() != null ? matchingVariant.getStock() : 0) + vStock);
+                        if (variantImages != null && variantImages.length > i && !variantImages[i].isEmpty()) {
+                            matchingVariant.setImage(saveImage(variantImages[i]));
+                        }
+                        variantService.save(matchingVariant);
+                    } else {
+                        ProductVariant newV = new ProductVariant();
+                        newV.setProduct(p);
+                        newV.setColor(color);
+                        newV.setStorage(storage);
+                        newV.setStock(vStock);
+                        if (variantImages != null && variantImages.length > i && !variantImages[i].isEmpty()) {
+                            newV.setImage(saveImage(variantImages[i]));
+                        }
+                        variantService.save(newV);
+                    }
+                }
+            }
+
+            // Cập nhật tổng tồn kho từ các biến thể nếu có biến thể
+            Product freshP = productService.getProductById(p.getId()).orElse(p);
+            if (freshP.getVariants() != null && !freshP.getVariants().isEmpty()) {
+                freshP.updateTotalStock();
+                productService.save(freshP);
+            }
+
+            // Đồng bộ sang RAG AI
+            Product freshProduct = productService.getProductById(p.getId()).orElse(p);
+            ragIntegrationService.syncProduct(freshProduct);
+
+            if (wasDeleted) {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Sản phẩm '" + freshProduct.getName() + "' (Model: " + modelName + ") đã được khôi phục thành công từ danh sách đã xóa và cộng dồn tồn kho (+" + addedStock + " máy)!");
+            } else {
+                redirectAttributes.addFlashAttribute("warningMessage",
+                        "Sản phẩm '" + freshProduct.getName() + "' (Model: " + modelName + ") đã tồn tại trong hệ thống. Đã tự động cập nhật thông tin và cộng dồn tồn kho (+" + addedStock + " máy)!");
+            }
+
+            return "redirect:/admin/products";
+        }
 
         Product p = new Product();
         p.setName(name);
@@ -110,9 +227,6 @@ public class AdminProductController {
         p.setBrand(brand);
         p.setBadge(badge);
         p.setSalePercent(salePercent);
-
-
-
 
         // --- SET CÁC FIELD KỸ THUẬT ---
         p.setRam(ram);
@@ -125,7 +239,6 @@ public class AdminProductController {
 
         // --- LƯU ẢNH CHÍNH ---
         if (imageFiles != null && imageFiles.length > 0) {
-
             StringBuilder imageList = new StringBuilder();
 
             for (MultipartFile file : imageFiles) {
@@ -135,26 +248,34 @@ public class AdminProductController {
                 }
             }
 
-            // xoá dấu phẩy cuối
             if (imageList.length() > 0) {
                 imageList.setLength(imageList.length() - 1);
+                p.setImages(imageList.toString());
+            } else {
+                p.setImages(null);
             }
-
-            p.setImages(imageList.toString());
+        } else {
+            p.setImages(null);
         }
 
-
-
-        productService.save(p);
+        try {
+            productService.save(p);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.error("[Admin] Lỗi trùng lặp dữ liệu khi thêm sản phẩm: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Không thể thêm sản phẩm: Mã Model '" + modelName + "' đã bị trùng!");
+            return "redirect:/admin/products";
+        }
 
         // --- XỬ LÝ BIẾN THỂ ---
         String[] colors = request.getParameterValues("variantColors");
         String[] storages = request.getParameterValues("variantStorages");
         String[] stocks = request.getParameterValues("variantStocks");
 
+        boolean hasVariants = false;
         if (colors != null) {
             for (int i = 0; i < colors.length; i++) {
-                if (colors[i].isBlank() || storages[i].isBlank()) continue;
+                if (colors[i] == null || colors[i].isBlank() || storages == null || storages.length <= i || storages[i].isBlank()) continue;
 
                 ProductVariant v = new ProductVariant();
                 v.setProduct(p);
@@ -171,19 +292,27 @@ public class AdminProductController {
                     v.setImage(saveImage(variantImages[i]));
                 }
 
-
-
                 variantService.save(v);
+                hasVariants = true;
             }
+        }
+
+        // Cập nhật tổng tồn kho từ biến thể nếu có biến thể
+        if (hasVariants) {
+            Product freshP = productService.getProductById(p.getId()).orElse(p);
+            freshP.updateTotalStock();
+            productService.save(freshP);
         }
 
         // Đồng bộ sang RAG
         Product freshProduct = productService.getProductById(p.getId()).orElse(p);
         ragIntegrationService.syncProduct(freshProduct);
 
-        return "redirect:/admin/products?added=true";
+        redirectAttributes.addFlashAttribute("successMessage", "Đã thêm sản phẩm '" + name + "' thành công!");
+        return "redirect:/admin/products";
 
     }
+
 
 
     @PostMapping("/edit/{id}")
@@ -227,13 +356,29 @@ public class AdminProductController {
     ) throws IOException {
 
         Product p = productService.getProductById(id).orElse(null);
-        if (p == null) return "redirect:/admin/products?error=notfound";
+        if (p == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy sản phẩm!");
+            return "redirect:/admin/products";
+        }
+
+        // --- KIỂM TRÁ TRÙNG MODEL ---
+        if (productService.existsByModel(modelName, id)) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Mã Model '" + modelName + "' đã được sử dụng bởi sản phẩm khác!");
+            if (q != null && !q.isBlank()) {
+                return "redirect:/admin/products/search?q=" + java.net.URLEncoder.encode(q, StandardCharsets.UTF_8) + "&page=" + page;
+            }
+            return "redirect:/admin/products?page=" + page;
+        }
+
+        Brand brand = brandService.getById(brandId).orElse(p.getBrand());
 
         // --- cập nhật product ---
         p.setName(name);
         p.setModel(modelName);
         p.setPrice(price);
         p.setStock(stock);
+        p.setBrand(brand);
         p.setDescription(description);
         p.setRam(ram);
         p.setDisplay(display);
@@ -245,10 +390,7 @@ public class AdminProductController {
         p.setBadge(badge);
         p.setSalePercent(salePercent);
 
-
-
         if (imageFiles != null && imageFiles.length > 0) {
-
             StringBuilder list = new StringBuilder();
 
             for (MultipartFile file : imageFiles) {
@@ -258,39 +400,40 @@ public class AdminProductController {
             }
 
             if (list.length() > 0) {
-                list.setLength(list.length() - 1); // xoá dấu phẩy cuối
+                list.setLength(list.length() - 1);
                 p.setImages(list.toString());
             }
         }
 
-
-
-        productService.save(p);
+        try {
+            productService.save(p);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.error("[Admin] Lỗi trùng lặp dữ liệu khi sửa sản phẩm ID={}: {}", id, e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Không thể cập nhật: Mã Model '" + modelName + "' đã bị trùng!");
+            return "redirect:/admin/products?page=" + page;
+        }
 
         // --- xử lý biến thể cũ ---
         if (variantIds != null) {
             for (int i = 0; i < variantIds.length; i++) {
-
                 ProductVariant v = variantService
                         .getVariantById(variantIds[i])
-                        .orElseThrow(() -> new RuntimeException("Variant not found"));
+                        .orElse(null);
+                if (v == null) continue;
 
-
-                if (deleteOldVariant[i] == 1) {
+                if (deleteOldVariant != null && deleteOldVariant.length > i && deleteOldVariant[i] == 1) {
                     variantService.delete(variantIds[i]);
                     continue;
                 }
 
-                v.setColor(variantOldColors[i]);
-                v.setStorage(variantOldStorages[i]);
-                v.setStock(variantOldStocks[i]);
+                if (variantOldColors != null && variantOldColors.length > i) v.setColor(variantOldColors[i]);
+                if (variantOldStorages != null && variantOldStorages.length > i) v.setStorage(variantOldStorages[i]);
+                if (variantOldStocks != null && variantOldStocks.length > i) v.setStock(variantOldStocks[i]);
 
                 if (variantOldImages != null && variantOldImages.length > i && !variantOldImages[i].isEmpty()) {
-
                     v.setImage(saveImage(variantOldImages[i]));
                 }
-
-
 
                 variantService.save(v);
             }
@@ -299,22 +442,27 @@ public class AdminProductController {
         // --- thêm biến thể mới ---
         if (variantColors != null) {
             for (int i = 0; i < variantColors.length; i++) {
-                if (variantColors[i].isBlank()) continue;
+                if (variantColors[i] == null || variantColors[i].isBlank()) continue;
 
                 ProductVariant v = new ProductVariant();
                 v.setProduct(p);
                 v.setColor(variantColors[i]);
-                v.setStorage(variantStorages[i]);
-                v.setStock(variantStocks[i]);
+                v.setStorage(variantStorages != null && variantStorages.length > i ? variantStorages[i] : "");
+                v.setStock(variantStocks != null && variantStocks.length > i ? variantStocks[i] : 0);
 
                 if (variantImages != null && variantImages.length > i && !variantImages[i].isEmpty()) {
-
                     v.setImage(saveImage(variantImages[i]));
                 }
 
-
                 variantService.save(v);
             }
+        }
+
+        // Cập nhật tổng tồn kho từ các biến thể
+        Product freshP = productService.getProductById(p.getId()).orElse(p);
+        if (freshP.getVariants() != null && !freshP.getVariants().isEmpty()) {
+            freshP.updateTotalStock();
+            productService.save(freshP);
         }
 
         // Đồng bộ sang RAG
@@ -329,6 +477,7 @@ public class AdminProductController {
         return "redirect:/admin/products?page=" + page;
 
     }
+
 
 
     /** 🔹 Xoá sản phẩm */

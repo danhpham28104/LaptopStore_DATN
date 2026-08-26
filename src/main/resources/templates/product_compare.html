@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Ma trận So sánh Laptop – LaptopStore</title>
+  <meta name="description" content="Bảng ma trận đối chiếu chi tiết thông số kỹ thuật các dòng Laptop tại LaptopStore.">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS -->
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Main CSS -->
+  <link th:href="@{/css/main.css}" rel="stylesheet">
+  <link th:href="@{/css/style.css}" rel="stylesheet">
+  
+  <style>
+    .compare-table {
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border);
+    }
+    .compare-table th, .compare-table td {
+      vertical-align: middle;
+      padding: 14px 18px;
+      border-color: var(--border-light);
+    }
+    .compare-spec-title {
+      font-weight: 700;
+      color: var(--text);
+      background: #f8fafc;
+      width: 220px;
+      min-width: 180px;
+      font-size: 0.9rem;
+    }
+    .compare-card-img {
+      height: 150px;
+      object-fit: contain;
+      margin-bottom: 8px;
+    }
+    .spec-value {
+      font-size: 0.9rem;
+      color: #334155;
+    }
+    .star-rating { color: #f59e0b; }
+    .remove-column-btn {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #fee2e2;
+      color: #ef4444;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .remove-column-btn:hover {
+      background: #ef4444; color: #fff;
+    }
+  </style>
+</head>
+<body class="index-page" style="background: var(--bg);">
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: siteHeader}"></div>
+
+<main class="main py-4">
+  <div class="container">
+
+    <!-- Title Section -->
+    <div class="d-flex align-items-center justify-content-between mb-4 bg-white p-3 rounded-3 border shadow-sm">
+      <div class="d-flex align-items-center gap-2">
+        <div style="width:4px;height:24px;background:var(--primary);border-radius:2px;"></div>
+        <div>
+          <h4 class="fw-bold mb-0" style="font-family: var(--font-heading); color: var(--text);">
+            <i class="bi bi-arrow-left-right text-primary me-1"></i> Ma trận So sánh Laptop Đối chiếu (2 – 4 Máy)
+          </h4>
+          <span class="text-muted small">Bảng so sánh kỹ thuật giúp bạn dễ dàng cân nhắc lựa chọn dòng Laptop phù hợp nhất</span>
+        </div>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" onclick="clearCompareList(); window.location.reload();">
+          <i class="bi bi-trash me-1"></i> Xóa danh sách so sánh
+        </button>
+        <a th:href="@{/product}" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" style="background:var(--primary);border-color:var(--primary);">
+          <i class="bi bi-plus-circle me-1"></i> Chọn thêm Laptop
+        </a>
+      </div>
+    </div>
+
+    <!-- Comparison Matrix Table -->
+    <div th:if="${products != null and !products.isEmpty()}" class="table-responsive compare-table mb-4">
+      <table class="table table-bordered mb-0 align-middle">
+        <tbody>
+          <!-- 1. Sản phẩm & Hình ảnh -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-laptop me-2" style="color:var(--primary);"></i>Sản phẩm</td>
+            <td th:each="p : ${products}" class="text-center position-relative" style="min-width: 240px; width: 25%;">
+              <div class="position-relative p-2">
+                <!-- Remove Button for column -->
+                <button type="button" class="remove-column-btn" th:data-id="${p.id}" onclick="removeFromComparePage(this.getAttribute('data-id'))" title="Xóa khỏi so sánh">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+
+                <img th:src="${p.images != null ? #strings.arraySplit(p.images, ',')[0] : '/images/default-avatar.png'}"
+                     th:alt="${p.name}" class="img-fluid compare-card-img"
+                     onerror="this.src='/images/default-avatar.png'">
+                <h6 class="fw-bold text-dark mb-1" th:text="${p.name}">Tên Laptop</h6>
+                <span class="badge bg-secondary mb-2" th:text="${p.brand != null ? p.brand.name : 'N/A'}">Hãng</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- 2. Giá bán chính thức -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-tag me-2" style="color:var(--primary);"></i>Giá bán chính thức</td>
+            <td th:each="p : ${products}" class="text-center">
+              <span class="fw-bold text-danger fs-5"
+                    th:text="${#numbers.formatDecimal(p.finalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+              <div th:if="${p.salePercent > 0}" class="small text-muted text-decoration-line-through"
+                   th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></div>
+            </td>
+          </tr>
+
+          <!-- 3. Đánh giá người dùng -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-star-fill text-warning me-2"></i>Đánh giá trung bình</td>
+            <td th:each="p : ${products}" class="text-center">
+              <span class="star-rating me-1"><i class="bi bi-star-fill"></i></span>
+              <strong th:text="${ratings.get(p.id)}">4.8</strong> / 5 ⭐
+              <div class="small text-muted" th:text="'(' + ${reviewCounts.get(p.id)} + ' lượt đánh giá)'"></div>
+            </td>
+          </tr>
+
+          <!-- 4. CPU -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-cpu me-2" style="color:var(--primary);"></i>Bộ vi xử lý (CPU)</td>
+            <td th:each="p : ${products}" class="text-center spec-value fw-semibold" th:text="${p.cpu != null and !p.cpu.isBlank() ? p.cpu : 'Đang cập nhật'}">Core i7</td>
+          </tr>
+
+          <!-- 5. RAM -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-memory me-2" style="color:var(--primary);"></i>Dung lượng RAM</td>
+            <td th:each="p : ${products}" class="text-center spec-value fw-semibold" th:text="${p.ram != null and !p.ram.isBlank() ? p.ram : 'Đang cập nhật'}">16GB</td>
+          </tr>
+
+          <!-- 6. Card đồ họa (GPU) -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-gpu-card me-2" style="color:var(--primary);"></i>Card đồ họa (GPU)</td>
+            <td th:each="p : ${products}" class="text-center spec-value fw-semibold" th:text="${p.gpu != null and !p.gpu.isBlank() ? p.gpu : 'Đang cập nhật'}">RTX 4060</td>
+          </tr>
+
+          <!-- 7. Màn hình -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-display me-2" style="color:var(--primary);"></i>Màn hình</td>
+            <td th:each="p : ${products}" class="text-center spec-value" th:text="${p.display != null and !p.display.isBlank() ? p.display : 'Đang cập nhật'}">15.6" FHD 144Hz</td>
+          </tr>
+
+          <!-- 8. Pin -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-battery-charging me-2" style="color:var(--primary);"></i>Dung lượng Pin</td>
+            <td th:each="p : ${products}" class="text-center spec-value" th:text="${p.battery != null and !p.battery.isBlank() ? p.battery : 'Đang cập nhật'}">60Wh</td>
+          </tr>
+
+          <!-- 9. Chất liệu & Thiết kế -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-box me-2" style="color:var(--primary);"></i>Chất liệu thiết kế</td>
+            <td th:each="p : ${products}" class="text-center spec-value" th:text="${p.material != null and !p.material.isBlank() ? p.material : 'Đang cập nhật'}">Kim loại / Nhựa</td>
+          </tr>
+
+          <!-- 10. Tồn kho -->
+          <tr>
+            <td class="compare-spec-title"><i class="bi bi-bag-check me-2" style="color:var(--primary);"></i>Tình trạng kho</td>
+            <td th:each="p : ${products}" class="text-center">
+              <span th:if="${p.stock > 0}" class="badge bg-success">Còn hàng (<span th:text="${p.stock}"></span>)</span>
+              <span th:if="${p.stock <= 0}" class="badge bg-danger">Hết hàng</span>
+            </td>
+          </tr>
+
+          <!-- 11. Nút thao tác -->
+          <tr>
+            <td class="compare-spec-title">Thao tác nhanh</td>
+            <td th:each="p : ${products}" class="text-center">
+              <a th:href="@{'/product/' + ${p.id}}" class="btn btn-primary btn-sm rounded-pill px-3 fw-bold" style="background:var(--primary);border-color:var(--primary);">
+                <i class="bi bi-cart-plus me-1"></i> Xem & Mua ngay
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${products == null or products.isEmpty()}" class="text-center py-5 bg-white rounded-3 border shadow-sm my-3">
+      <i class="bi bi-arrow-left-right text-muted" style="font-size: 3.5rem; display:block; margin-bottom:12px;"></i>
+      <h5 class="fw-bold" style="color:var(--text);">Bạn chưa chọn sản phẩm nào để so sánh</h5>
+      <p class="text-muted small">Vui lòng chọn từ 2 đến 4 chiếc Laptop trong danh sách để xem bảng so sánh đối chiếu chi tiết!</p>
+      <a th:href="@{/product}" class="btn btn-primary rounded-pill px-4 py-2 mt-2 font-weight-bold" style="background:var(--primary);border-color:var(--primary);">
+        <i class="bi bi-laptop me-1"></i> Khám phá Laptop ngay
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: siteFooter}"></div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+
+<!-- ✅ Tự động đồng bộ các sản phẩm từ URL/Server vào localStorage -->
+<script th:inline="javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+    /* Auto sync server products to compare localStorage */
+    const productsInMatrix = [
+      /*[# th:each="p : ${products}"]*/
+      {
+        id: /*[[${p.id}]]*/ 0,
+        name: /*[[${p.name}]]*/ '',
+        image: /*[[${p.images != null and !p.images.isEmpty() ? #strings.arraySplit(p.images, ',')[0] : '/images/default-avatar.png'}]]*/ '/images/default-avatar.png'
+      },
+      /*[/]*/
+    ];
+
+    if (productsInMatrix && productsInMatrix.length > 0) {
+      localStorage.setItem('techstore_compare_list', JSON.stringify(productsInMatrix));
+      if (typeof renderCompareDrawer === 'function') {
+        renderCompareDrawer();
+      }
+    }
+  });
+
+  function removeFromComparePage(id) {
+    removeCompareItem(id);
+    const list = getCompareList();
+    if (list.length > 0) {
+      const ids = list.map(item => item.id).join(',');
+      window.location.href = '/products/compare?ids=' + ids;
+    } else {
+      window.location.href = '/products/compare';
+    }
+  }
+</script>
+</body>
+</html>

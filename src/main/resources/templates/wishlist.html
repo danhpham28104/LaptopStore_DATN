@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Sản phẩm Yêu thích – LaptopStore</title>
+  <meta name="description" content="Danh sách Laptop bạn đã thả tim và lưu lại tại LaptopStore.">
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Vendor CSS -->
+  <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <!-- Main CSS -->
+  <link th:href="@{/css/main.css}" rel="stylesheet">
+  <link th:href="@{/css/style.css}" rel="stylesheet">
+</head>
+<body class="index-page" style="background: var(--bg);">
+
+<!-- Header -->
+<div th:replace="~{fragments/header :: siteHeader}"></div>
+
+<main class="main py-4">
+  <div class="container">
+    
+    <!-- Title Section with Brand Bar -->
+    <div class="d-flex align-items-center justify-content-between mb-4 bg-white p-3 rounded-3 border shadow-sm">
+      <div class="d-flex align-items-center gap-2">
+        <div style="width:4px;height:24px;background:var(--primary);border-radius:2px;"></div>
+        <div>
+          <h4 class="fw-bold mb-0" style="font-family: var(--font-heading); color: var(--text);">
+            <i class="bi bi-heart-fill text-danger me-1"></i> Sản phẩm Yêu thích
+          </h4>
+          <span class="text-muted small">Danh sách các mẫu Laptop bạn đã chọn lưu để theo dõi và mua sau</span>
+        </div>
+      </div>
+      <a th:href="@{/product}" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold">
+        <i class="bi bi-plus-circle me-1"></i> Tìm thêm Laptop
+      </a>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle me-1"></i> <span th:text="${success}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${error}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Wishlist Cards Grid -->
+    <div th:if="${wishlist != null and !wishlist.isEmpty()}" class="row g-3">
+      <div th:each="item : ${wishlist}" class="col-lg-3 col-md-6">
+        <div class="product-item position-relative">
+          
+          <!-- Remove Wishlist Button -->
+          <form th:action="@{/wishlist/remove}" method="post" style="position: absolute; top: 8px; right: 8px; z-index: 30;">
+            <input type="hidden" name="productId" th:value="${item.product.id}"/>
+            <button type="submit" class="btn-close bg-white p-2 rounded-circle shadow-sm"
+                    style="font-size: 0.75rem;" title="Xóa khỏi yêu thích"></button>
+          </form>
+
+          <!-- Product Image -->
+          <div class="product-image text-center">
+            <a th:href="@{'/product/' + ${item.product.id}}">
+              <span class="my-badge badge-hot" th:if="${item.product.badge != null and item.product.badge.equalsIgnoreCase('HOT')}">
+                <i class="bi bi-fire"></i> HOT
+              </span>
+              <img th:src="${item.product.images != null ? #strings.arraySplit(item.product.images, ',')[0] : '/images/default-avatar.png'}"
+                   th:alt="${item.product.name}" loading="lazy"
+                   onerror="this.src='/images/default-avatar.png'">
+            </a>
+          </div>
+
+          <!-- Product Info -->
+          <div class="product-info">
+            <div class="product-category" th:text="${item.product.brand != null ? item.product.brand.name : 'Laptop'}">Thương hiệu</div>
+            <h4 class="product-name">
+              <a th:href="@{'/product/' + ${item.product.id}}" th:text="${item.product.name}" th:title="${item.product.name}">Tên sản phẩm</a>
+              <span class="sale-badge" th:if="${item.product.salePercent != null and item.product.salePercent > 0}"
+                    th:text="'-' + ${item.product.salePercent} + '%'">-10%</span>
+            </h4>
+
+            <!-- Specs -->
+            <div class="display-tags">
+              <span class="spec-tag" th:if="${item.product.cpu != null and !item.product.cpu.isBlank()}" th:text="${item.product.cpu}"></span>
+              <span class="spec-tag" th:if="${item.product.ram != null and !item.product.ram.isBlank()}" th:text="${item.product.ram}"></span>
+            </div>
+
+            <!-- Price -->
+            <div class="product-price">
+              <span class="price-final"
+                    th:text="${#numbers.formatDecimal(item.product.finalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+              <span class="price-old" th:if="${item.product.salePercent != null and item.product.salePercent > 0}"
+                    th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
+            </div>
+
+            <!-- CTA Buttons -->
+            <div class="card-btn-group">
+              <a th:href="@{'/product/' + ${item.product.id}}" class="card-btn card-btn-buy w-100">
+                <i class="bi bi-cart-plus"></i> Xem & Mua ngay
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty Wishlist State -->
+    <div th:if="${wishlist == null or wishlist.isEmpty()}" class="text-center py-5 bg-white rounded-3 border shadow-sm my-3">
+      <i class="bi bi-heartbreak text-muted" style="font-size: 3.5rem; display:block; margin-bottom:12px;"></i>
+      <h5 class="fw-bold" style="color:var(--text);">Danh sách yêu thích của bạn đang trống</h5>
+      <p class="text-muted small">Bấm vào biểu tượng thả tim <i class="bi bi-heart text-danger"></i> ở các sản phẩm để lưu lại tại đây nhé!</p>
+      <a th:href="@{/product}" class="btn btn-primary rounded-pill px-4 py-2 mt-2 font-weight-bold" style="background:var(--primary);border-color:var(--primary);">
+        <i class="bi bi-laptop me-1"></i> Khám phá Laptop ngay
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: siteFooter}"></div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

@@ -42,9 +42,10 @@
             <ul class="footer-links list-unstyled">
               <li><a th:href="@{/}">Trang chủ</a></li>
               <li><a th:href="@{/product}">Laptop</a></li>
+              <li><a th:href="@{/products/compare}">So sánh Laptop</a></li>
+              <li><a th:href="@{/wishlist}">Yêu thích</a></li>
               <li><a th:href="@{/cart}">Giỏ hàng</a></li>
               <li><a th:href="@{/orders}">Đơn hàng</a></li>
-              <li><a th:href="@{/user/account}">Tài khoản</a></li>
             </ul>
           </div>
         </div>
@@ -96,7 +97,7 @@
   <div class="footer-bottom">
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
       <div class="text-center text-md-start">
-        © <span th:text="${#dates.format(#dates.createNow(),'yyyy')}">2025</span>
+        © <span th:text="${#dates.format(#dates.createNow(),'yyyy')}">2026</span>
         LaptopStore. All rights reserved.
       </div>
       <div class="d-flex align-items-center gap-3 text-center text-md-end">
@@ -108,8 +109,29 @@
     </div>
   </div>
 
-  <!-- ✅ AI Chatbot (đặt bên trong footer để fragment không bỏ qua) -->
+  <!-- ✅ AI Chatbot -->
   <div th:replace="~{fragments/chatbot :: aiChatbot}"></div>
+
+  <!-- 💻 COMPARISON FLOATING DRAWER (Thanh so sánh nổi 2-4 sản phẩm) -->
+  <div id="compareFloatingDrawer" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1080; background: #ffffff; border-top: 3px solid var(--primary); box-shadow: 0 -4px 24px rgba(0,0,0,0.18); padding: 12px 0;">
+    <div class="container d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-3 overflow-x-auto py-1" style="max-width: 75%;">
+        <div class="d-flex flex-column flex-shrink-0">
+          <strong class="text-dark" style="font-size: 0.9rem;"><i class="bi bi-arrow-left-right text-danger me-1"></i> So sánh Laptop (<span id="compareCount">0</span>/4)</strong>
+          <span class="text-muted small">Chọn từ 2 đến 4 máy</span>
+        </div>
+        <div id="compareItemsList" class="d-flex gap-2 align-items-center"></div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" onclick="clearCompareList()">
+          <i class="bi bi-trash"></i> Xóa tất cả
+        </button>
+        <button type="button" id="btnGoToCompare" class="btn btn-danger btn-sm rounded-pill px-3 fw-bold" onclick="navigateToComparePage()">
+          So sánh ngay →
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ✅ QUICK SELECT VARIANT MODAL -->
   <div class="modal fade" id="quickSelectModal" tabindex="-1" aria-hidden="true" style="z-index: 1085;">
@@ -183,6 +205,142 @@
       </div>
     </div>
   </div>
+
+  <!-- 💻 Global Multi-Product Compare Script -->
+  <script>
+    const COMPARE_KEY = 'techstore_compare_list';
+
+    function getCompareList() {
+      try {
+        const data = localStorage.getItem(COMPARE_KEY);
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveCompareList(list) {
+      localStorage.setItem(COMPARE_KEY, JSON.stringify(list));
+      renderCompareDrawer();
+    }
+
+    function toggleCompareItem(id, name, image) {
+      let list = getCompareList();
+      const index = list.findIndex(item => item.id == id);
+      
+      if (index !== -1) {
+        list.splice(index, 1);
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'info',
+            title: 'Đã xóa khỏi danh sách so sánh',
+            showConfirmButton: false,
+            timer: 2000
+          });
+        }
+      } else {
+        if (list.length >= 4) {
+          if (typeof Swal !== 'undefined') {
+            Swal.fire({
+              icon: 'warning',
+              title: 'Giới hạn so sánh',
+              text: 'Bạn chỉ có thể chọn tối đa 4 sản phẩm để so sánh cùng lúc!',
+              confirmButtonColor: 'var(--primary)'
+            });
+          } else {
+            alert('Bạn chỉ có thể chọn tối đa 4 sản phẩm để so sánh cùng lúc!');
+          }
+          return;
+        }
+        list.push({ id: id, name: name, image: image });
+        if (typeof Swal !== 'undefined') {
+          Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'Đã thêm vào danh sách so sánh (' + list.length + '/4)',
+            showConfirmButton: false,
+            timer: 2000
+          });
+        }
+      }
+
+      saveCompareList(list);
+    }
+
+    function removeCompareItem(id) {
+      let list = getCompareList();
+      list = list.filter(item => item.id != id);
+      saveCompareList(list);
+    }
+
+    function clearCompareList() {
+      localStorage.removeItem(COMPARE_KEY);
+      renderCompareDrawer();
+    }
+
+    function renderCompareDrawer() {
+      const drawer = document.getElementById('compareFloatingDrawer');
+      const container = document.getElementById('compareItemsList');
+      const countSpan = document.getElementById('compareCount');
+      if (!drawer || !container) return;
+
+      const list = getCompareList();
+      countSpan.innerText = list.length;
+
+      if (list.length === 0) {
+        drawer.style.display = 'none';
+        return;
+      }
+
+      drawer.style.display = 'block';
+      container.innerHTML = '';
+
+      list.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.className = 'd-flex align-items-center gap-1 bg-light border p-1 rounded-3 position-relative';
+        itemEl.style.fontSize = '0.8rem';
+        itemEl.style.maxWidth = '190px';
+        
+        const imgSrc = item.image || '/images/default-avatar.png';
+        itemEl.innerHTML = `
+          <img src="${imgSrc}" style="width:34px;height:34px;object-fit:contain;" onerror="this.src='/images/default-avatar.png'"/>
+          <span class="text-truncate fw-semibold text-dark me-1" style="max-width:110px;" title="${item.name}">${item.name}</span>
+          <button type="button" class="btn-close ms-auto" style="font-size:0.65rem;" onclick="removeCompareItem('${item.id}')"></button>
+        `;
+        container.appendChild(itemEl);
+      });
+
+      // Highlight active compare buttons on page
+      document.querySelectorAll('.btn-compare-toggle').forEach(btn => {
+        const pId = btn.getAttribute('data-product-id');
+        const isSelected = list.some(item => item.id == pId);
+        if (isSelected) {
+          btn.classList.add('btn-danger', 'text-white');
+          btn.classList.remove('btn-outline-secondary');
+        } else {
+          btn.classList.remove('btn-danger', 'text-white');
+          btn.classList.add('btn-outline-secondary');
+        }
+      });
+    }
+
+    function navigateToComparePage() {
+      const list = getCompareList();
+      if (list.length < 1) {
+        alert('Vui lòng chọn ít nhất 1 sản phẩm để so sánh!');
+        return;
+      }
+      const ids = list.map(item => item.id).join(',');
+      window.location.href = '/products/compare?ids=' + ids;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderCompareDrawer();
+    });
+  </script>
 
 </footer>
 </body>

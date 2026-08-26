@@ -79,8 +79,25 @@ public class ProductService {
     public void delete(Long id) {
         productRepository.findById(id).ifPresent(product -> {
             product.setDeleted(true);
+            if (product.getModel() != null && !product.getModel().contains("_deleted_")) {
+                product.setModel(product.getModel() + "_deleted_" + System.currentTimeMillis());
+            }
             productRepository.save(product);
         });
+    }
+
+    // Kiểm tra model đã tồn tại trong DB chưa (bao gồm cả sản phẩm đã xóa)
+    @Transactional(readOnly = true)
+    public boolean existsByModel(String model, Long excludeId) {
+        if (model == null || model.isBlank()) return false;
+        return productRepository.countByModelIgnoreCaseExcludingId(model.trim(), excludeId) > 0;
+    }
+
+    // Tìm sản phẩm theo model (bao gồm cả sản phẩm đã xóa mềm)
+    @Transactional(readOnly = true)
+    public Optional<Product> findAnyByModel(String model) {
+        if (model == null || model.isBlank()) return Optional.empty();
+        return productRepository.findAnyByModelIncludingDeleted(model.trim());
     }
 
     // Tìm kiếm nâng cao (Laptop)

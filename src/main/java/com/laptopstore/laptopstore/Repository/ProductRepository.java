@@ -22,6 +22,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findByModel(String model);
 
+    @Query(value = "SELECT COUNT(*) FROM product WHERE LOWER(model) = LOWER(:model) AND (:excludeId IS NULL OR id != :excludeId)", nativeQuery = true)
+    long countByModelIgnoreCaseExcludingId(@Param("model") String model, @Param("excludeId") Long excludeId);
+
+    @Query(value = "SELECT * FROM product WHERE LOWER(model) = LOWER(:model) OR LOWER(model) LIKE LOWER(CONCAT(:model, '_deleted_%')) ORDER BY id DESC LIMIT 1", nativeQuery = true)
+    Optional<Product> findAnyByModelIncludingDeleted(@Param("model") String model);
+
     @Query("""
     SELECT DISTINCT p FROM Product p
     LEFT JOIN p.brand b

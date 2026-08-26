@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle} != null ? ${pageTitle} : 'So sánh sản phẩm - LaptopStore'">So sánh sản phẩm - LaptopStore</title>
+  <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+  <link rel="stylesheet" th:href="@{/css/bootstrap-icons.css}">
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <style>
+    .compare-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+    .compare-table th, .compare-table td {
+      text-align: center;
+      vertical-align: middle;
+      padding: 16px;
+    }
+    .compare-table th:first-child, .compare-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+      width: 180px;
+      background-color: #f8940610;
+    }
+    .spec-label {
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    .spec-val {
+      font-weight: 500;
+      color: #1e293b;
+    }
+    .product-img-wrapper {
+      position: relative;
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 12px;
+    }
+    .product-img-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/header :: siteHeader}"></div>
+
+<main class="container my-5">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-arrow-left-right text-primary me-2"></i> Bảng So sánh Sản phẩm</h2>
+      <p class="text-muted mb-0">Đối chiếu chi tiết thông số kỹ thuật giữa các dòng Laptop (tối đa 4 sản phẩm)</p>
+    </div>
+    <div th:if="${compareProducts != null and !compareProducts.isEmpty()}">
+      <form th:action="@{/compare/clear}" method="post" class="d-inline">
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-trash me-1"></i> Xóa tất cả so sánh
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+    <span th:text="${successMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- Khi chưa chọn sản phẩm nào -->
+  <div th:if="${compareProducts == null or compareProducts.isEmpty()}" class="card border-0 shadow-sm text-center py-5">
+    <div class="card-body">
+      <div class="mb-3">
+        <i class="bi bi-arrow-left-right text-muted" style="font-size: 4rem;"></i>
+      </div>
+      <h4 class="fw-bold text-secondary mb-2">Chưa có sản phẩm nào trong bảng so sánh</h4>
+      <p class="text-muted mb-4">Bạn có thể chọn nút "So sánh" trên các sản phẩm laptop để đưa vào bảng đối chiếu chi tiết.</p>
+      <a th:href="@{/product}" class="btn btn-primary px-4 py-2">
+        <i class="bi bi-laptop me-1"></i> Khám phá danh sách Laptop
+      </a>
+    </div>
+  </div>
+
+  <!-- Bảng So sánh Side-by-Side -->
+  <div th:if="${compareProducts != null and !compareProducts.isEmpty()}" class="card border-0 shadow-sm overflow-hidden">
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0 compare-table">
+        <thead class="table-light">
+          <tr>
+            <th>Thông số / Sản phẩm</th>
+            <th th:each="p : ${compareProducts}">
+              <div class="text-end mb-2">
+                <form th:action="@{'/compare/remove/' + ${p.id}}" method="post">
+                  <button type="submit" class="btn btn-sm btn-light text-danger rounded-circle p-1" title="Xóa khỏi so sánh">
+                    <i class="bi bi-x-lg"></i>
+                  </button>
+                </form>
+              </div>
+              <div class="product-img-wrapper">
+                <img th:src="${p.images != null and !p.images.isBlank() ? p.images.split(',')[0] : '/images/default-laptop.png'}"
+                     th:alt="${p.name}">
+              </div>
+              <h6 class="fw-bold text-dark mb-1" th:text="${p.name}">Tên sản phẩm</h6>
+              <span class="badge bg-secondary mb-2" th:text="${p.brand != null ? p.brand.name : 'N/A'}">Hãng</span>
+              <div class="text-primary fw-bold mb-3 fs-5"
+                   th:text="${#numbers.formatDecimal(p.finalPrice, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</div>
+              <a th:href="@{'/product/' + ${p.id}}" class="btn btn-sm btn-outline-primary w-100 mb-2">
+                Xem chi tiết
+              </a>
+              <form th:action="@{/cart/add}" method="post">
+                <input type="hidden" name="productId" th:value="${p.id}"/>
+                <input type="hidden" name="quantity" value="1"/>
+                <button type="submit" class="btn btn-sm btn-primary w-100" th:disabled="${p.stock <= 0}">
+                  <i class="bi bi-cart-plus me-1"></i> Thêm vào giỏ
+                </button>
+              </form>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="spec-label"><i class="bi bi-cpu me-2"></i>Bộ vi xử lý (CPU)</td>
+            <td th:each="p : ${compareProducts}" class="spec-val" th:text="${p.cpu != null and !p.cpu.isBlank() ? p.cpu : 'Chưa cập nhật'}">CPU</td>
+          </tr>
+          <tr>
+            <td class="spec-label"><i class="bi bi-memory me-2"></i>Bộ nhớ RAM</td>
+            <td th:each="p : ${compareProducts}" class="spec-val" th:text="${p.ram != null and !p.ram.isBlank() ? p.ram : 'Chưa cập nhật'}">RAM</td>
+          </tr>
+          <tr>
+            <td class="spec-label"><i class="bi bi-gpu-card me-2"></i>Card đồ họa (GPU)</td>
+            <td th:each="p : ${compareProducts}" class="spec-val" th:text="${p.gpu != null and !p.gpu.isBlank() ? p.gpu : 'Chưa cập nhật'}">GPU</td>
+          </tr>
+          <tr>
+            <td class="spec-label"><i class="bi bi-display me-2"></i>Màn hình</td>
+            <td th:each="p : ${compareProducts}" class="spec-val" th:text="${p.display != null and !p.display.isBlank() ? p.display : 'Chưa cập nhật'}">Display</td>
+          </tr>
+          <tr>
+            <td class="spec-label"><i class="bi bi-battery-charging me-2"></i>Pin</td>
+            <td th:each="p : ${compareProducts}" class="spec-val" th:text="${p.battery != null and !p.battery.isBlank() ? p.battery : 'Chưa cập nhật'}">Battery</td>
+          </tr>
+          <tr>
+            <td class="spec-label"><i class="bi bi-layers me-2"></i>Chất liệu vỏ</td>
+            <td th:each="p : ${compareProducts}" class="spec-val" th:text="${p.material != null and !p.material.isBlank() ? p.material : 'Chưa cập nhật'}">Material</td>
+          </tr>
+          <tr>
+            <td class="spec-label"><i class="bi bi-aspect-ratio me-2"></i>Kích thước</td>
+            <td th:each="p : ${compareProducts}" class="spec-val" th:text="${p.dimensions != null and !p.dimensions.isBlank() ? p.dimensions : 'Chưa cập nhật'}">Dimensions</td>
+          </tr>
+          <tr>
+            <td class="spec-label"><i class="bi bi-box-seam me-2"></i>Tình trạng kho</td>
+            <td th:each="p : ${compareProducts}">
+              <span th:if="${p.stock > 0}" class="badge bg-success">Còn hàng (<span th:text="${p.stock}"></span>)</span>
+              <span th:if="${p.stock <= 0}" class="badge bg-danger">Hết hàng</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<div th:replace="~{fragments/footer :: siteFooter}"></div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>

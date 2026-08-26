@@ -83,6 +83,15 @@
             </div>
           </div>
 
+          <!-- Wishlist -->
+          <a th:href="@{/wishlist}" class="header-action-btn position-relative" aria-label="Yêu thích" title="Sản phẩm yêu thích">
+            <i class="bi bi-heart" style="font-size:1.35rem;"></i>
+            <span class="badge cart-badge bg-danger" id="headerWishlistBadge"
+                  th:text="${wishlistCount}"
+                  th:if="${wishlistCount != null and wishlistCount > 0}">
+            </span>
+          </a>
+
           <!-- Account (chưa đăng nhập) -->
           <div class="account-area">
             <div sec:authorize="isAnonymous()" class="d-flex gap-2 align-items-center">
@@ -115,6 +124,9 @@
                 <div class="dropdown-body">
                   <a class="dropdown-item d-flex align-items-center gap-2" th:href="@{/user/account}">
                     <i class="bi bi-person-circle" style="color:var(--primary);"></i>Hồ sơ cá nhân
+                  </a>
+                  <a th:href="@{/wishlist}" class="dropdown-item d-flex align-items-center gap-2">
+                    <i class="bi bi-heart" style="color:var(--primary);"></i>Sản phẩm yêu thích
                   </a>
                   <a th:href="@{/orders}" class="dropdown-item d-flex align-items-center gap-2">
                     <i class="bi bi-bag-check" style="color:var(--primary);"></i>Đơn hàng của tôi
@@ -185,25 +197,37 @@
         <ul>
           <li>
             <a th:href="@{/}"
-               th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI == '/'} ? 'active' : ''">
+               th:classappend="${currentUri == '/' or currentUri == '/home'} ? 'active' : ''">
               <i class="bi bi-house-fill d-xl-none"></i> Trang chủ
             </a>
           </li>
           <li>
             <a th:href="@{/product}"
-               th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI.startsWith('/product')} ? 'active' : ''">
+               th:classappend="${currentUri != null and currentUri.startsWith('/product')} ? 'active' : ''">
               <i class="bi bi-laptop d-xl-none"></i> Laptop
             </a>
           </li>
           <li>
+            <a th:href="@{/products/compare}"
+               th:classappend="${currentUri != null and currentUri.startsWith('/products/compare')} ? 'active' : ''">
+              <i class="bi bi-arrow-left-right d-xl-none"></i> So sánh Laptop
+            </a>
+          </li>
+          <li>
+            <a th:href="@{/wishlist}"
+               th:classappend="${currentUri != null and currentUri.startsWith('/wishlist')} ? 'active' : ''">
+              <i class="bi bi-heart d-xl-none"></i> Yêu thích
+            </a>
+          </li>
+          <li>
             <a th:href="@{/cart}"
-               th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI.startsWith('/cart')} ? 'active' : ''">
+               th:classappend="${currentUri != null and currentUri.startsWith('/cart')} ? 'active' : ''">
               <i class="bi bi-cart3 d-xl-none"></i> Giỏ hàng
             </a>
           </li>
           <li>
             <a th:href="@{/orders}"
-               th:classappend="${#httpServletRequest != null and #httpServletRequest.requestURI.startsWith('/orders')} ? 'active' : ''"
+               th:classappend="${currentUri != null and currentUri.startsWith('/orders')} ? 'active' : ''"
                sec:authorize="isAuthenticated()">
               <i class="bi bi-bag-check d-xl-none"></i> Đơn hàng
             </a>
@@ -248,6 +272,16 @@
           </a>
           <a th:href="@{/product}" class="mobile-nav-link">
             <i class="bi bi-laptop"></i> Tất cả Laptop
+          </a>
+          <a th:href="@{/products/compare}" class="mobile-nav-link">
+            <i class="bi bi-arrow-left-right"></i> So sánh Laptop
+          </a>
+          <a th:href="@{/wishlist}" class="mobile-nav-link">
+            <i class="bi bi-heart"></i> Yêu thích
+            <span class="badge ms-auto bg-danger"
+                  style="border-radius:99px;padding:2px 8px;font-size:0.72rem;"
+                  th:text="${wishlistCount}"
+                  th:if="${wishlistCount != null and wishlistCount > 0}"></span>
           </a>
           <a th:href="@{/cart}" class="mobile-nav-link">
             <i class="bi bi-cart3"></i> Giỏ hàng

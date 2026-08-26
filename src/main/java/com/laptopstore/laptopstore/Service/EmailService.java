@@ -15,11 +15,8 @@ public class EmailService {
     @Value("${sendgrid.api-key}")
     private String sendGridKey;
 
-    @Value("${sendgrid.from-email:LAPTOPSTORE247sp@gmail.com}")
-    private String fromEmail;
-
     public void sendEmail(String to, String subject, String contentText) throws Exception {
-        Email from = new Email(fromEmail);
+        Email from = new Email("techstore247sp@gmail.com"); // Email gửi đi (tuỳ chọn)
         Email toEmail = new Email(to);
         Content content = new Content("text/plain", contentText);
         Mail mail = new Mail(from, subject, toEmail, content);

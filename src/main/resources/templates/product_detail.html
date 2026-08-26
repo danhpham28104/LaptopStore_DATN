@@ -26,6 +26,10 @@
   <link th:href="@{/css/main.css}" rel="stylesheet">
   <link th:href="@{/css/style.css}" rel="stylesheet">
   <link th:href="@{/css/recommendation.css}" rel="stylesheet">
+  <style>
+    .star-rating { color: #f59e0b; }
+    .verified-badge { background: #dcfce7; color: #166534; font-size: 0.75rem; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+  </style>
 </head>
 
 <body class="product-details-page" style="background:var(--bg);">
@@ -52,6 +56,17 @@
   <!-- Product Details Section -->
   <section id="product-details" class="product-details section py-4">
     <div class="container">
+
+      <!-- Alert Messages -->
+      <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-1"></i> <span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i> <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+
       <div class="row g-4">
 
         <!-- ── LEFT: Gallery ── -->
@@ -104,8 +119,7 @@
               </div>
               <div class="guarantee-item">
                 <i class="bi bi-arrow-repeat icon"></i>
-                <p>1 đổi 1 trong 15 ngày nếu có lỗi phần cứng do nhà sản xuất.
-                  <a href="#" class="text-primary fw-semibold">Xem chi tiết</a></p>
+                <p>1 đổi 1 trong 15 ngày nếu có lỗi phần cứng do nhà sản xuất.</p>
               </div>
               <div class="guarantee-item">
                 <i class="bi bi-box-seam icon"></i>
@@ -123,22 +137,41 @@
         <div class="col-lg-5">
           <div class="product-details">
 
-            <!-- Brand + rating -->
-            <div class="product-badge-container">
-              <span class="badge-category" th:text="${product.brand != null ? product.brand.name : 'Thương hiệu'}">Brand</span>
-              <div class="rating-group">
-                <div class="stars">
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-fill"></i>
-                  <i class="bi bi-star-half"></i>
+            <!-- Brand + rating + Quick Actions -->
+            <div class="product-badge-container d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge-category" th:text="${product.brand != null ? product.brand.name : 'Thương hiệu'}">Brand</span>
+                <div class="rating-group d-flex align-items-center gap-1">
+                  <span class="star-rating"><i class="bi bi-star-fill"></i></span>
+                  <strong th:text="${averageRating != null ? averageRating : '5.0'}">4.8</strong>
+                  <span class="text-muted small" th:text="'(' + ${reviewCount != null ? reviewCount : 0} + ' nhận xét)'"></span>
                 </div>
+              </div>
+
+              <div class="d-flex gap-2">
+                <!-- Wishlist Toggle -->
+                <button type="button" class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 36px; height: 36px;"
+                        th:data-product-id="${product.id}"
+                        onclick="toggleWishlist(this)"
+                        title="Yêu thích">
+                  <i th:class="${isWishlisted ? 'bi bi-heart-fill' : 'bi bi-heart'}"></i>
+                </button>
+                <!-- Multi-Product Compare Button -->
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center btn-compare-toggle"
+                        style="width: 36px; height: 36px;"
+                        th:data-product-id="${product.id}"
+                        th:data-product-name="${product.name}"
+                        th:data-product-image="${allImages != null and !allImages.isEmpty() ? allImages[0] : '/images/default-avatar.png'}"
+                        onclick="toggleCompareItem(this.getAttribute('data-product-id'), this.getAttribute('data-product-name'), this.getAttribute('data-product-image'))"
+                        title="Thêm sản phẩm này vào danh sách so sánh (Tối đa 4 sản phẩm)">
+                  <i class="bi bi-arrow-left-right"></i>
+                </button>
               </div>
             </div>
 
             <!-- Product name -->
-            <h1 class="product-name detail-name" th:text="${product.name}">Tên sản phẩm</h1>
+            <h1 class="product-name detail-name mt-2" th:text="${product.name}">Tên sản phẩm</h1>
 
             <!-- Pricing -->
             <div class="pricing-section">
@@ -279,8 +312,8 @@
         </div>
       </div>
 
-      <!-- ── Information Tabs ── -->
-      <div class="row mt-4">
+      <!-- ── Information Tabs & Reviews ── -->
+      <div class="row mt-5">
         <div class="col-12">
           <div class="info-tabs-container">
             <nav class="tabs-navigation nav">
@@ -290,52 +323,104 @@
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#technical" type="button">
                 <i class="bi bi-cpu me-1"></i> Thông số kỹ thuật
               </button>
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#reviewsTab" type="button">
+                <i class="bi bi-star me-1"></i> Đánh giá (<span th:text="${reviewCount != null ? reviewCount : 0}">0</span>)
+              </button>
             </nav>
 
-            <div class="tab-content">
+            <div class="tab-content p-4 bg-white rounded-bottom border border-top-0">
               <!-- Mô tả -->
               <div class="tab-pane fade show active" id="overview">
-                <h3 style="font-size:1rem;font-weight:700;margin-bottom:12px;color:var(--text);">Mô tả sản phẩm</h3>
+                <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:12px;color:var(--text);">Mô tả sản phẩm</h3>
                 <p th:text="${product.description}"
-                   style="font-size:0.9rem;color:var(--muted);line-height:1.8;">Thông tin mô tả sản phẩm...</p>
+                   style="font-size:0.95rem;color:var(--muted);line-height:1.8;">Thông tin mô tả sản phẩm...</p>
               </div>
 
               <!-- Cấu hình -->
               <div class="tab-pane fade" id="technical">
-                <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;color:var(--text);">Thông số kỹ thuật</h3>
+                <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--text);">Thông số kỹ thuật</h3>
                 <div class="spec-table">
-                  <div class="spec-row">
-                    <span class="spec-name">RAM</span>
-                    <span class="spec-value" th:text="${product.ram}">—</span>
+                  <div class="spec-row"><span class="spec-name">RAM</span><span class="spec-value" th:text="${product.ram}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">SSD</span><span class="spec-value" th:text="${#lists.isEmpty(variants) ? '—' : variants.get(0).storage}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">Màn hình</span><span class="spec-value" th:text="${product.display}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">CPU</span><span class="spec-value" th:text="${product.cpu}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">GPU</span><span class="spec-value" th:text="${product.gpu}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">Pin</span><span class="spec-value" th:text="${product.battery}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">Kích thước</span><span class="spec-value" th:text="${product.dimensions}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">Chất liệu</span><span class="spec-value" th:text="${product.material}">—</span></div>
+                </div>
+              </div>
+
+              <!-- Đánh giá & Nhận xét sản phẩm (Review System) -->
+              <div class="tab-pane fade" id="reviewsTab">
+                <div class="row g-4">
+                  <!-- Summary Box -->
+                  <div class="col-md-4 text-center border-end">
+                    <div class="p-3">
+                      <h1 class="display-4 fw-bold text-primary mb-0" th:text="${averageRating != null ? averageRating : '5.0'}">4.8</h1>
+                      <div class="star-rating fs-4 mb-2">
+                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                      </div>
+                      <p class="text-muted" th:text="'Dựa trên ' + ${reviewCount != null ? reviewCount : 0} + ' lượt đánh giá đã xác minh'"></p>
+                    </div>
                   </div>
-                  <div class="spec-row">
-                    <span class="spec-name">SSD</span>
-                    <span class="spec-value"
-                          th:text="${#lists.isEmpty(variants) ? '—' : variants.get(0).storage}">—</span>
-                  </div>
-                  <div class="spec-row">
-                    <span class="spec-name">Màn hình</span>
-                    <span class="spec-value" th:text="${product.display}">—</span>
-                  </div>
-                  <div class="spec-row">
-                    <span class="spec-name">CPU</span>
-                    <span class="spec-value" th:text="${product.cpu}">—</span>
-                  </div>
-                  <div class="spec-row">
-                    <span class="spec-name">GPU</span>
-                    <span class="spec-value" th:text="${product.gpu}">—</span>
-                  </div>
-                  <div class="spec-row">
-                    <span class="spec-name">Pin</span>
-                    <span class="spec-value" th:text="${product.battery}">—</span>
-                  </div>
-                  <div class="spec-row">
-                    <span class="spec-name">Kích thước</span>
-                    <span class="spec-value" th:text="${product.dimensions}">—</span>
-                  </div>
-                  <div class="spec-row">
-                    <span class="spec-name">Chất liệu</span>
-                    <span class="spec-value" th:text="${product.material}">—</span>
+
+                  <!-- Form viết nhận xét -->
+                  <div class="col-md-8">
+                    <div th:if="${canReview}" class="card border-primary mb-4">
+                      <div class="card-header bg-primary text-white fw-bold">
+                        <i class="bi bi-pencil-square me-2"></i>Viết nhận xét đánh giá sản phẩm
+                      </div>
+                      <div class="card-body">
+                        <form th:action="@{/reviews/add}" method="post">
+                          <input type="hidden" name="productId" th:value="${product.id}"/>
+                          <div class="mb-3">
+                            <label class="form-label fw-bold">Số sao chọn đánh giá:</label>
+                            <select name="rating" class="form-select w-auto" required>
+                              <option value="5">⭐⭐⭐⭐⭐ (5 sao - Rất hài lòng)</option>
+                              <option value="4">⭐⭐⭐⭐ (4 sao - Hài lòng)</option>
+                              <option value="3">⭐⭐⭐ (3 sao - Bình thường)</option>
+                              <option value="2">⭐⭐ (2 sao - Không hài lòng)</option>
+                              <option value="1">⭐ (1 sao - Rất tệ)</option>
+                            </select>
+                          </div>
+                          <div class="mb-3">
+                            <label class="form-label fw-bold">Nội dung nhận xét:</label>
+                            <textarea name="comment" class="form-control" rows="3" placeholder="Chia sẻ cảm nhận chi tiết về hiệu năng, màn hình, bàn phím và thiết kế của chiếc Laptop này..." required></textarea>
+                          </div>
+                          <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="bi bi-send me-1"></i> Gửi nhận xét
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+
+                    <div th:if="${!canReview}" class="alert alert-light border mb-4">
+                      <i class="bi bi-shield-check text-success me-2"></i>
+                      <span class="text-muted">Chỉ những khách hàng đã mua sản phẩm và đơn hàng ở trạng thái <strong>Đã giao hàng (DELIVERED)</strong> mới có thể gửi nhận xét đánh giá.</span>
+                    </div>
+
+                    <!-- Danh sách các bài nhận xét đã duyệt -->
+                    <h5 class="fw-bold mb-3">Nhận xét từ người mua</h5>
+                    <div th:if="${reviews != null and !reviews.isEmpty()}" class="d-flex flex-column gap-3">
+                      <div th:each="r : ${reviews}" class="p-3 border rounded bg-light">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                          <div class="d-flex align-items-center gap-2">
+                            <strong th:text="${r.user != null ? r.user.fullName : 'Khách hàng TechStore'}">Tên người dùng</strong>
+                            <span class="verified-badge"><i class="bi bi-check-circle-fill me-1"></i>Đã mua hàng (Verified Purchase)</span>
+                          </div>
+                          <small class="text-muted" th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">26/08/2026</small>
+                        </div>
+                        <div class="star-rating mb-2">
+                          <i class="bi bi-star-fill" th:each="i : ${#numbers.sequence(1, r.rating)}"></i>
+                        </div>
+                        <p class="mb-0 text-dark" th:text="${r.comment}">Nội dung nhận xét tuyệt vời!</p>
+                      </div>
+                    </div>
+
+                    <div th:if="${reviews == null or reviews.isEmpty()}" class="text-muted py-3 text-center">
+                      Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên mua và trải nghiệm!
+                    </div>
                   </div>
                 </div>
               </div>
@@ -347,80 +432,9 @@
     </div>
   </section>
 
-  <!-- Sản phẩm đề xuất -->
-  <section th:if="${recommendations != null and !recommendations.isEmpty()}"
-           class="recommendation-section container my-4">
-    <div class="d-flex align-items-center gap-2 mb-3">
-      <div style="width:4px;height:20px;background:#f59e0b;border-radius:2px;"></div>
-      <h3 class="recommendation-title mb-0">
-        <i class="bi bi-stars"></i> Đề cử dành riêng cho bạn
-      </h3>
-    </div>
-    <div class="row g-3">
-      <div class="col-lg-3 col-md-6" th:each="p : ${recommendations}">
-        <div class="product-item" style="position:relative;">
-          <span class="badge-recommended"><i class="bi bi-sparkles"></i> Gợi ý</span>
-          <div class="product-image">
-            <span class="my-badge badge-limited" th:if="${p.stock < 10 and p.stock > 0}">
-              <i class="bi bi-exclamation-triangle-fill"></i> SẮP HẾT
-            </span>
-            <img th:if="${p.images != null and !p.images.isEmpty()}"
-                 th:src="${#strings.arraySplit(p.images, ',')[0]}"
-                 th:alt="${p.name}" loading="lazy"
-                 onerror="this.src='/images/default-avatar.png'">
-            <img th:if="${p.images == null or p.images.isEmpty()}"
-                 th:src="@{/images/default-avatar.png}" loading="lazy" alt="Laptop">
-          </div>
-          <div class="product-info">
-            <div class="product-category" th:text="${p.brand != null ? p.brand.name : 'Khác'}">Hãng</div>
-            <h4 class="product-name">
-              <a th:href="@{'/product/' + ${p.id}}" th:text="${p.name}">Tên laptop</a>
-              <span class="sale-badge" th:if="${p.salePercent != null and p.salePercent > 0}"
-                    th:text="'-' + ${p.salePercent} + '%'"></span>
-            </h4>
-            <div class="display-tags">
-              <span class="spec-tag" th:if="${p.cpu != null and !p.cpu.isBlank()}" th:text="${p.cpu}"></span>
-              <span class="spec-tag" th:if="${p.ram != null and !p.ram.isBlank()}" th:text="${p.ram}"></span>
-              <span class="spec-tag" th:if="${!#lists.isEmpty(p.variants)}" th:text="${p.variants[0].storage}"></span>
-              <span class="spec-tag" th:if="${p.gpu != null and !p.gpu.isBlank()}" th:text="${p.gpu}"></span>
-            </div>
-            <div class="product-price">
-              <span class="price-final"
-                    th:text="${#numbers.formatDecimal(p.price * (100 - p.salePercent) / 100, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-              <span class="price-old" th:if="${p.salePercent > 0}"
-                    th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
-            </div>
-            <!-- Dual CTA Buttons: + Giỏ hàng (AJAX) + Mua ngay -->
-            <div class="card-btn-group">
-              <button type="button"
-                      class="card-btn card-btn-view btn-quick-add-cart"
-                      th:data-product-id="${p.id}"
-                      th:data-product-name="${p.name}">
-                <i class="bi bi-cart-plus"></i>
-                <span>+ Giỏ hàng</span>
-              </button>
-              <button type="button"
-                      class="card-btn card-btn-buy"
-                      th:data-product-id="${p.id}"
-                      th:data-product-name="${p.name}">
-                <i class="bi bi-lightning-charge-fill"></i>
-                <span>Mua ngay</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
 </main>
 
 <div th:replace="fragments/footer :: siteFooter"></div>
-
-<!-- Scroll top -->
-<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
-  <i class="bi bi-arrow-up-short"></i>
-</a>
 
 <!-- Scripts -->
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
@@ -432,7 +446,41 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script th:src="@{/js/main.js}"></script>
 
-<!-- ✅ SCRIPT CHỌN BIẾN THỂ (giữ nguyên logic) -->
+<script th:inline="javascript">
+  function toggleWishlist(btn) {
+    const productId = btn.getAttribute('data-product-id');
+    fetch('/api/wishlist/toggle?productId=' + productId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(res => {
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      return res.json();
+    })
+    .then(data => {
+      if (data && data.success) {
+        const icon = btn.querySelector('i');
+        if (data.wishlisted) {
+          icon.className = 'bi bi-heart-fill';
+        } else {
+          icon.className = 'bi bi-heart';
+        }
+        const badge = document.getElementById('headerWishlistBadge');
+        if (badge) {
+          badge.innerText = data.count;
+          badge.style.display = data.count > 0 ? 'inline-block' : 'none';
+        }
+      } else if (data && data.message) {
+        alert(data.message);
+      }
+    })
+    .catch(err => console.error(err));
+  }
+</script>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const colorButtons = document.querySelectorAll(".color-btn");
@@ -442,7 +490,6 @@
 
     let selectedColor = null;
 
-    // Chọn màu đầu tiên mặc định nếu có
     if (colorButtons.length > 0) {
       colorButtons[0].click();
     }
@@ -483,7 +530,6 @@
           variantInput.value = v.dataset.variantId;
         });
 
-        // Set first as default
         if (idx === 0) variantInput.value = v.dataset.variantId;
 
         storageContainer.appendChild(storageBtn);
@@ -511,7 +557,6 @@
   });
 </script>
 
-<!-- ✅ SCRIPT GALLERY (giữ nguyên logic) -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const mainImage  = document.getElementById("main-product-image");
@@ -546,7 +591,6 @@
   });
 </script>
 
-<!-- ✅ SCRIPT MUA NGAY (giữ nguyên logic) -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     const buyNowBtn = document.getElementById("buyNowBtn");
