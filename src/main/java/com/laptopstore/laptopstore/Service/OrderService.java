@@ -413,7 +413,7 @@
 
 
         // ===========================
-        // 🔹 CRUD
+        // 🔹 CRUD & QUERIES
         // ===========================
 
         public List<Order> getAllOrders() { return orderRepository.findAll(); }
@@ -426,6 +426,16 @@
 
         public Order saveOrder(Order order) { return orderRepository.save(order); }
 
+        public Order getByOrderCode(String code) {
+            return orderRepository.findByOrderCode(code).orElse(null);
+        }
+
+        private String generateOrderCode() {
+            String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+            int random = (int)(Math.random() * 9000) + 1000;
+            return "DH" + date + "-" + random;
+        }
+
         /** Doanh thu theo ngày */
         public BigDecimal getRevenueByDate(LocalDate date) {
             return orderRepository.sumRevenueByDate(date).orElse(BigDecimal.ZERO);
@@ -435,7 +445,6 @@
         public int countOrdersByDate(LocalDate date) {
             return orderRepository.countOrdersByDate(date);
         }
-
 
         /** Lấy N đơn gần nhất */
         public List<Order> getRecentOrders(int limit) {
@@ -447,18 +456,8 @@
             return orderRepository.findAll(pageable);
         }
 
-        public Order getByOrderCode(String code) {
-            return orderRepository.findByOrderCode(code)
-                    .orElse(null);
-        }
-        private String generateOrderCode() {
-            String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-            int random = (int)(Math.random() * 9000) + 1000; // random 4 số
-            return "DH" + date + "-" + random;
-        }
-
         // ==========================================
-        // 🔹 DATE RANGE STATS (PHASE 1A)
+        // 🔹 DATE RANGE STATS & FILTER (DASHBOARD CARDS)
         // ==========================================
         public List<Order> getOrdersByDateRange(LocalDate startDate, LocalDate endDate) {
             if (startDate == null) startDate = LocalDate.now().minusDays(6);
@@ -493,6 +492,35 @@
             LocalDateTime end = endDate.atTime(23, 59, 59);
             List<String> lowerStatuses = statuses.stream().map(String::toLowerCase).toList();
             return orderRepository.countOrdersByDateRangeAndStatuses(start, end, lowerStatuses);
+        }
+
+        /**
+         * 🔹 Lọc đơn hàng theo Trạng thái & Khoảng ngày (Dành cho Clickable Cards Dashboard)
+         */
+        public List<Order> filterOrders(String statusGroup, LocalDate startDate, LocalDate endDate) {
+            LocalDateTime start = startDate != null ? startDate.atStartOfDay() : LocalDate.now().minusYears(1).atStartOfDay();
+            LocalDateTime end = endDate != null ? endDate.atTime(23, 59, 59) : LocalDate.now().atTime(23, 59, 59);
+
+            List<Order> orders = orderRepository.findOrdersByDateRange(start, end);
+
+            if (statusGroup == null || statusGroup.isBlank() || statusGroup.equalsIgnoreCase("all")) {
+                return orders;
+            }
+
+            List<String> targetStatuses;
+            if (statusGroup.equalsIgnoreCase("success")) {
+                targetStatuses = List.of("paid", "completed", "delivered", "shipping");
+            } else if (statusGroup.equalsIgnoreCase("pending")) {
+                targetStatuses = List.of("pending", "processing", "pending_payment");
+            } else if (statusGroup.equalsIgnoreCase("cancelled")) {
+                targetStatuses = List.of("cancelled");
+            } else {
+                targetStatuses = List.of(statusGroup.toLowerCase());
+            }
+
+            return orders.stream()
+                    .filter(o -> o.getOrderStatus() != null && targetStatuses.contains(o.getOrderStatus().toLowerCase()))
+                    .toList();
         }
 
         public java.util.Map<String, Object> getDailyRevenueDataInRange(LocalDate startDate, LocalDate endDate) {

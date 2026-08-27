@@ -18,23 +18,33 @@ public class AdminOrderController {
     @Autowired
     private OrderService orderService;
 
-    /** 🔹 Danh sách tất cả đơn hàng */
+    /** 🔹 Danh sách tất cả đơn hàng (Hỗ trợ Lọc theo Trạng thái & Ngày từ Dashboard Cards) */
     @GetMapping
     public String listOrders(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Model model
     ) {
-        Page<Order> pageData = orderService.getPagedOrders(page, size);
+        if ((status != null && !status.isBlank()) || startDate != null || endDate != null) {
+            List<Order> filteredOrders = orderService.filterOrders(status, startDate, endDate);
+            model.addAttribute("orders", filteredOrders);
+            model.addAttribute("searchMode", true); // Tắt phân trang khi ở chế độ filter
+            model.addAttribute("filterStatus", status);
+            model.addAttribute("startDate", startDate != null ? startDate.toString() : "");
+            model.addAttribute("endDate", endDate != null ? endDate.toString() : "");
+        } else {
+            Page<Order> pageData = orderService.getPagedOrders(page, size);
+            model.addAttribute("orders", pageData.getContent());
+            model.addAttribute("currentPage", page);
+            model.addAttribute("totalPages", pageData.getTotalPages());
+            model.addAttribute("pageSize", size);
+            model.addAttribute("searchMode", false);  // 👈 chế độ phân trang
+        }
 
-        model.addAttribute("orders", pageData.getContent());
-        model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", pageData.getTotalPages());
-        model.addAttribute("pageSize", size);
-
-        model.addAttribute("searchMode", false);  // 👈 chế độ phân trang
         model.addAttribute("active", "orders");
-
         return "admin/orders";
     }
 

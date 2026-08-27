@@ -18,9 +18,13 @@
           position: relative;
           overflow: hidden;
           box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-          transition: transform 0.2s;
+          transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
         }
-        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card:hover {
+          transform: translateY(-5px) scale(1.02);
+          box-shadow: 0 8px 22px rgba(0,0,0,0.2);
+        }
 
         .stat-icon {
           position: absolute;
@@ -127,60 +131,72 @@
         </a>
     </div>
 
-    <!-- 6 METRIC CARDS ROW -->
+    <!-- 6 METRIC CARDS ROW (CLICKABLE LINKS) -->
     <div class="row g-3 mb-4">
         <!-- 1. Doanh Thu Lọc -->
         <div class="col-md-4 col-xl-2">
-            <div class="stat-card" style="background: linear-gradient(135deg, #4e73df, #224abe);">
-                <span class="fs-7 opacity-75">Doanh Thu (Lọc)</span>
-                <h5 class="fw-bold mt-2 mb-0" th:text="${rangeRevenue != null ? #numbers.formatDecimal(rangeRevenue, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}">0 ₫</h5>
-                <i class="bi bi-currency-dollar stat-icon"></i>
-            </div>
+            <a th:href="@{/admin/orders(status='success',startDate=${startDate},endDate=${endDate})}" class="text-decoration-none d-block">
+                <div class="stat-card" style="background: linear-gradient(135deg, #4e73df, #224abe);" title="Xem danh sách các đơn tạo doanh thu">
+                    <span class="fs-7 opacity-75">Doanh Thu (Lọc)</span>
+                    <h5 class="fw-bold mt-2 mb-0" th:text="${rangeRevenue != null ? #numbers.formatDecimal(rangeRevenue, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}">0 ₫</h5>
+                    <i class="bi bi-currency-dollar stat-icon"></i>
+                </div>
+            </a>
         </div>
 
         <!-- 2. Tổng Đơn Hàng -->
         <div class="col-md-4 col-xl-2">
-            <div class="stat-card" style="background: linear-gradient(135deg, #36b9cc, #258391);">
-                <span class="fs-7 opacity-75">Tổng Số Đơn</span>
-                <h5 class="fw-bold mt-2 mb-0" th:text="${totalOrders}">0</h5>
-                <i class="bi bi-cart stat-icon"></i>
-            </div>
+            <a th:href="@{/admin/orders(startDate=${startDate},endDate=${endDate})}" class="text-decoration-none d-block">
+                <div class="stat-card" style="background: linear-gradient(135deg, #36b9cc, #258391);" title="Xem tất cả đơn hàng trong kỳ">
+                    <span class="fs-7 opacity-75">Tổng Số Đơn</span>
+                    <h5 class="fw-bold mt-2 mb-0" th:text="${totalOrders}">0</h5>
+                    <i class="bi bi-cart stat-icon"></i>
+                </div>
+            </a>
         </div>
 
         <!-- 3. Đơn Thành Công -->
         <div class="col-md-4 col-xl-2">
-            <div class="stat-card" style="background: linear-gradient(135deg, #1cc88a, #0e7b52);">
-                <span class="fs-7 opacity-75">Đơn Thành Công</span>
-                <h5 class="fw-bold mt-2 mb-0" th:text="${successOrders}">0</h5>
-                <i class="bi bi-check-circle stat-icon"></i>
-            </div>
+            <a th:href="@{/admin/orders(status='success',startDate=${startDate},endDate=${endDate})}" class="text-decoration-none d-block">
+                <div class="stat-card" style="background: linear-gradient(135deg, #1cc88a, #0e7b52);" title="Xem danh sách đơn thành công">
+                    <span class="fs-7 opacity-75">Đơn Thành Công</span>
+                    <h5 class="fw-bold mt-2 mb-0" th:text="${successOrders}">0</h5>
+                    <i class="bi bi-check-circle stat-icon"></i>
+                </div>
+            </a>
         </div>
 
         <!-- 4. Đơn Chờ Xử Lý -->
         <div class="col-md-4 col-xl-2">
-            <div class="stat-card" style="background: linear-gradient(135deg, #f6c23e, #c7961d);">
-                <span class="fs-7 opacity-75">Đơn Chờ Xử Lý</span>
-                <h5 class="fw-bold mt-2 mb-0" th:text="${pendingOrders}">0</h5>
-                <i class="bi bi-clock-history stat-icon"></i>
-            </div>
+            <a th:href="@{/admin/orders(status='pending',startDate=${startDate},endDate=${endDate})}" class="text-decoration-none d-block">
+                <div class="stat-card" style="background: linear-gradient(135deg, #f6c23e, #c7961d);" title="Xem danh sách đơn chờ xử lý">
+                    <span class="fs-7 opacity-75">Đơn Chờ Xử Lý</span>
+                    <h5 class="fw-bold mt-2 mb-0" th:text="${pendingOrders}">0</h5>
+                    <i class="bi bi-clock-history stat-icon"></i>
+                </div>
+            </a>
         </div>
 
         <!-- 5. Đơn Bị Hủy -->
         <div class="col-md-4 col-xl-2">
-            <div class="stat-card" style="background: linear-gradient(135deg, #e74a3b, #be2617);">
-                <span class="fs-7 opacity-75">Đơn Bị Hủy</span>
-                <h5 class="fw-bold mt-2 mb-0" th:text="${cancelledOrders}">0</h5>
-                <i class="bi bi-x-circle stat-icon"></i>
-            </div>
+            <a th:href="@{/admin/orders(status='cancelled',startDate=${startDate},endDate=${endDate})}" class="text-decoration-none d-block">
+                <div class="stat-card" style="background: linear-gradient(135deg, #e74a3b, #be2617);" title="Xem danh sách đơn bị hủy">
+                    <span class="fs-7 opacity-75">Đơn Bị Hủy</span>
+                    <h5 class="fw-bold mt-2 mb-0" th:text="${cancelledOrders}">0</h5>
+                    <i class="bi bi-x-circle stat-icon"></i>
+                </div>
+            </a>
         </div>
 
         <!-- 6. AOV Trung Bình -->
         <div class="col-md-4 col-xl-2">
-            <div class="stat-card" style="background: linear-gradient(135deg, #858796, #5a5c69);">
-                <span class="fs-7 opacity-75">Giá Trị Đơn (AOV)</span>
-                <h5 class="fw-bold mt-2 mb-0" th:text="${aov != null ? #numbers.formatDecimal(aov, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}">0 ₫</h5>
-                <i class="bi bi-calculator stat-icon"></i>
-            </div>
+            <a th:href="@{/admin/orders(status='success',startDate=${startDate},endDate=${endDate})}" class="text-decoration-none d-block">
+                <div class="stat-card" style="background: linear-gradient(135deg, #858796, #5a5c69);" title="Xem danh sách đơn giá trị trung bình">
+                    <span class="fs-7 opacity-75">Giá Trị Đơn (AOV)</span>
+                    <h5 class="fw-bold mt-2 mb-0" th:text="${aov != null ? #numbers.formatDecimal(aov, 0, 'COMMA', 0, 'POINT') + ' ₫' : '0 ₫'}">0 ₫</h5>
+                    <i class="bi bi-calculator stat-icon"></i>
+                </div>
+            </a>
         </div>
     </div>
 
@@ -204,7 +220,7 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2 fs-7"
                         th:each="b : ${bestSellers}">
-                        <span class="text-truncate me-2" th:text="${b.productName}" style="max-width: 200px;"></span>
+                        <a th:href="@{/admin/products(search=${b.productName})}" class="text-truncate me-2 text-decoration-none text-dark fw-semibold" th:text="${b.productName}" style="max-width: 200px;" title="Xem sản phẩm trong quản lý"></a>
                         <span class="badge bg-danger rounded-pill px-2 py-1" th:text="${b.totalSold} + ' đã bán'"></span>
                     </li>
 
