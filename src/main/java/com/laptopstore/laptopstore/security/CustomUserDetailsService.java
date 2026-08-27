@@ -22,10 +22,11 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .map(r -> new SimpleGrantedAuthority(r.getName()))
                 .toList();
 
-        return new org.springframework.security.core.userdetails.User(
-                u.getUsername(),
-                u.getPassword(),
-                authorities
-        );
+        return org.springframework.security.core.userdetails.User
+                .withUsername(u.getUsername())
+                .password(u.getPassword())
+                .disabled(!u.isEnabled())
+                .authorities(authorities)
+                .build();
     }
 }

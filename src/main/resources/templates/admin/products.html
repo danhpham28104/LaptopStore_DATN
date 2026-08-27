@@ -39,45 +39,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Sidebar ── */
-    .sidebar {
-      width: 240px;
-      height: 100vh;
-      position: fixed;
-      top: 0; left: 0;
-      background: linear-gradient(180deg, var(--secondary) 0%, #16213e 100%);
-      color: #fff;
-      padding-top: 60px;
-      border-right: 1px solid rgba(255,255,255,0.05);
-      overflow-y: auto;
-    }
-
-    .sidebar a {
-      color: rgba(255,255,255,0.65);
-      text-decoration: none;
-      padding: 11px 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      border-left: 3px solid transparent;
-      transition: var(--transition);
-    }
-
-    .sidebar a:hover {
-      background: rgba(255,255,255,0.07);
-      color: #fff;
-      border-left-color: var(--primary);
-    }
-
-    .sidebar a.active {
-      background: rgba(215,0,24,0.15);
-      color: #fff;
-      border-left-color: var(--primary);
-      font-weight: 600;
-    }
-
     /* ── Topbar ── */
     .navbar {
       position: fixed;
@@ -99,23 +60,6 @@
       min-height: 100vh;
     }
 
-    /* ── Brand Logo ── */
-    .brand-logo {
-      font-family: var(--font-heading);
-      font-weight: 800;
-      color: #fff;
-      font-size: 1rem;
-      padding: 0 20px;
-      position: absolute;
-      top: 0; left: 0;
-      background: rgba(0,0,0,0.3);
-      width: 240px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
 
     /* ── Table ── */
     .table thead th {
@@ -209,44 +153,17 @@
 
     /* Mobile responsive */
     @media (max-width: 768px) {
-      .sidebar { width: 0; display: none; }
-      .navbar  { left: 0; }
-      .content { margin-left: 0; }
-      .brand-logo { display: none; }
+      .admin-sidebar-wrapper { width: 0; display: none !important; }
+      .admin-brand-header { display: none !important; }
+      .navbar  { left: 0 !important; }
+      .content { margin-left: 0 !important; }
     }
   </style>
 </head>
 
 <body>
-<div class="brand-logo">
-    <div style="width:28px;height:28px;background:var(--primary);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-      <i class="bi bi-laptop" style="color:#fff;font-size:0.9rem;"></i>
-    </div>
-    <span>LaptopStore Admin</span>
-  </div>
-
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'">
-      <i class="bi bi-speedometer2"></i> Dashboard
-    </a>
-    <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'">
-      <i class="bi bi-box"></i> Sản phẩm
-    </a>
-    <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'">
-      <i class="bi bi-receipt"></i> Đơn hàng
-    </a>
-    <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'">
-      <i class="bi bi-people"></i> Người dùng
-    </a>
-    <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'">
-      <i class="bi bi-ticket-perforated"></i> Voucher
-    </a>
-    <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
-    <div style="font-size: 0.75rem; text-transform: uppercase; color: rgba(255,255,255,0.4); padding: 15px 20px 5px; font-weight: 700;">Phân Tích Nhu Cầu</div>
-    <a th:href="@{/admin/analytics/products}" th:classappend="${active == 'analytics_products'} ? 'active'"><i class="bi bi-eye"></i> Phân Tích Xem SP</a>
-    <a th:href="@{/admin/analytics/ai-chat}" th:classappend="${active == 'analytics_aichat'} ? 'active'"><i class="bi bi-robot"></i> AI Chat Insights</a>
-  </div>
+<!-- Sidebar -->
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('products')}"></div>
 
   <!-- Navbar -->
   <nav class="navbar navbar-light bg-white shadow-sm">

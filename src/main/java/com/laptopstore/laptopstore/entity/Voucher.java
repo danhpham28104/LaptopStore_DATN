@@ -47,6 +47,19 @@ public class Voucher {
     @Column(length = 255)
     private String description;
 
+    // 🔹 [NÂNG CAO] Giới hạn số tiền giảm tối đa (chỉ áp dụng khi discountType = PERCENT)
+    // Ví dụ: giảm 10% nhưng tối đa 200.000đ
+    @Column(precision = 10, scale = 2)
+    private java.math.BigDecimal maxDiscountAmount;
+
+    // 🔹 [NÂNG CAO] Chỉ áp dụng cho sản phẩm thuộc thương hiệu cụ thể (null = áp dụng tất cả)
+    @Column(name = "applicable_brand_id")
+    private Long applicableBrandId;
+
+    // 🔹 [NÂNG CAO] Giới hạn số lần dùng trên cùng 1 user (null = không giới hạn)
+    @Column(name = "usage_limit_per_user")
+    private Integer usageLimitPerUser;
+
     @CreationTimestamp
     @Column( nullable = true, updatable = false)
     private LocalDateTime createdAt;
@@ -120,6 +133,15 @@ public class Voucher {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public java.math.BigDecimal getMaxDiscountAmount() { return maxDiscountAmount; }
+    public void setMaxDiscountAmount(java.math.BigDecimal maxDiscountAmount) { this.maxDiscountAmount = maxDiscountAmount; }
+
+    public Long getApplicableBrandId() { return applicableBrandId; }
+    public void setApplicableBrandId(Long applicableBrandId) { this.applicableBrandId = applicableBrandId; }
+
+    public Integer getUsageLimitPerUser() { return usageLimitPerUser; }
+    public void setUsageLimitPerUser(Integer usageLimitPerUser) { this.usageLimitPerUser = usageLimitPerUser; }
 
     @Override
     public String toString() {

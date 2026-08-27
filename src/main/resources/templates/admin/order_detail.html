@@ -10,12 +10,6 @@
 
   <style>
     body { background-color: #f5f7fb; font-family: 'Segoe UI', sans-serif; color: #1f2937; }
-    .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1a1a2e; color: #fff; padding-top: 60px; z-index: 9; }
-    .sidebar a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 12px 20px; display: flex; align-items: center; gap: 10px; font-weight: 500; }
-    .sidebar a.active, .sidebar a:hover { background: rgba(215,0,24,0.15); color: #fff; border-left: 4px solid #d70018; }
-    .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e5e7eb; height: 60px; }
-    .content { margin-left: 240px; padding: 80px 24px 40px; }
-    .brand-logo { font-weight: 800; color: #fff; font-size: 1.1rem; padding: 15px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
 
     .chart-box {
       background: #fff;
@@ -58,18 +52,8 @@
 </head>
 
 <body>
-<div class="brand-logo">⚙️ LaptopStore Admin</div>
-
 <!-- Sidebar -->
-<div class="sidebar">
-    <a th:href="@{/admin}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a th:href="@{/admin/products}"><i class="bi bi-box"></i> Sản phẩm</a>
-    <a th:href="@{/admin/orders}" class="active"><i class="bi bi-receipt"></i> Đơn hàng</a>
-    <a th:href="@{/admin/reviews}"><i class="bi bi-star"></i> Đánh giá sản phẩm</a>
-    <a th:href="@{/admin/users}"><i class="bi bi-people"></i> Người dùng</a>
-    <a th:href="@{/admin/vouchers}"><i class="bi bi-ticket-perforated"></i> Voucher</a>
-    <a th:href="@{/admin/brands}"><i class="bi bi-tags"></i> Thương hiệu</a>
-</div>
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('orders')}"></div>
 
 <!-- Navbar -->
 <nav class="navbar navbar-light bg-white shadow-sm px-4">

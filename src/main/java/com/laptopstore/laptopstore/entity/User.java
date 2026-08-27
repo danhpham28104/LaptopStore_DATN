@@ -51,6 +51,10 @@ public class User {
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
+    // 🔹 Trạng thái tài khoản (true = Hoạt động, false = Bị khoá)
+    @Column(name = "enabled", nullable = false, columnDefinition = "tinyint(1) default 1")
+    private boolean enabled = true;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -117,6 +121,9 @@ public class User {
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
     }
+
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
     public LocalDateTime getUpdatedAt() {
         return updatedAt;

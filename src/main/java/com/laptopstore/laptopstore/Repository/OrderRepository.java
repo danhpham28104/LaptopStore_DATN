@@ -51,4 +51,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND LOWER(o.orderStatus) IN :statuses")
     long countOrdersByDateRangeAndStatuses(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<String> statuses);
+
+    /** Tìm đơn hàng PENDING_PAYMENT đã quá hạn thanh toán */
+    List<Order> findByOrderStatusAndPaymentDeadlineBefore(String orderStatus, LocalDateTime deadline);
+
+    /** Tổng tiền giảm giá (discount) trong khoảng ngày */
+    @Query("SELECT COALESCE(SUM(o.discount), 0) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND LOWER(o.orderStatus) IN :statuses")
+    BigDecimal sumDiscountByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<String> statuses);
 }

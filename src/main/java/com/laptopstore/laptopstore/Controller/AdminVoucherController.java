@@ -1,5 +1,6 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.laptopstore.laptopstore.Service.BrandService;
 import com.laptopstore.laptopstore.Service.VoucherService;
 import com.laptopstore.laptopstore.entity.Voucher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +20,15 @@ public class AdminVoucherController {
     @Autowired
     private VoucherService voucherService;
 
+    @Autowired
+    private BrandService brandService;
+
     /** 🔹 Danh sách voucher */
     @GetMapping
     public String listVouchers(Model model) {
         List<Voucher> vouchers = voucherService.getAll();
         model.addAttribute("vouchers", vouchers);
+        model.addAttribute("brands", brandService.getAllBrands());
         model.addAttribute("pageTitle", "Quản lý Voucher - LaptopStore Admin");
         model.addAttribute("active", "vouchers");
         return "admin/vouchers";
@@ -39,7 +44,11 @@ public class AdminVoucherController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam Integer quantity,
-            @RequestParam(required = false) String description
+            @RequestParam(required = false) String description,
+            // 🟢 Advanced fields
+            @RequestParam(required = false) BigDecimal maxDiscountAmount,
+            @RequestParam(required = false) Long applicableBrandId,
+            @RequestParam(required = false) Integer usageLimitPerUser
     ) {
         if (voucherService.existsByCode(code)) {
             return "redirect:/admin/vouchers?error=exists";
@@ -57,6 +66,10 @@ public class AdminVoucherController {
         v.setCreatedAt(LocalDateTime.now());
         v.setUpdatedAt(LocalDateTime.now());
         v.setActive(true);
+        // 🟢 Advanced fields
+        v.setMaxDiscountAmount(maxDiscountAmount);
+        v.setApplicableBrandId(applicableBrandId);
+        v.setUsageLimitPerUser(usageLimitPerUser);
 
         voucherService.save(v);
         return "redirect:/admin/vouchers?success=added";
@@ -74,7 +87,11 @@ public class AdminVoucherController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam Integer quantity,
             @RequestParam Boolean active,
-            @RequestParam(required = false) String description
+            @RequestParam(required = false) String description,
+            // 🟢 Advanced fields
+            @RequestParam(required = false) BigDecimal maxDiscountAmount,
+            @RequestParam(required = false) Long applicableBrandId,
+            @RequestParam(required = false) Integer usageLimitPerUser
     ) {
         Voucher v = voucherService.getById(id).orElse(null);
         if (v == null) return "redirect:/admin/vouchers?error=notfound";
@@ -89,6 +106,10 @@ public class AdminVoucherController {
         v.setActive(active);
         v.setDescription(description);
         v.setUpdatedAt(LocalDateTime.now());
+        // 🟢 Advanced fields
+        v.setMaxDiscountAmount(maxDiscountAmount);
+        v.setApplicableBrandId(applicableBrandId);
+        v.setUsageLimitPerUser(usageLimitPerUser);
 
         voucherService.save(v);
         return "redirect:/admin/vouchers?success=updated";

@@ -1,0 +1,186 @@
+<!-- ✅ templates/fragments/admin_sidebar.html -->
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+<div th:fragment="adminSidebar(activePage)">
+  <style>
+    :root {
+      --sidebar-width: 240px;
+      --sidebar-bg: #1a1c23;
+      --sidebar-active-bg: #2d2f3e;
+      --sidebar-hover-bg: #242632;
+      --sidebar-text: #b0b3c6;
+      --sidebar-section-text: #6b7280;
+      --primary: #d70018;
+    }
+
+    /* Top Left Admin Brand Logo Header */
+    .admin-brand-header {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: var(--sidebar-width) !important;
+      height: 60px !important;
+      background-color: var(--primary) !important;
+      color: #ffffff !important;
+      font-weight: 700 !important;
+      font-size: 1.05rem !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 10px !important;
+      z-index: 1000 !important;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15) !important;
+      white-space: nowrap !important;
+      user-select: none !important;
+    }
+
+    /* Fixed Left Sidebar Container */
+    .admin-sidebar-wrapper {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: var(--sidebar-width) !important;
+      height: 100vh !important;
+      background-color: var(--sidebar-bg) !important;
+      color: #ffffff !important;
+      padding-top: 60px !important;
+      overflow-y: auto !important;
+      z-index: 900 !important;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.15) !important;
+    }
+
+    .admin-sidebar-wrapper::-webkit-scrollbar {
+      width: 4px;
+    }
+    .admin-sidebar-wrapper::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+    }
+
+    /* Section Headings */
+    .admin-sidebar-section {
+      font-size: 0.7rem !important;
+      text-transform: uppercase !important;
+      color: var(--sidebar-section-text) !important;
+      padding: 16px 20px 6px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.08em !important;
+      user-select: none !important;
+    }
+
+    /* Menu Navigation Links */
+    .admin-sidebar-wrapper a {
+      color: var(--sidebar-text) !important;
+      text-decoration: none !important;
+      padding: 10px 20px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 12px !important;
+      font-size: 0.88rem !important;
+      font-weight: 400 !important;
+      transition: all 0.15s ease !important;
+      border-left: 3px solid transparent !important;
+      box-sizing: border-box !important;
+    }
+
+    .admin-sidebar-wrapper a i {
+      font-size: 1.05rem !important;
+      width: 20px !important;
+      text-align: center !important;
+    }
+
+    .admin-sidebar-wrapper a:hover {
+      background-color: var(--sidebar-hover-bg) !important;
+      color: #ffffff !important;
+    }
+
+    .admin-sidebar-wrapper a.active {
+      background-color: var(--sidebar-active-bg) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+      border-left-color: var(--primary) !important;
+    }
+
+    /* Layout overrides for top navbar and main content container */
+    .navbar {
+      position: fixed !important;
+      left: var(--sidebar-width) !important;
+      right: 0 !important;
+      top: 0 !important;
+      height: 60px !important;
+      z-index: 800 !important;
+      background: #ffffff !important;
+      border-bottom: 1px solid #e5e7eb !important;
+    }
+
+    .content {
+      margin-left: var(--sidebar-width) !important;
+      padding-top: 80px !important;
+    }
+  </style>
+
+  <!-- Top Left Brand Logo Header -->
+  <div class="admin-brand-header">
+    <i class="bi bi-laptop" style="font-size: 1.2rem;"></i>
+    <span>LaptopStore Admin</span>
+  </div>
+
+  <!-- Sidebar Menu Container -->
+  <div class="admin-sidebar-wrapper">
+
+    <!-- 🟢 TỔNG QUAN (ADMIN Only) -->
+    <div sec:authorize="hasRole('ADMIN')">
+      <div class="admin-sidebar-section">TỔNG QUAN</div>
+      <a th:href="@{/admin}" th:classappend="${activePage == 'dashboard'} ? 'active'">
+        <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+      </a>
+    </div>
+
+    <!-- 🟢 SẢN PHẨM & KHO (ADMIN & WAREHOUSE) -->
+    <div sec:authorize="hasAnyRole('ADMIN', 'WAREHOUSE')">
+      <div class="admin-sidebar-section">SẢN PHẨM & KHO</div>
+      <a th:href="@{/admin/products}" th:classappend="${activePage == 'products'} ? 'active'">
+        <i class="bi bi-box"></i><span>Sản phẩm</span>
+      </a>
+      <a th:href="@{/admin/brands}" th:classappend="${activePage == 'brands'} ? 'active'">
+        <i class="bi bi-tags"></i><span>Thương hiệu</span>
+      </a>
+      <a th:href="@{/admin/stock}" th:classappend="${activePage == 'stock'} ? 'active'">
+        <i class="bi bi-archive"></i><span>Lịch sử Kho</span>
+      </a>
+    </div>
+
+    <!-- 🟢 BÁN HÀNG (ADMIN & SALE) -->
+    <div sec:authorize="hasAnyRole('ADMIN', 'SALE')">
+      <div class="admin-sidebar-section">BÁN HÀNG</div>
+      <a th:href="@{/admin/orders}" th:classappend="${activePage == 'orders'} ? 'active'">
+        <i class="bi bi-receipt"></i><span>Đơn hàng</span>
+      </a>
+      <a th:href="@{/admin/vouchers}" th:classappend="${activePage == 'vouchers'} ? 'active'">
+        <i class="bi bi-ticket-perforated"></i><span>Voucher</span>
+      </a>
+      <a th:href="@{/admin/reviews}" th:classappend="${activePage == 'reviews'} ? 'active'">
+        <i class="bi bi-star"></i><span>Đánh giá SP</span>
+      </a>
+    </div>
+
+    <!-- 🟢 QUẢN TRỊ & PHÂN TÍCH (ADMIN Only) -->
+    <div sec:authorize="hasRole('ADMIN')">
+      <div class="admin-sidebar-section">QUẢN TRỊ & PHÂN TÍCH</div>
+      <a th:href="@{/admin/users}" th:classappend="${activePage == 'users'} ? 'active'">
+        <i class="bi bi-people"></i><span>Người dùng & Quyền</span>
+      </a>
+      <a th:href="@{/admin/analytics/products}" th:classappend="${activePage == 'analytics_products'} ? 'active'">
+        <i class="bi bi-eye"></i><span>Phân tích Xem SP</span>
+      </a>
+      <a th:href="@{/admin/analytics/ai-chat}" th:classappend="${activePage == 'analytics_aichat'} ? 'active'">
+        <i class="bi bi-robot"></i><span>AI Chat Insights</span>
+      </a>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

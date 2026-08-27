@@ -13,6 +13,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Cấu hình bảo mật với phân quyền đa tầng (RBAC):
+ *
+ * ROLE_ADMIN     → Toàn quyền admin
+ * ROLE_SALE      → Chỉ xem/xử lý Đơn hàng, Voucher, Đánh giá
+ * ROLE_WAREHOUSE → Chỉ xem/thêm/sửa Sản phẩm, Thương hiệu, Kho
+ */
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
@@ -46,12 +53,33 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/otp/**", "/api/**", "/webhook/**")
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/admin/**").hasRole("ADMIN")
+                // ─── ADMIN ONLY (Toàn quyền hệ thống) ───
+                .requestMatchers("/admin", "/admin/").hasRole("ADMIN")
+                .requestMatchers("/admin/dashboard/**").hasRole("ADMIN")
+                .requestMatchers("/admin/users/**").hasRole("ADMIN")
+                .requestMatchers("/admin/export/**").hasRole("ADMIN")
+                .requestMatchers("/admin/analytics/**").hasRole("ADMIN")
+
+                // ─── ADMIN + SALE (Đơn hàng, Voucher, Review) ───
+                .requestMatchers("/admin/orders/**").hasAnyRole("ADMIN", "SALE")
+                .requestMatchers("/admin/vouchers/**").hasAnyRole("ADMIN", "SALE")
+                .requestMatchers("/admin/reviews/**").hasAnyRole("ADMIN", "SALE")
+
+                // ─── ADMIN + WAREHOUSE (Sản phẩm, Thương hiệu, Kho) ───
+                .requestMatchers("/admin/products/**").hasAnyRole("ADMIN", "WAREHOUSE")
+                .requestMatchers("/admin/brands/**").hasAnyRole("ADMIN", "WAREHOUSE")
+                .requestMatchers("/admin/stock/**").hasAnyRole("ADMIN", "WAREHOUSE")
+
+                // ─── BẤT KỲ ROLE ADMIN nào → có thể vào /admin/** còn lại ───
+                .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")
+
+                // ─── PUBLIC ───
                 .anyRequest().permitAll()
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .loginProcessingUrl("/auth/login") // ⚠️ rất quan trọng nếu form login dùng URL này
+                .loginProcessingUrl("/auth/login")
+                .successHandler(successHandler)
                 .permitAll()
             )
             .logout(logout -> logout.permitAll());

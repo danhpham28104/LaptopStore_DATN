@@ -29,6 +29,14 @@ public class ProductVariant {
     @Column(nullable = false)
     private Integer stock = 0;
 
+    // 🔹 Tồn kho đang bị khoá tạm thời (chờ thanh toán QR)
+    @Column(nullable = false)
+    private Integer reservedStock = 0;
+
+    // 🔹 Giá nhập kho riêng cho biến thể (nếu khác giá nhập của sản phẩm chính)
+    @Column(precision = 19, scale = 2)
+    private java.math.BigDecimal importPrice;
+
     @Column(columnDefinition = "TEXT")
     private String image; // ảnh riêng cho màu này (nếu có)
 
@@ -55,6 +63,12 @@ public class ProductVariant {
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = stock; }
+
+    public Integer getReservedStock() { return reservedStock != null ? reservedStock : 0; }
+    public void setReservedStock(Integer reservedStock) { this.reservedStock = (reservedStock != null) ? reservedStock : 0; }
+
+    public java.math.BigDecimal getImportPrice() { return importPrice; }
+    public void setImportPrice(java.math.BigDecimal importPrice) { this.importPrice = importPrice; }
 
     public String getImage() { return image; }
     public void setImage(String image) { this.image = image; }

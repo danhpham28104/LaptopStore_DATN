@@ -43,6 +43,14 @@ public class Product {
     @Column(nullable = false)
     private Integer stock = 0;
 
+    // 🔹 Tồn kho đang bị khoá tạm thời (chờ thanh toán QR)
+    @Column(nullable = false)
+    private Integer reservedStock = 0;
+
+    // 🔹 Giá nhập kho (để tính lợi nhuận gộp)
+    @Column(precision = 19, scale = 2)
+    private java.math.BigDecimal importPrice;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
@@ -180,6 +188,12 @@ public class Product {
 
     public Integer getStock() { return stock; }
     public void setStock(Integer stock) { this.stock = (stock != null) ? stock : 0; }
+
+    public Integer getReservedStock() { return reservedStock != null ? reservedStock : 0; }
+    public void setReservedStock(Integer reservedStock) { this.reservedStock = (reservedStock != null) ? reservedStock : 0; }
+
+    public java.math.BigDecimal getImportPrice() { return importPrice; }
+    public void setImportPrice(java.math.BigDecimal importPrice) { this.importPrice = importPrice; }
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

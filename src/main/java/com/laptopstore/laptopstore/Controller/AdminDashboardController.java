@@ -88,6 +88,17 @@ public class AdminDashboardController {
             lowStockProducts = lowStockProducts.subList(0, 5);
         }
 
+        // 🟢 6. Lợi nhuận gộp (Gross Profit)
+        BigDecimal totalCogs = orderService.getCogsInRange(startDate, endDate);
+        BigDecimal totalDiscount = orderService.getTotalDiscountInRange(startDate, endDate);
+        BigDecimal grossProfit = rangeRevenue.subtract(totalCogs).subtract(totalDiscount);
+        BigDecimal grossProfitMargin = BigDecimal.ZERO;
+        if (rangeRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            grossProfitMargin = grossProfit
+                .divide(rangeRevenue, 4, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+        }
+
         // Truyền model attributes
         model.addAttribute("startDate", startDate.toString());
         model.addAttribute("endDate", endDate.toString());
@@ -111,6 +122,12 @@ public class AdminDashboardController {
         model.addAttribute("bestSellers", bestSellers);
         model.addAttribute("recentOrders", recentOrders);
         model.addAttribute("lowStockProducts", lowStockProducts);
+
+        // 🟢 Gross Profit
+        model.addAttribute("grossProfit", grossProfit);
+        model.addAttribute("totalCogs", totalCogs);
+        model.addAttribute("totalDiscount", totalDiscount);
+        model.addAttribute("grossProfitMargin", grossProfitMargin);
 
         // Active menu
         model.addAttribute("active", "dashboard");

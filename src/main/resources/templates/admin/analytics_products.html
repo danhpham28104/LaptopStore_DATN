@@ -10,13 +10,6 @@
 
     <style>
         body { background-color: #f5f7fb; font-family: 'Segoe UI', sans-serif; color: #1f2937; }
-        .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1a1a2e; color: #fff; padding-top: 60px; z-index: 9; overflow-y: auto; }
-        .sidebar a { color: rgba(255,255,255,0.7); text-decoration: none; padding: 11px 20px; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; }
-        .sidebar a.active, .sidebar a:hover { background: rgba(215,0,24,0.15); color: #fff; border-left: 4px solid #d70018; }
-        .sidebar-heading { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); padding: 15px 20px 5px; font-weight: 700; }
-        .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #e5e7eb; height: 60px; }
-        .content { margin-left: 240px; padding: 80px 24px 40px; }
-        .brand-logo { font-weight: 800; color: #fff; font-size: 1.1rem; padding: 15px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
 
         .stat-card {
           border-radius: 14px;
@@ -39,21 +32,8 @@
 </head>
 
 <body>
-<div class="brand-logo">⚙️ LaptopStore Admin</div>
-
 <!-- Sidebar -->
-<div class="sidebar">
-    <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'"><i class="bi bi-box"></i> Sản phẩm</a>
-    <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'"><i class="bi bi-receipt"></i> Đơn hàng</a>
-    <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'"><i class="bi bi-people"></i> Người dùng</a>
-    <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'"><i class="bi bi-ticket-perforated"></i> Voucher</a>
-    <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
-
-    <div class="sidebar-heading">Phân Tích Nhu Cầu</div>
-    <a th:href="@{/admin/analytics/products}" th:classappend="${active == 'analytics_products'} ? 'active'"><i class="bi bi-eye"></i> Phân Tích Xem SP</a>
-    <a th:href="@{/admin/analytics/ai-chat}" th:classappend="${active == 'analytics_aichat'} ? 'active'"><i class="bi bi-robot"></i> AI Chat Insights</a>
-</div>
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('analytics_products')}"></div>
 
 <!-- Navbar -->
 <nav class="navbar navbar-light bg-white shadow-sm px-4">

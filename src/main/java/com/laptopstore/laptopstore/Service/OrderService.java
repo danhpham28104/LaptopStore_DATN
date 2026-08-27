@@ -4,6 +4,7 @@
     import com.laptopstore.laptopstore.entity.*;
     import com.laptopstore.laptopstore.enums.PaymentMethod;
     import com.laptopstore.laptopstore.enums.PaymentStatus;
+    import com.laptopstore.laptopstore.enums.StockLogType;
     import jakarta.transaction.Transactional;
     import org.springframework.beans.factory.annotation.Autowired;
     import org.springframework.data.domain.Page;
@@ -30,6 +31,7 @@
         @Autowired private VoucherRepository voucherRepository;
         @Autowired private PaymentRepository paymentRepository;
         @Autowired private ProductVariantRepository productVariantRepository;
+        @Autowired private StockLogService stockLogService;
 
 
 
@@ -109,14 +111,38 @@
                 order.addItem(oi); // thiết lập 2 chiều
                 total = total.add(oi.getLineTotal());
 
-                // 🔻 Trừ tồn kho
-                if (variant != null) {
-                    variant.setStock(variant.getStock() - reqQty);
-                    p.updateTotalStock();
-                    productVariantRepository.save(variant);
+                // 🔻 Khoá kho hoặc trừ kho theo phương thức thanh toán
+                if (paymentMethod == PaymentMethod.QR_CODE) {
+                    // QR: chỉ khoá tạm (reservedStock), chưa trừ stock chính thức
+                    if (variant != null) {
+                        variant.setReservedStock(variant.getReservedStock() + reqQty);
+                        productVariantRepository.save(variant);
+                        stockLogService.logVariant(p, variant, null, StockLogType.RESERVE,
+                            -reqQty, variant.getStock(), "SYSTEM",
+                            "Khoá tạm kho chờ thanh toán QR – " + p.getName());
+                    } else {
+                        p.setReservedStock(p.getReservedStock() + reqQty);
+                        productRepository.save(p);
+                        stockLogService.log(p, null, StockLogType.RESERVE,
+                            -reqQty, p.getStock(), "SYSTEM",
+                            "Khoá tạm kho chờ thanh toán QR – " + p.getName());
+                    }
                 } else {
-                    p.setStock(p.getStock() - reqQty);
-                    productRepository.save(p);
+                    // COD / Banking: trừ thẳng stock
+                    if (variant != null) {
+                        variant.setStock(variant.getStock() - reqQty);
+                        p.updateTotalStock();
+                        productVariantRepository.save(variant);
+                        stockLogService.logVariant(p, variant, null, StockLogType.EXPORT_ORDER,
+                            -reqQty, variant.getStock(), "SYSTEM",
+                            "Xuất kho đơn hàng COD – " + p.getName());
+                    } else {
+                        p.setStock(p.getStock() - reqQty);
+                        productRepository.save(p);
+                        stockLogService.log(p, null, StockLogType.EXPORT_ORDER,
+                            -reqQty, p.getStock(), "SYSTEM",
+                            "Xuất kho đơn hàng COD – " + p.getName());
+                    }
                 }
             }
 
@@ -125,6 +151,12 @@
 
             // 💰 Lưu tổng tiền
             order.setTotalAmount(total);
+
+            // ⏰ Set payment deadline nếu QR (15 phút)
+            if (paymentMethod == PaymentMethod.QR_CODE) {
+                order.setPaymentDeadline(LocalDateTime.now().plusMinutes(15));
+                order.setOrderStatus("PENDING_PAYMENT");
+            }
 
             // 💳 Tạo bản ghi Payment
             Payment payment = new Payment();
@@ -269,13 +301,19 @@
         }
 
 
-        /** Tính tiền giảm giá */
+        /** Tính tiền giảm giá – hỗ trợ maxDiscountAmount */
         private BigDecimal calculateDiscount(BigDecimal total, Voucher v) {
+            BigDecimal discount;
             if ("PERCENT".equalsIgnoreCase(v.getDiscountType())) {
-                return total.multiply(v.getDiscountValue().divide(BigDecimal.valueOf(100)));
+                discount = total.multiply(v.getDiscountValue().divide(BigDecimal.valueOf(100)));
+                // Giới hạn tối đa nếu có cài maxDiscountAmount
+                if (v.getMaxDiscountAmount() != null && discount.compareTo(v.getMaxDiscountAmount()) > 0) {
+                    discount = v.getMaxDiscountAmount();
+                }
             } else {
-                return v.getDiscountValue();
+                discount = v.getDiscountValue();
             }
+            return discount;
         }
 
         @Transactional
@@ -284,11 +322,92 @@
                     .orElseThrow(() -> new RuntimeException("Order not found"));
 
             // chỉ cho phép hủy khi đang xử lý
-            if (!order.getOrderStatus().equals("Pending")) {
+            if (!order.getOrderStatus().equals("Pending") &&
+                !order.getOrderStatus().equals("PENDING_PAYMENT")) {
                 throw new RuntimeException("Không thể hủy đơn này!");
             }
 
+            boolean wasQrPending = "PENDING_PAYMENT".equals(order.getOrderStatus());
+
+            // 🔄 Nhả kho
+            for (OrderItem item : order.getOrderItems()) {
+                Product p = item.getProduct();
+                ProductVariant variant = item.getVariant();
+                int qty = item.getQuantity();
+
+                if (wasQrPending) {
+                    // Nhả reservedStock (QR chưa thanh toán)
+                    if (variant != null) {
+                        variant.setReservedStock(Math.max(0, variant.getReservedStock() - qty));
+                        productVariantRepository.save(variant);
+                        stockLogService.logVariant(p, variant, order, StockLogType.CANCEL_RESTORE,
+                            qty, variant.getStock(), "SYSTEM",
+                            "Hoàn kho – Hủy đơn QR timeout: " + order.getOrderCode());
+                    } else {
+                        p.setReservedStock(Math.max(0, p.getReservedStock() - qty));
+                        productRepository.save(p);
+                        stockLogService.log(p, order, StockLogType.CANCEL_RESTORE,
+                            qty, p.getStock(), "SYSTEM",
+                            "Hoàn kho – Hủy đơn QR timeout: " + order.getOrderCode());
+                    }
+                } else {
+                    // Hoàn kho thực (đơn COD đã trừ)
+                    if (variant != null) {
+                        variant.setStock(variant.getStock() + qty);
+                        p.updateTotalStock();
+                        productVariantRepository.save(variant);
+                        stockLogService.logVariant(p, variant, order, StockLogType.CANCEL_RESTORE,
+                            qty, variant.getStock(), "SYSTEM",
+                            "Hoàn kho – Hủy đơn: " + order.getOrderCode());
+                    } else {
+                        p.setStock(p.getStock() + qty);
+                        productRepository.save(p);
+                        stockLogService.log(p, order, StockLogType.CANCEL_RESTORE,
+                            qty, p.getStock(), "SYSTEM",
+                            "Hoàn kho – Hủy đơn: " + order.getOrderCode());
+                    }
+                }
+            }
+
             order.setOrderStatus("Cancelled");
+            orderRepository.save(order);
+        }
+
+        /**
+         * ✅ Xác nhận thanh toán QR thành công → trừ kho chính thức
+         */
+        @Transactional
+        public void confirmQrPayment(Long orderId, String performedBy) {
+            Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+            if (!"PENDING_PAYMENT".equals(order.getOrderStatus())) return;
+
+            for (OrderItem item : order.getOrderItems()) {
+                Product p = item.getProduct();
+                ProductVariant variant = item.getVariant();
+                int qty = item.getQuantity();
+
+                if (variant != null) {
+                    // Trừ stock chính thức, nhả reservedStock
+                    variant.setStock(variant.getStock() - qty);
+                    variant.setReservedStock(Math.max(0, variant.getReservedStock() - qty));
+                    p.updateTotalStock();
+                    productVariantRepository.save(variant);
+                    stockLogService.logVariant(p, variant, order, StockLogType.CONFIRM_RESERVE,
+                        -qty, variant.getStock(), performedBy,
+                        "Xác nhận QR → Trừ kho chính thức: " + order.getOrderCode());
+                } else {
+                    p.setStock(p.getStock() - qty);
+                    p.setReservedStock(Math.max(0, p.getReservedStock() - qty));
+                    productRepository.save(p);
+                    stockLogService.log(p, order, StockLogType.CONFIRM_RESERVE,
+                        -qty, p.getStock(), performedBy,
+                        "Xác nhận QR → Trừ kho chính thức: " + order.getOrderCode());
+                }
+            }
+
+            order.setOrderStatus("Confirmed");
             orderRepository.save(order);
         }
 
@@ -401,6 +520,57 @@
             map.put("labels", labels);
             map.put("revenues", revenues);
             return map;
+        }
+
+        // ==========================================
+        // 🟢 GROSS PROFIT STATS (PHASE 2)
+        // ==========================================
+
+        /**
+         * Tính tổng Giá vốn hàng bán (COGS) trong khoảng ngày.
+         * COGS = SUM(orderItem.quantity * product.importPrice)
+         */
+        public BigDecimal getCogsInRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate == null) startDate = LocalDate.now().minusDays(6);
+            if (endDate == null) endDate = LocalDate.now();
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(23, 59, 59);
+            List<String> successStatuses = List.of("paid", "completed", "delivered", "shipping");
+
+            // Lấy tất cả đơn thành công trong khoảng
+            List<Order> orders = orderRepository.findOrdersByDateRange(start, end).stream()
+                .filter(o -> successStatuses.contains(o.getOrderStatus().toLowerCase()))
+                .toList();
+
+            BigDecimal totalCogs = BigDecimal.ZERO;
+            for (Order order : orders) {
+                for (com.laptopstore.laptopstore.entity.OrderItem item : order.getOrderItems()) {
+                    // Ưu tiên importPrice của variant, fallback về product
+                    java.math.BigDecimal importPrice = null;
+                    if (item.getVariant() != null && item.getVariant().getImportPrice() != null) {
+                        importPrice = item.getVariant().getImportPrice();
+                    } else if (item.getProduct() != null && item.getProduct().getImportPrice() != null) {
+                        importPrice = item.getProduct().getImportPrice();
+                    }
+                    if (importPrice != null) {
+                        totalCogs = totalCogs.add(importPrice.multiply(java.math.BigDecimal.valueOf(item.getQuantity())));
+                    }
+                }
+            }
+            return totalCogs;
+        }
+
+        /**
+         * Tổng tiền giảm giá (discount từ Voucher) trong khoảng ngày
+         */
+        public BigDecimal getTotalDiscountInRange(LocalDate startDate, LocalDate endDate) {
+            if (startDate == null) startDate = LocalDate.now().minusDays(6);
+            if (endDate == null) endDate = LocalDate.now();
+            LocalDateTime start = startDate.atStartOfDay();
+            LocalDateTime end = endDate.atTime(23, 59, 59);
+            List<String> successStatuses = List.of("paid", "completed", "delivered", "shipping");
+            BigDecimal result = orderRepository.sumDiscountByDateRange(start, end, successStatuses);
+            return result != null ? result : BigDecimal.ZERO;
         }
 
     }

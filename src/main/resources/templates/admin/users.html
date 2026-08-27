@@ -1,137 +1,274 @@
 <!DOCTYPE html>
-<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title th:text="${pageTitle} ?: 'Quản lý Người dùng - LaptopStore Admin'">Quản lý Người dùng</title>
+  <title th:text="${pageTitle} ?: 'Quản Lý Tài Khoản - LaptopStore Admin'">Quản lý Tài Khoản</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
+    :root { --primary: #d70018; }
     body { background-color: #f6f7fb; font-family: 'Segoe UI', sans-serif; }
-    .sidebar { width: 240px; height: 100vh; position: fixed; top: 0; left: 0; background: #1e1f26; color: #fff; padding-top: 60px; }
-    .sidebar a { color: #bbb; text-decoration: none; padding: 10px 20px; display: block; }
-    .sidebar a.active, .sidebar a:hover { background: #343541; color: #fff; }
-    .navbar { position: fixed; left: 240px; right: 0; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid #ddd; }
-    .content { margin-left: 240px; padding: 80px 20px 40px; }
-    .brand-logo { font-weight: bold; color: #fff; font-size: 1.2rem; padding: 10px 20px; position: absolute; top: 0; left: 0; background: #111; width: 240px; text-align: center; }
+
+    .role-admin { background-color: #dc3545; color: #fff; }
+    .role-sale { background-color: #ffc107; color: #000; }
+    .role-warehouse { background-color: #0d6efd; color: #fff; }
+    .role-user { background-color: #6c757d; color: #fff; }
   </style>
 </head>
 
 <body>
-<div class="brand-logo">⚙️ LaptopStore Admin</div>
-
 <!-- Sidebar -->
-<div class="sidebar">
-  <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'"><i class="bi bi-speedometer2"></i> Dashboard</a>
-  <a th:href="@{/admin/products}" th:classappend="${active == 'products'} ? 'active'"><i class="bi bi-box"></i> Sản phẩm</a>
-  <a th:href="@{/admin/orders}" th:classappend="${active == 'orders'} ? 'active'"><i class="bi bi-receipt"></i> Đơn hàng</a>
-  <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'"><i class="bi bi-people"></i> Người dùng</a>
-  <a th:href="@{/admin/vouchers}" th:classappend="${active == 'vouchers'} ? 'active'"><i class="bi bi-ticket-perforated"></i> Voucher</a>
-  <a th:href="@{/admin/brands}" th:classappend="${active == 'brands'} ? 'active'"><i class="bi bi-tags"></i> Thương hiệu</a>
-  <div style="font-size: 0.75rem; text-transform: uppercase; color: rgba(255,255,255,0.4); padding: 15px 20px 5px; font-weight: 700;">Phân Tích Nhu Cầu</div>
-  <a th:href="@{/admin/analytics/products}" th:classappend="${active == 'analytics_products'} ? 'active'"><i class="bi bi-eye"></i> Phân Tích Xem SP</a>
-  <a th:href="@{/admin/analytics/ai-chat}" th:classappend="${active == 'analytics_aichat'} ? 'active'"><i class="bi bi-robot"></i> AI Chat Insights</a>
-</div>
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('users')}"></div>
 
 <!-- Navbar -->
-<nav class="navbar navbar-light bg-white shadow-sm">
+<nav class="navbar navbar-light bg-white shadow-sm px-3">
   <div class="container-fluid justify-content-end align-items-center">
-
     <span class="me-3 text-secondary fw-semibold">
-      👋 Xin chào, Admin
+      👋 Xin chào, <span sec:authentication="name">Admin</span>
     </span>
-
     <a href="/logout" class="btn btn-sm btn-outline-danger">
       <i class="bi bi-box-arrow-right"></i> Đăng xuất
     </a>
-
   </div>
 </nav>
 
 <!-- Content -->
 <div class="content">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold">Quản lý Người dùng</h4>
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-people me-2" style="color:var(--primary)"></i>Quản Lý Tài Khoản & Phân Quyền</h4>
+      <small class="text-muted">Tạo mới nhân viên, phân quyền đa tầng và quản lý trạng thái tài khoản</small>
+    </div>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+      <i class="bi bi-person-plus-fill me-1"></i> Tạo tài khoản mới
+    </button>
   </div>
 
   <div class="card shadow-sm">
-    <div class="card-body table-responsive">
-      <table class="table align-middle table-hover">
-        <thead class="table-light">
-        <tr>
-          <th>ID</th>
-          <th>Họ tên</th>
-          <th>Tên đăng nhập</th>
-          <th>Email</th>
-          <th>Điện thoại</th>
-          <th>Vai trò</th>
-          <th>Hành động</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="u : ${users}">
-          <td th:text="${u.id}"></td>
-          <td th:text="${u.fullName}"></td>
-          <td th:text="${u.username}"></td>
-          <td th:text="${u.email}"></td>
-          <td th:text="${u.phone ?: '-'}"></td>
-          <td>
-            <span th:each="r : ${u.roles}" th:text="${r.name}" class="badge bg-secondary me-1"></span>
-          </td>
-          <td>
-            <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
-                    th:data-bs-target="'#editModal_' + ${u.id}">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <form th:action="@{'/admin/users/delete/' + ${u.id}}" method="post" style="display:inline;">
-              <button class="btn btn-danger btn-sm" onclick="return confirm('Xóa người dùng này?')">
-                <i class="bi bi-trash"></i>
-              </button>
-            </form>
-          </td>
-        </tr>
-        <tr th:if="${#lists.isEmpty(users)}">
-          <td colspan="7" class="text-center text-muted">Không có người dùng nào</td>
-        </tr>
-        </tbody>
-      </table>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+          <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Họ và tên</th>
+            <th>Tài khoản / Email</th>
+            <th>Điện thoại</th>
+            <th>Vai trò (Role)</th>
+            <th class="text-center">Trạng thái</th>
+            <th class="text-end pe-3">Hành động</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="u : ${users}">
+            <td th:text="${u.id}" class="text-muted fw-semibold"></td>
+            <td>
+              <div class="fw-bold text-dark" th:text="${u.fullName}"></div>
+            </td>
+            <td>
+              <div class="fw-semibold" th:text="${u.username}"></div>
+              <small class="text-muted" th:text="${u.email}"></small>
+            </td>
+            <td th:text="${u.phone ?: '-'}"></td>
+            <td>
+              <!-- Badge Vai trò -->
+              <span th:each="r : ${u.roles}"
+                    th:switch="${r.name}">
+                <span th:case="'ROLE_ADMIN'" class="badge role-admin px-2 py-1"><i class="bi bi-shield-lock-fill"></i> ADMIN</span>
+                <span th:case="'ROLE_SALE'" class="badge role-sale px-2 py-1"><i class="bi bi-headset"></i> SALE</span>
+                <span th:case="'ROLE_WAREHOUSE'" class="badge role-warehouse px-2 py-1"><i class="bi bi-archive-fill"></i> WAREHOUSE</span>
+                <span th:case="*" class="badge role-user px-2 py-1"><i class="bi bi-person"></i> CUSTOMER</span>
+              </span>
+            </td>
+            <td class="text-center">
+              <!-- Badge Trạng thái -->
+              <span th:if="${#lists.contains(u.roles.![name], 'ROLE_ADMIN')}" class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-3" title="Tài khoản Admin tối cao không thể bị khoá">
+                <i class="bi bi-shield-check me-1"></i> Luôn mở (Admin)
+              </span>
+              <span th:if="${!#lists.contains(u.roles.![name], 'ROLE_ADMIN') and u.enabled}" class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3">
+                <i class="bi bi-check-circle-fill me-1"></i> Hoạt động
+              </span>
+              <span th:if="${!#lists.contains(u.roles.![name], 'ROLE_ADMIN') and !u.enabled}" class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-3">
+                <i class="bi bi-lock-fill me-1"></i> Bị khoá
+              </span>
+            </td>
+            <td class="text-end pe-3">
+              <div class="btn-group btn-group-sm">
+                <!-- Nút Sửa -->
+                <button class="btn btn-outline-primary" data-bs-toggle="modal"
+                        th:data-bs-target="'#editModal_' + ${u.id}" title="Sửa thông tin / Role">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+
+                <!-- Nút Khoá / Mở khoá (Ẩn/Disable với ADMIN) -->
+                <form th:if="${!#lists.contains(u.roles.![name], 'ROLE_ADMIN')}"
+                      th:action="@{'/admin/users/toggle-status/' + ${u.id}}" method="post" class="d-inline">
+                  <button type="submit"
+                          th:class="${u.enabled} ? 'btn btn-outline-warning' : 'btn btn-outline-success'"
+                          th:title="${u.enabled} ? 'Khoá tài khoản này' : 'Mở khoá tài khoản này'"
+                          th:onclick="return confirm([[${u.enabled} ? 'Khoá tài khoản ' + ${u.username} + '?' : 'Mở khoá tài khoản ' + ${u.username} + '?']])">
+                    <i th:class="${u.enabled} ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
+                  </button>
+                </form>
+                <button th:if="${#lists.contains(u.roles.![name], 'ROLE_ADMIN')}"
+                        class="btn btn-outline-secondary" disabled title="Tài khoản ADMIN không thể bị khoá">
+                  <i class="bi bi-shield-lock-fill"></i>
+                </button>
+
+                <!-- Nút Xoá -->
+                <form th:action="@{'/admin/users/delete/' + ${u.id}}" method="post" class="d-inline">
+                  <button type="submit" class="btn btn-outline-danger" title="Xoá tài khoản"
+                          onclick="return confirm('Xác nhận xóa vĩnh viễn người dùng này?')">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(users)}">
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-people fs-2 d-block mb-2"></i>Chưa có người dùng nào
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Modal chỉnh sửa người dùng -->
-<div th:each="u : ${users}" th:id="'editModal_' + ${u.id}" class="modal fade" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered">
+<!-- Modal Tạo mới tài khoản nội bộ -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
-      <form th:action="@{'/admin/users/edit/' + ${u.id}}" method="post">
+      <form th:action="@{/admin/users/add}" method="post">
         <div class="modal-header">
-          <h5 class="modal-title">Chỉnh sửa thông tin</h5>
+          <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2" style="color:var(--primary)"></i>Tạo Tài Khoản Mới</h5>
           <button class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body row g-3">
-          <div class="col-md-12">
-            <label class="form-label">Họ tên</label>
-            <input name="fullName" class="form-control" th:value="${u.fullName}" required>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+            <input name="fullName" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" required>
           </div>
-          <div class="col-md-12">
-            <label class="form-label">Email</label>
-            <input name="email" class="form-control" type="email" th:value="${u.email}" required>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tên đăng nhập (Username) <span class="text-danger">*</span></label>
+            <input name="username" class="form-control" placeholder="Ví dụ: sale_nv01" required>
           </div>
-          <div class="col-md-12">
-            <label class="form-label">Điện thoại</label>
-            <input name="phone" class="form-control" th:value="${u.phone}">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+            <input name="email" type="email" class="form-control" placeholder="nguyenvana@gmail.com" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Số điện thoại</label>
+            <input name="phone" class="form-control" placeholder="0901234567">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Mật khẩu <span class="text-danger">*</span></label>
+            <input name="password" type="password" class="form-control" placeholder="Nhập mật khẩu" required minlength="6">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Phân quyền (Role) <span class="text-danger">*</span></label>
+            <select name="roleName" class="form-select" required>
+              <option value="ROLE_SALE">🟡 SALE (Quản lý đơn hàng, voucher, CSKH)</option>
+              <option value="ROLE_WAREHOUSE">🔵 WAREHOUSE (Quản lý sản phẩm, thương hiệu, kho)</option>
+              <option value="ROLE_ADMIN">🔴 ADMIN (Toàn quyền hệ thống)</option>
+              <option value="ROLE_USER">⚪ USER (Khách hàng mua sắm)</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-primary">Lưu</button>
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i> Tạo tài khoản</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<!-- Modal Chỉnh sửa người dùng -->
+<div th:each="u : ${users}" th:id="'editModal_' + ${u.id}" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form th:action="@{'/admin/users/edit/' + ${u.id}}" method="post">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2" style="color:var(--primary)"></i>Sửa Tài Khoản: <span th:text="${u.username}"></span></h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Họ và tên</label>
+            <input name="fullName" class="form-control" th:value="${u.fullName}" required>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Email</label>
+            <input name="email" class="form-control" type="email" th:value="${u.email}" required>
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Điện thoại</label>
+            <input name="phone" class="form-control" th:value="${u.phone}">
+          </div>
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">Vai trò (Role)</label>
+            <select name="roleName" class="form-select">
+              <option value="ROLE_SALE" th:selected="${#lists.contains(u.roles.![name], 'ROLE_SALE')}">🟡 SALE (Quản lý đơn hàng, voucher, CSKH)</option>
+              <option value="ROLE_WAREHOUSE" th:selected="${#lists.contains(u.roles.![name], 'ROLE_WAREHOUSE')}">🔵 WAREHOUSE (Quản lý sản phẩm, thương hiệu, kho)</option>
+              <option value="ROLE_ADMIN" th:selected="${#lists.contains(u.roles.![name], 'ROLE_ADMIN')}">🔴 ADMIN (Toàn quyền hệ thống)</option>
+              <option value="ROLE_USER" th:selected="${#lists.contains(u.roles.![name], 'ROLE_USER')}">⚪ USER (Khách hàng mua sắm)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i> Lưu thay đổi</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Thông Báo -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+  <div id="toastMessage" class="toast align-items-center text-white bg-success border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toastText">Thành công!</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
+    let message = "";
+    let isError = false;
+
+    if (params.get("success") === "added") message = "Đã tạo tài khoản mới thành công!";
+    if (params.get("success") === "updated") message = "Đã cập nhật thông tin & vai trò!";
+    if (params.get("success") === "locked") { message = "Đã khoá tài khoản!"; isError = true; }
+    if (params.get("success") === "unlocked") message = "Đã mở khoá tài khoản thành công!";
+    if (params.get("success") === "deleted") { message = "Đã xoá tài khoản!"; isError = true; }
+
+    if (params.get("error")) {
+      message = params.get("error");
+      isError = true;
+    }
+
+    if (message !== "") {
+      const toastEl = document.getElementById("toastMessage");
+      const toastText = document.getElementById("toastText");
+      toastText.textContent = message;
+      toastEl.classList.remove("bg-success", "bg-danger");
+      toastEl.classList.add(isError ? "bg-danger" : "bg-success");
+      const toast = new bootstrap.Toast(toastEl);
+      toast.show();
+    }
+  });
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
