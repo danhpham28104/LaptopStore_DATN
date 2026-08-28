@@ -50,7 +50,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/otp/**", "/api/**", "/webhook/**")
+                .ignoringRequestMatchers("/otp/**", "/api/**", "/webhook/**", "/payment/webhook/**")
             )
             .authorizeHttpRequests(auth -> auth
                 // ─── ADMIN ONLY (Toàn quyền hệ thống) ───
@@ -72,6 +72,9 @@ public class SecurityConfig {
 
                 // ─── BẤT KỲ ROLE ADMIN nào → có thể vào /admin/** còn lại ───
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")
+
+                // ─── CUSTOMER ROUTES (Bắt buộc đăng nhập) ───
+                .requestMatchers("/cart/**", "/checkout/**", "/orders/**", "/user/**", "/wishlist/**").authenticated()
 
                 // ─── PUBLIC ───
                 .anyRequest().permitAll()

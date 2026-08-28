@@ -116,7 +116,7 @@ public class AdminStockLogController {
             RedirectAttributes redirectAttributes
     ) {
         String performedBy = (principal != null) ? principal.getName() : "ADMIN";
-        Product product = productService.getProductById(productId);
+        Product product = productService.getProductById(productId).orElse(null);
 
         if (product == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy sản phẩm!");

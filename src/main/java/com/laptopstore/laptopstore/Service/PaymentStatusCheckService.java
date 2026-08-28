@@ -34,6 +34,9 @@ public class PaymentStatusCheckService {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private OrderService orderService;
+
     /**
      * 🔄 Scheduled Task: Kiểm tra trạng thái thanh toán mỗi 30 giây
      * 
@@ -74,15 +77,19 @@ public class PaymentStatusCheckService {
 
             for (Payment payment : overduePayments) {
                 Order order = payment.getOrder();
-                if (order != null && !order.getOrderStatus().equals("Cancelled")) {
-                    // Đánh dấu order bị hủy do hết hạn thanh toán
+                if (order != null && !order.getOrderStatus().equalsIgnoreCase("Cancelled")) {
+                    try {
+                        orderService.cancelOrder(order.getId());
+                    } catch (Exception ex) {
+                        logger.warn("Order {} already cancelled or cannot be cancelled: {}", order.getOrderCode(), ex.getMessage());
+                    }
                     order.setOrderStatus("Payment Timeout");
                     payment.setStatus(PaymentStatus.FAILED);
 
                     orderRepository.save(order);
                     paymentRepository.save(payment);
 
-                    logger.info("⏰ Marked order {} as timeout", order.getOrderCode());
+                    logger.info("⏰ Marked order {} as timeout & restored stock", order.getOrderCode());
                 }
             }
 
