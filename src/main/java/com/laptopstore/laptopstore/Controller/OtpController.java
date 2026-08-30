@@ -13,6 +13,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import com.laptopstore.laptopstore.enums.OrderStatus;
+
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,6 +134,12 @@ public class OtpController {
             Order order = orderService.getOrderById(orderId)
                     .orElseThrow(() -> new RuntimeException("Order not found"));
 
+            // 🛡️ BẢO MẬT: Kiểm tra quyền sở hữu đơn hàng
+            if (order.getUser() == null || !order.getUser().getUsername().equals(principal.getName())) {
+                return ResponseEntity.status(403)
+                        .body(Map.of("success", false, "message", "Bạn không có quyền thực hiện trên đơn hàng này"));
+            }
+
             order.setOtpVerified(true);
 
             String redirectUrl = "/orders/" + orderId;
@@ -139,7 +147,7 @@ public class OtpController {
                 if (order.getPayment().getMethod() == com.laptopstore.laptopstore.enums.PaymentMethod.SEPAY) {
                     redirectUrl = "/checkout/sepay?orderId=" + orderId;
                 } else if (order.getPayment().getMethod() == com.laptopstore.laptopstore.enums.PaymentMethod.COD) {
-                    order.setOrderStatus("Confirmed");
+                    order.setOrderStatus(OrderStatus.CONFIRMED);
                     redirectUrl = "/orders/success";
                 }
             }

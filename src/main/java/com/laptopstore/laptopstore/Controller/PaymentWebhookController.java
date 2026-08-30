@@ -1,5 +1,9 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laptopstore.laptopstore.Repository.PaymentRepository;
+import com.laptopstore.laptopstore.Service.PaymentService;
 import com.laptopstore.laptopstore.Service.PaymentStatusCheckService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +28,15 @@ public class PaymentWebhookController {
     @Autowired
     private PaymentStatusCheckService paymentStatusCheckService;
 
+    @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     /**
      * Webhook từ SEPAY
      * POST /payment/webhook/sepay
@@ -31,14 +44,33 @@ public class PaymentWebhookController {
      */
     @PostMapping("/webhook/sepay")
     @ResponseBody
-    public ResponseEntity<?> sepayWebhook(@RequestBody Map<String, Object> payload) {
-        logger.info("🪝 SEPAY Webhook received: {}", payload);
+    public ResponseEntity<?> sepayWebhook(
+            @RequestHeader(value = "X-SePay-Signature", required = false) String signature,
+            @RequestBody String rawBody
+    ) {
+        logger.info("🪝 SEPAY Webhook received: signature={}, rawBody={}", signature, rawBody);
+
+        // 🔹 1. Verify HMAC-SHA256 signature
+        if (!paymentService.validateWebhookSignature(rawBody, signature)) {
+            logger.warn("⚠️ Unauthorized SEPAY Webhook attempt: Invalid signature!");
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid signature"));
+        }
 
         try {
-            String orderCode = (String) payload.get("orderCode");
-            String transactionId = (String) payload.get("transactionId");
-            String status = (String) payload.get("status");
-            Long amount = ((Number) payload.get("amount")).longValue();
+            Map<String, Object> payload = objectMapper.readValue(rawBody, new TypeReference<Map<String, Object>>() {});
+
+            String transactionId = payload.get("transactionId") != null ? payload.get("transactionId").toString()
+                    : (payload.get("id") != null ? payload.get("id").toString() : null);
+
+            // 🔹 2. Idempotency check
+            if (transactionId != null && !transactionId.isBlank() && paymentRepository.existsByTransactionId(transactionId)) {
+                logger.info("ℹ️ Transaction {} already processed", transactionId);
+                return ResponseEntity.ok("Already processed");
+            }
+
+            String orderCode = payload.get("orderCode") != null ? payload.get("orderCode").toString() : null;
+            String status = payload.get("status") != null ? payload.get("status").toString() : "SUCCESS";
+            Long amount = payload.get("amount") != null ? ((Number) payload.get("amount")).longValue() : 0L;
 
             // 🔹 Xử lý webhook
             paymentStatusCheckService.handlePaymentWebhook(orderCode, transactionId, status, amount);

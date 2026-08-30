@@ -96,10 +96,11 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         // --- Gán role mặc định ---
-        Role roleDefault = roleRepository.findByName("USER")
+        Role roleDefault = roleRepository.findByName("ROLE_USER")
                 .orElseGet(() -> {
                     Role newRole = new Role();
-                    newRole.setName("USER");
+                    newRole.setName("ROLE_USER");
+                    newRole.setDescription("Normal user");
                     return roleRepository.save(newRole);
                 });
         user.setRoles(Set.of(roleDefault));

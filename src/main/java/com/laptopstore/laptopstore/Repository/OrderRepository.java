@@ -1,6 +1,7 @@
 package com.laptopstore.laptopstore.Repository;
 
 import com.laptopstore.laptopstore.entity.Order;
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,19 +44,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end ORDER BY o.createdAt DESC")
     List<Order> findOrdersByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND LOWER(o.orderStatus) IN :statuses")
-    Optional<BigDecimal> sumRevenueByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<String> statuses);
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus IN :statuses")
+    Optional<BigDecimal> sumRevenueByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<OrderStatus> statuses);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end")
     long countOrdersByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND LOWER(o.orderStatus) IN :statuses")
-    long countOrdersByDateRangeAndStatuses(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<String> statuses);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus IN :statuses")
+    long countOrdersByDateRangeAndStatuses(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<OrderStatus> statuses);
 
     /** Tìm đơn hàng PENDING_PAYMENT đã quá hạn thanh toán */
-    List<Order> findByOrderStatusAndPaymentDeadlineBefore(String orderStatus, LocalDateTime deadline);
+    List<Order> findByOrderStatusAndPaymentDeadlineBefore(OrderStatus orderStatus, LocalDateTime deadline);
 
     /** Tổng tiền giảm giá (discount) trong khoảng ngày */
-    @Query("SELECT COALESCE(SUM(o.discount), 0) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND LOWER(o.orderStatus) IN :statuses")
-    BigDecimal sumDiscountByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<String> statuses);
+    @Query("SELECT COALESCE(SUM(o.discount), 0) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus IN :statuses")
+    BigDecimal sumDiscountByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<OrderStatus> statuses);
 }

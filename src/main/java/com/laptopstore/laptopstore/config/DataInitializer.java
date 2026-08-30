@@ -43,8 +43,32 @@ public class DataInitializer implements CommandLineRunner {
             .orElseGet(() -> roleRepository.save(new Role(null, "ROLE_SALE")));
         roleRepository.findByName("ROLE_WAREHOUSE")
             .orElseGet(() -> roleRepository.save(new Role(null, "ROLE_WAREHOUSE")));
-        roleRepository.findByName("ROLE_USER")
+        Role userRole = roleRepository.findByName("ROLE_USER")
             .orElseGet(() -> roleRepository.save(new Role(null, "ROLE_USER")));
+
+        // Khắc phục / Migration dữ liệu cũ nếu DB có Role tên "USER" không có prefix "ROLE_"
+        roleRepository.findByName("USER").ifPresent(legacyUserRole -> {
+            log.info("[DataInitializer] Phát hiện Role legacy 'USER' - Đang chuyển đổi sang 'ROLE_USER'...");
+            if (!legacyUserRole.getId().equals(userRole.getId())) {
+                List<User> usersWithLegacyRole = userRepository.findAll().stream()
+                        .filter(u -> u.getRoles().contains(legacyUserRole))
+                        .toList();
+                for (User u : usersWithLegacyRole) {
+                    u.getRoles().remove(legacyUserRole);
+                    u.getRoles().add(userRole);
+                    userRepository.save(u);
+                }
+                try {
+                    roleRepository.delete(legacyUserRole);
+                } catch (Exception e) {
+                    log.warn("[DataInitializer] Không thể xóa role legacy 'USER': {}", e.getMessage());
+                }
+            } else {
+                legacyUserRole.setName("ROLE_USER");
+                roleRepository.save(legacyUserRole);
+            }
+            log.info("[DataInitializer] ✅ Đã hoàn tất chuyển đổi Role legacy 'USER' -> 'ROLE_USER'.");
+        });
 
         // 2. Lấy toàn bộ người dùng trong DB
         List<User> allUsers = userRepository.findAll();

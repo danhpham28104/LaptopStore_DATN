@@ -168,6 +168,11 @@ public class CheckoutController {
         Order order = orderService.getOrderById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
+        // 🛡️ BẢO MẬT: Kiểm tra quyền sở hữu đơn hàng
+        if (order.getUser() == null || !order.getUser().getUsername().equals(principal.getName())) {
+            return "redirect:/orders?error=unauthorized";
+        }
+
         // 🔹 Kiểm tra OTP đã xác thực hay chưa
         if (!order.getOtpVerified()) {
             return "redirect:/otp/verify?orderId=" + orderId;

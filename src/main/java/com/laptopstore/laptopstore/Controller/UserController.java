@@ -5,6 +5,7 @@ import com.laptopstore.laptopstore.Service.UserService;
 import com.laptopstore.laptopstore.entity.Address;
 import com.laptopstore.laptopstore.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,11 +21,11 @@ public class UserController {
     @Autowired
     private AddressService addressService;
 
-    /** Trang danh sách user (admin) */
+    /** Trang danh sách user (admin) -> Chuyển hướng sang /admin/users */
     @GetMapping("/users")
-    public String listUsers(Model model) {
-        model.addAttribute("users", userService.getAllUser());
-        return "users";
+    @PreAuthorize("hasRole('ADMIN')")
+    public String listUsers() {
+        return "redirect:/admin/users";
     }
 
     /** Trang tài khoản hiện tại */
@@ -50,6 +51,16 @@ public class UserController {
                              @RequestParam String phone,
                              Model model,
                              Principal principal) {
+        if (principal == null) return "redirect:/login";
+        User loggedInUser = userService.findByUsername(principal.getName()).orElse(null);
+        if (loggedInUser == null) return "redirect:/login";
+
+        // 🛡️ BẢO MẬT: Chỉ cho phép cập nhật thông tin cá nhân của chính mình
+        if (!loggedInUser.getId().equals(id)) {
+            model.addAttribute("error", "Bạn không có quyền chỉnh sửa thông tin tài khoản này!");
+            return currentUserAccount(model, principal);
+        }
+
         User u = userService.getUserById(id).orElseThrow();
         u.setFullName(fullName);
         u.setEmail(email);
@@ -106,8 +117,16 @@ public class UserController {
 
     /** Xóa địa chỉ */
     @GetMapping("/user/account/delete-address/{id}")
-    public String deleteAddress(@PathVariable Long id) {
-        addressService.deleteAddress(id);
+    public String deleteAddress(@PathVariable Long id, Principal principal) {
+        if (principal == null) return "redirect:/login";
+        User user = userService.findByUsername(principal.getName()).orElse(null);
+        if (user == null) return "redirect:/login";
+
+        // 🛡️ BẢO MẬT: Kiểm tra quyền sở hữu địa chỉ trước khi xóa
+        Address address = addressService.getById(id);
+        if (address != null && address.getUser() != null && address.getUser().getId().equals(user.getId())) {
+            addressService.deleteAddress(id);
+        }
         return "redirect:/user/account#addresses";
     }
 
@@ -115,8 +134,14 @@ public class UserController {
     @GetMapping("/account/make-default/{id}")
     public String makeDefault(@PathVariable Long id, Principal principal) {
         if (principal == null) return "redirect:/login";
-        User user = userService.findByUsername(principal.getName()).orElseThrow();
-        addressService.setDefaultAddress(user.getId(), id);
+        User user = userService.findByUsername(principal.getName()).orElse(null);
+        if (user == null) return "redirect:/login";
+
+        // 🛡️ BẢO MẬT: Kiểm tra quyền sở hữu địa chỉ trước khi đặt làm mặc định
+        Address address = addressService.getById(id);
+        if (address != null && address.getUser() != null && address.getUser().getId().equals(user.getId())) {
+            addressService.setDefaultAddress(user.getId(), id);
+        }
         return "redirect:/user/account#addresses";
     }
 }

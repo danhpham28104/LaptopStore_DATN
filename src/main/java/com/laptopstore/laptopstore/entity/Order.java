@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.laptopstore.laptopstore.enums.OrderStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -48,8 +50,9 @@ public class Order {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 30, nullable = false)
-    private String orderStatus = "Pending";
+    private OrderStatus orderStatus = OrderStatus.PENDING_PAYMENT;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -105,7 +108,7 @@ public class Order {
 
     public Order() {}
 
-    public Order(Long id, String orderCode, User user, List<OrderItem> orderItems, String shippingAddress, String receiverName, String receiverPhone, Voucher voucher, BigDecimal discount, BigDecimal totalAmount, String orderStatus, LocalDateTime createdAt, Payment payment) {
+    public Order(Long id, String orderCode, User user, List<OrderItem> orderItems, String shippingAddress, String receiverName, String receiverPhone, Voucher voucher, BigDecimal discount, BigDecimal totalAmount, OrderStatus orderStatus, LocalDateTime createdAt, Payment payment) {
         this.id = id;
         this.orderCode = orderCode;
         this.user = user;
@@ -198,11 +201,11 @@ public class Order {
         this.voucher = voucher;
     }
 
-    public String getOrderStatus() {
+    public OrderStatus getOrderStatus() {
         return orderStatus;
     }
 
-    public void setOrderStatus(String orderStatus) {
+    public void setOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
     }
 

@@ -3,6 +3,7 @@ package com.laptopstore.laptopstore.config;
 import com.laptopstore.laptopstore.Repository.OrderRepository;
 import com.laptopstore.laptopstore.Service.OrderService;
 import com.laptopstore.laptopstore.entity.Order;
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ public class InventoryReservationScheduler {
 
         // Lấy tất cả đơn PENDING_PAYMENT có paymentDeadline < now
         List<Order> expiredOrders = orderRepository
-            .findByOrderStatusAndPaymentDeadlineBefore("PENDING_PAYMENT", now);
+            .findByOrderStatusAndPaymentDeadlineBefore(OrderStatus.PENDING_PAYMENT, now);
 
         if (expiredOrders.isEmpty()) return;
 

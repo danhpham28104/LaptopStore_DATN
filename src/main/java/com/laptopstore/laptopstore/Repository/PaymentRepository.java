@@ -53,5 +53,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
      * Tìm theo transaction ID
      */
     Optional<Payment> findByTransactionId(String transactionId);
+
+    /**
+     * Kiểm tra transaction ID đã tồn tại chưa (Idempotency check)
+     */
+    boolean existsByTransactionId(String transactionId);
 }
 

@@ -2,6 +2,7 @@ package com.laptopstore.laptopstore.Service;
 
 import com.laptopstore.laptopstore.Repository.*;
 import com.laptopstore.laptopstore.entity.*;
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import com.laptopstore.laptopstore.enums.PaymentMethod;
 import com.laptopstore.laptopstore.enums.PaymentStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,7 +107,7 @@ class OrderServiceTest {
         );
 
         assertNotNull(order);
-        assertEquals("PENDING_PAYMENT", order.getOrderStatus());
+        assertEquals(OrderStatus.PENDING_PAYMENT, order.getOrderStatus());
         assertEquals(1, variant.getReservedStock()); // Khóa tạm 1
         assertEquals(5, variant.getStock()); // Tồn kho chính chưa trừ
         verify(productVariantRepository, times(1)).save(variant);

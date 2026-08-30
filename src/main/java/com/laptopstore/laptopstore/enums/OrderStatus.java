@@ -33,7 +33,10 @@ public enum OrderStatus {
             }
         }
         if ("Pending".equalsIgnoreCase(text)) return PENDING_PAYMENT;
+        if ("Paid".equalsIgnoreCase(text)) return CONFIRMED;
+        if ("Shipped".equalsIgnoreCase(text)) return SHIPPING;
         if ("Completed".equalsIgnoreCase(text)) return DELIVERED;
+        if ("Payment Timeout".equalsIgnoreCase(text) || "Payment Failed".equalsIgnoreCase(text)) return CANCELLED;
         return PENDING_PAYMENT;
     }
 }

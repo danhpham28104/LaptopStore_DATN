@@ -4,6 +4,7 @@ import com.laptopstore.laptopstore.Repository.OrderRepository;
 import com.laptopstore.laptopstore.Repository.PaymentRepository;
 import com.laptopstore.laptopstore.entity.Order;
 import com.laptopstore.laptopstore.entity.Payment;
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import com.laptopstore.laptopstore.enums.PaymentStatus;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,13 +78,13 @@ public class PaymentStatusCheckService {
 
             for (Payment payment : overduePayments) {
                 Order order = payment.getOrder();
-                if (order != null && !order.getOrderStatus().equalsIgnoreCase("Cancelled")) {
+                if (order != null && order.getOrderStatus() != OrderStatus.CANCELLED) {
                     try {
                         orderService.cancelOrder(order.getId());
                     } catch (Exception ex) {
                         logger.warn("Order {} already cancelled or cannot be cancelled: {}", order.getOrderCode(), ex.getMessage());
                     }
-                    order.setOrderStatus("Payment Timeout");
+                    order.setOrderStatus(OrderStatus.CANCELLED);
                     payment.setStatus(PaymentStatus.FAILED);
 
                     orderRepository.save(order);
@@ -134,7 +135,7 @@ public class PaymentStatusCheckService {
         // Nếu payment đã được xác nhận thành công từ provider
         if (isPaymentConfirmed(payment)) {
             payment.setStatus(PaymentStatus.SUCCESS);
-            order.setOrderStatus("Paid");
+            order.setOrderStatus(OrderStatus.CONFIRMED);
 
             paymentRepository.save(payment);
             orderRepository.save(order);
@@ -154,19 +155,6 @@ public class PaymentStatusCheckService {
         if (transactionId != null && transactionId.contains("TEST_SUCCESS")) {
             return true;
         }
-
-        // 🔹 TODO: Gọi API SEPAY/VNPay thật
-        /*
-        try {
-            // Ví dụ với SEPAY
-            String url = "https://api.sepay.vn/transactions/" + transactionId;
-            // Make HTTP GET request to check status
-            // Parse response and return true if status is "SUCCESS"
-        } catch (Exception e) {
-            logger.error("Error checking payment from provider: {}", e.getMessage());
-            return false;
-        }
-        */
 
         return false;
     }
@@ -200,12 +188,12 @@ public class PaymentStatusCheckService {
             if ("SUCCESS".equalsIgnoreCase(status)) {
                 payment.setStatus(PaymentStatus.SUCCESS);
                 payment.setTransactionId(transactionId);
-                order.setOrderStatus("Paid");
+                order.setOrderStatus(OrderStatus.CONFIRMED);
 
                 logger.info("✅ Payment confirmed via webhook for order: {}", orderCode);
             } else if ("FAILED".equalsIgnoreCase(status)) {
                 payment.setStatus(PaymentStatus.FAILED);
-                order.setOrderStatus("Payment Failed");
+                order.setOrderStatus(OrderStatus.CANCELLED);
 
                 logger.warn("❌ Payment failed for order: {}", orderCode);
             }

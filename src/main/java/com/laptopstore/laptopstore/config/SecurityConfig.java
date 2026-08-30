@@ -59,6 +59,7 @@ public class SecurityConfig {
                 .requestMatchers("/admin/users/**").hasRole("ADMIN")
                 .requestMatchers("/admin/export/**").hasRole("ADMIN")
                 .requestMatchers("/admin/analytics/**").hasRole("ADMIN")
+                .requestMatchers("/users", "/users/**").hasRole("ADMIN")
 
                 // ─── ADMIN + SALE (Đơn hàng, Voucher, Review) ───
                 .requestMatchers("/admin/orders/**").hasAnyRole("ADMIN", "SALE")
@@ -74,7 +75,7 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")
 
                 // ─── CUSTOMER ROUTES (Bắt buộc đăng nhập) ───
-                .requestMatchers("/cart/**", "/checkout/**", "/orders/**", "/user/**", "/wishlist/**").authenticated()
+                .requestMatchers("/cart/**", "/checkout/**", "/orders/**", "/user/**", "/account/**", "/wishlist/**").authenticated()
 
                 // ─── PUBLIC ───
                 .anyRequest().permitAll()

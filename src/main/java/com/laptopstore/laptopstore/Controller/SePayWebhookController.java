@@ -1,7 +1,12 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.laptopstore.laptopstore.Repository.PaymentRepository;
 import com.laptopstore.laptopstore.Service.OrderService;
+import com.laptopstore.laptopstore.Service.PaymentService;
 import com.laptopstore.laptopstore.entity.Order;
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,10 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -28,27 +30,60 @@ public class SePayWebhookController {
     @Autowired
     private OrderService orderService;
 
+    @Autowired
+    private PaymentService paymentService;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Value("${payment.sepay.secret-key:}")
     private String secretKey;
 
     @PostMapping("/webhook")
-    public ResponseEntity<String> webhook(@RequestBody Map<String, Object> payload, HttpServletRequest request) {
+    public ResponseEntity<?> webhook(
+            @RequestHeader(value = "X-SePay-Signature", required = false) String signature,
+            @RequestBody String rawBody,
+            HttpServletRequest request
+    ) {
+        log.info("Webhook từ SePay: signature={}, rawBody={}", signature, rawBody);
 
-        log.info("Webhook từ SePay: {}", payload);
-
-        // 🔹 1. Xác thực Secret Key (nếu được cấu hình)
-        if (secretKey != null && !secretKey.isBlank()) {
-            String authHeader = request.getHeader("Authorization");
-            String customSecret = request.getHeader("X-SePay-Secret");
-            boolean validAuth = (authHeader != null && authHeader.contains(secretKey)) || secretKey.equals(customSecret);
-            if (!validAuth) {
-                log.warn("⚠️ Unauthorized SePay Webhook attempt!");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("UNAUTHORIZED");
+        // 🔹 1. Xác thực HMAC-SHA256 Signature
+        if (!paymentService.validateWebhookSignature(rawBody, signature)) {
+            // Check legacy secretKey header fallback if present
+            boolean validLegacy = false;
+            if (secretKey != null && !secretKey.isBlank()) {
+                String authHeader = request.getHeader("Authorization");
+                String customSecret = request.getHeader("X-SePay-Secret");
+                validLegacy = (authHeader != null && authHeader.contains(secretKey)) || secretKey.equals(customSecret);
             }
+            if (!validLegacy) {
+                log.warn("⚠️ Unauthorized SePay Webhook attempt: Invalid signature!");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid signature"));
+            }
+        }
+
+        Map<String, Object> payload;
+        try {
+            payload = objectMapper.readValue(rawBody, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log.error("❌ Invalid JSON payload in webhook: {}", e.getMessage());
+            return ResponseEntity.badRequest().body("INVALID_PAYLOAD");
         }
 
         if (payload == null || !payload.containsKey("description") || !payload.containsKey("trans_amount")) {
             return ResponseEntity.badRequest().body("INVALID_PAYLOAD");
+        }
+
+        // 🔹 Idempotency check
+        String transactionId = payload.containsKey("id") ? payload.get("id").toString()
+                : (payload.containsKey("transactionId") ? payload.get("transactionId").toString() : null);
+
+        if (transactionId != null && !transactionId.isBlank() && paymentRepository.existsByTransactionId(transactionId)) {
+            log.info("ℹ️ Transaction {} already processed", transactionId);
+            return ResponseEntity.ok("Already processed");
         }
 
         String rawDescription = payload.get("description").toString();
@@ -80,12 +115,12 @@ public class SePayWebhookController {
         }
 
         // 🔹 3. Cập nhật trạng thái đơn hàng & xác nhận kho chuẩn xác
-        if ("PENDING_PAYMENT".equals(order.getOrderStatus()) || "Pending".equalsIgnoreCase(order.getOrderStatus())) {
+        if (order.getOrderStatus() == OrderStatus.PENDING_PAYMENT) {
             orderService.confirmQrPayment(order.getId(), "SePay Webhook");
-            order.setOrderStatus("PAID");
+            order.setOrderStatus(OrderStatus.CONFIRMED);
             if (order.getPayment() != null) {
                 order.getPayment().setStatus(com.laptopstore.laptopstore.enums.PaymentStatus.SUCCESS);
-                order.getPayment().setTransactionId(payload.getOrDefault("id", "SEPAY_" + System.currentTimeMillis()).toString());
+                order.getPayment().setTransactionId(transactionId != null ? transactionId : "SEPAY_" + System.currentTimeMillis());
             }
             orderService.saveOrder(order);
             log.info("✅ Đã xác nhận thanh toán tự động qua SePay cho đơn hàng: {}", orderCode);

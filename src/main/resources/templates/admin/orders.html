@@ -78,23 +78,24 @@
             <td th:text="${#temporals.format(o.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
             <td th:text="${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
             <td>
-              <!-- ❌ Nếu đơn hàng đã bị hủy -->
-              <span th:if="${o.orderStatus == 'Cancelled'}" class="badge bg-danger">
-                  Cancelled
+              <!-- ❌ Nếu đơn hàng đã bị hủy hoặc hoàn tiền -->
+              <span th:if="${o.orderStatus.name() == 'CANCELLED' or o.orderStatus.name() == 'REFUNDED'}"
+                    class="badge" th:classappend="${o.orderStatus.badgeClass}"
+                    th:text="${o.orderStatus.displayName}">
               </span>
 
               <!-- ✔ Nếu đơn hàng chưa hủy → cho phép cập nhật -->
-              <form th:if="${o.orderStatus != 'Cancelled'}"
+              <form th:if="${o.orderStatus.name() != 'CANCELLED' and o.orderStatus.name() != 'REFUNDED'}"
                     th:action="@{'/admin/orders/update-status/' + ${o.id}}"
                     method="post"
                     class="d-flex align-items-center">
 
                 <select name="status" class="form-select form-select-sm me-2">
-                  <option value="Pending" th:selected="${o.orderStatus == 'Pending'}">Chờ xử lý</option>
-                  <option value="Paid" th:selected="${o.orderStatus == 'Paid'}">Đã thanh toán</option>
-                  <option value="Shipped" th:selected="${o.orderStatus == 'Shipped'}">Đang giao</option>
-                  <option value="Delivered" th:selected="${o.orderStatus == 'Delivered'}">Đã giao</option>
-
+                  <option th:each="st : ${T(com.laptopstore.laptopstore.enums.OrderStatus).values()}"
+                          th:value="${st.name()}"
+                          th:selected="${o.orderStatus == st}"
+                          th:text="${st.displayName}">
+                  </option>
                 </select>
 
                 <button class="btn btn-outline-primary btn-sm">

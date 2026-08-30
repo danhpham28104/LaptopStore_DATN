@@ -2,6 +2,7 @@ package com.laptopstore.laptopstore.Service;
 
 import com.laptopstore.laptopstore.Repository.*;
 import com.laptopstore.laptopstore.entity.*;
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import com.laptopstore.laptopstore.enums.PaymentMethod;
 import com.laptopstore.laptopstore.enums.PaymentStatus;
 import com.laptopstore.laptopstore.enums.StockLogType;
@@ -34,7 +35,7 @@ public class OrderService {
     @Autowired private StockLogService stockLogService;
 
     @Transactional
-    public void updateStatus(Long id, String newStatus) {
+    public void updateStatus(Long id, OrderStatus newStatus) {
         orderRepository.findById(id).ifPresent(order -> {
             order.setOrderStatus(newStatus);
             orderRepository.save(order);
@@ -74,7 +75,7 @@ public class OrderService {
         order.setReceiverName(receiverName);
         order.setShippingAddress(shippingAddress);
         order.setReceiverPhone(receiverPhone);
-        order.setOrderStatus("Pending");
+        order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
         order.setCreatedAt(LocalDateTime.now());
 
         BigDecimal total = BigDecimal.ZERO;
@@ -142,7 +143,7 @@ public class OrderService {
 
         if (paymentMethod == PaymentMethod.QR_CODE) {
             order.setPaymentDeadline(LocalDateTime.now().plusMinutes(15));
-            order.setOrderStatus("PENDING_PAYMENT");
+            order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
         }
 
         Payment payment = new Payment();
@@ -200,7 +201,7 @@ public class OrderService {
         order.setReceiverName(receiverName);
         order.setShippingAddress(shippingAddress);
         order.setReceiverPhone(receiverPhone);
-        order.setOrderStatus("Pending");
+        order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
         order.setCreatedAt(LocalDateTime.now());
 
         OrderItem orderItem = new OrderItem();
@@ -232,7 +233,7 @@ public class OrderService {
                     "Khoá tạm kho chờ thanh toán QR (Mua ngay) – " + product.getName());
             }
             order.setPaymentDeadline(LocalDateTime.now().plusMinutes(15));
-            order.setOrderStatus("PENDING_PAYMENT");
+            order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
         } else {
             if (variant != null) {
                 variant.setStock(variant.getStock() - quantity);
@@ -312,12 +313,12 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (!order.getOrderStatus().equalsIgnoreCase("Pending") &&
-            !order.getOrderStatus().equalsIgnoreCase("PENDING_PAYMENT")) {
+        if (!order.getOrderStatus().equals(OrderStatus.PENDING_PAYMENT) && 
+            !order.getOrderStatus().equals(OrderStatus.CONFIRMED)) {
             throw new RuntimeException("Không thể hủy đơn này!");
         }
 
-        boolean wasQrPending = "PENDING_PAYMENT".equalsIgnoreCase(order.getOrderStatus());
+        boolean wasQrPending = OrderStatus.PENDING_PAYMENT.equals(order.getOrderStatus());
 
         for (OrderItem item : order.getOrderItems()) {
             Product p = item.getProduct();
@@ -356,7 +357,7 @@ public class OrderService {
             }
         }
 
-        order.setOrderStatus("Cancelled");
+        order.setOrderStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
     }
 
@@ -368,7 +369,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        if (!"PENDING_PAYMENT".equalsIgnoreCase(order.getOrderStatus()) && !"Pending".equalsIgnoreCase(order.getOrderStatus())) return;
+        if (!OrderStatus.PENDING_PAYMENT.equals(order.getOrderStatus())) return;
 
         for (OrderItem item : order.getOrderItems()) {
             Product p = item.getProduct();
@@ -393,7 +394,7 @@ public class OrderService {
             }
         }
 
-        order.setOrderStatus("Confirmed");
+        order.setOrderStatus(OrderStatus.CONFIRMED);
         orderRepository.save(order);
     }
 
@@ -451,7 +452,7 @@ public class OrderService {
         if (endDate == null) endDate = LocalDate.now();
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.atTime(23, 59, 59);
-        List<String> successStatuses = List.of("paid", "completed", "delivered", "shipping");
+        List<OrderStatus> successStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED);
         return orderRepository.sumRevenueByDateRange(start, end, successStatuses).orElse(BigDecimal.ZERO);
     }
 
@@ -463,14 +464,13 @@ public class OrderService {
         return orderRepository.countOrdersByDateRange(start, end);
     }
 
-    public long countOrdersByStatusesInRange(LocalDate startDate, LocalDate endDate, List<String> statuses) {
+    public long countOrdersByStatusesInRange(LocalDate startDate, LocalDate endDate, List<OrderStatus> statuses) {
         if (startDate == null) startDate = LocalDate.now().minusDays(6);
         if (endDate == null) endDate = LocalDate.now();
         if (statuses == null || statuses.isEmpty()) return 0;
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.atTime(23, 59, 59);
-        List<String> lowerStatuses = statuses.stream().map(String::toLowerCase).toList();
-        return orderRepository.countOrdersByDateRangeAndStatuses(start, end, lowerStatuses);
+        return orderRepository.countOrdersByDateRangeAndStatuses(start, end, statuses);
     }
 
     public List<Order> filterOrders(String statusGroup, LocalDate startDate, LocalDate endDate) {
@@ -483,19 +483,20 @@ public class OrderService {
             return orders;
         }
 
-        List<String> targetStatuses;
+        List<OrderStatus> targetStatuses;
         if (statusGroup.equalsIgnoreCase("success")) {
-            targetStatuses = List.of("paid", "completed", "delivered", "shipping");
+            targetStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED);
         } else if (statusGroup.equalsIgnoreCase("pending")) {
-            targetStatuses = List.of("pending", "processing", "pending_payment");
+            targetStatuses = List.of(OrderStatus.PENDING_PAYMENT);
         } else if (statusGroup.equalsIgnoreCase("cancelled")) {
-            targetStatuses = List.of("cancelled");
+            targetStatuses = List.of(OrderStatus.CANCELLED, OrderStatus.REFUNDED);
         } else {
-            targetStatuses = List.of(statusGroup.toLowerCase());
+            OrderStatus st = OrderStatus.fromString(statusGroup);
+            targetStatuses = List.of(st);
         }
 
         return orders.stream()
-                .filter(o -> o.getOrderStatus() != null && targetStatuses.contains(o.getOrderStatus().toLowerCase()))
+                .filter(o -> o.getOrderStatus() != null && targetStatuses.contains(o.getOrderStatus()))
                 .toList();
     }
 
@@ -531,10 +532,10 @@ public class OrderService {
         if (endDate == null) endDate = LocalDate.now();
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.atTime(23, 59, 59);
-        List<String> successStatuses = List.of("paid", "completed", "delivered", "shipping");
+        List<OrderStatus> successStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED);
 
         List<Order> orders = orderRepository.findOrdersByDateRange(start, end).stream()
-            .filter(o -> successStatuses.contains(o.getOrderStatus().toLowerCase()))
+            .filter(o -> o.getOrderStatus() != null && successStatuses.contains(o.getOrderStatus()))
             .toList();
 
         BigDecimal totalCogs = BigDecimal.ZERO;
@@ -559,7 +560,7 @@ public class OrderService {
         if (endDate == null) endDate = LocalDate.now();
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.atTime(23, 59, 59);
-        List<String> successStatuses = List.of("paid", "completed", "delivered", "shipping");
+        List<OrderStatus> successStatuses = List.of(OrderStatus.CONFIRMED, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED);
         BigDecimal result = orderRepository.sumDiscountByDateRange(start, end, successStatuses);
         return result != null ? result : BigDecimal.ZERO;
     }

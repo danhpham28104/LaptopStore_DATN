@@ -66,7 +66,7 @@ public class AdminExportController {
                 String address = escapeCsv(o.getShippingAddress());
                 String dateStr = o.getCreatedAt() != null ? o.getCreatedAt().format(fmt) : "";
                 String total = o.getTotalAmount() != null ? o.getTotalAmount().toString() : "0";
-                String status = escapeCsv(o.getOrderStatus());
+                String status = escapeCsv(o.getOrderStatus() != null ? o.getOrderStatus().getDisplayName() : "");
                 String otp = (o.getOtpVerified() != null && o.getOtpVerified()) ? "Đã xác thực" : "Chưa xác thực";
                 String paymentMethod = (o.getPayment() != null && o.getPayment().getMethod() != null)
                         ? o.getPayment().getMethod().name() : "N/A";

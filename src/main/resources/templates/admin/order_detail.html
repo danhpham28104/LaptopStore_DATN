@@ -105,13 +105,11 @@
       <!-- Quick Update Status -->
       <form th:action="@{'/admin/orders/update-status/' + ${order.id}}" method="post" class="d-flex align-items-center gap-2">
         <select name="status" class="form-select form-select-sm fw-bold w-auto border-secondary">
-          <option value="PENDING_PAYMENT" th:selected="${order.orderStatus == 'PENDING_PAYMENT' or order.orderStatus == 'Pending'}">Chờ thanh toán (PENDING_PAYMENT)</option>
-          <option value="CONFIRMED" th:selected="${order.orderStatus == 'CONFIRMED'}">Đã xác nhận (CONFIRMED)</option>
-          <option value="PACKING" th:selected="${order.orderStatus == 'PACKING'}">Đang đóng gói (PACKING)</option>
-          <option value="SHIPPING" th:selected="${order.orderStatus == 'SHIPPING'}">Đang giao hàng (SHIPPING)</option>
-          <option value="DELIVERED" th:selected="${order.orderStatus == 'DELIVERED' or order.orderStatus == 'Completed'}">Đã giao hàng (DELIVERED)</option>
-          <option value="CANCELLED" th:selected="${order.orderStatus == 'CANCELLED'}">Đã hủy (CANCELLED)</option>
-          <option value="REFUNDED" th:selected="${order.orderStatus == 'REFUNDED'}">Đã hoàn tiền (REFUNDED)</option>
+          <option th:each="st : ${T(com.laptopstore.laptopstore.enums.OrderStatus).values()}"
+                  th:value="${st.name()}"
+                  th:selected="${order.orderStatus == st}"
+                  th:text="${st.displayName + ' (' + st.name() + ')'}">
+          </option>
         </select>
         <button type="submit" class="btn btn-sm btn-danger text-nowrap fw-bold">
           <i class="bi bi-save"></i> Cập nhật
@@ -119,18 +117,18 @@
       </form>
     </div>
 
-    <div th:if="${order.orderStatus == 'CANCELLED' or order.orderStatus == 'REFUNDED'}" class="alert alert-danger d-flex align-items-center gap-2 mb-0">
+    <div th:if="${order.orderStatus.name() == 'CANCELLED' or order.orderStatus.name() == 'REFUNDED'}" class="alert alert-danger d-flex align-items-center gap-2 mb-0">
       <i class="bi bi-x-circle-fill fs-4"></i>
       <div>
-        <strong th:text="${order.orderStatus == 'CANCELLED' ? 'Đơn hàng này đã bị HỦY' : 'Đơn hàng này đã HOÀN TIỀN'}">Đã hủy</strong>
+        <strong th:text="${order.orderStatus.name() == 'CANCELLED' ? 'Đơn hàng này đã bị HỦY' : 'Đơn hàng này đã HOÀN TIỀN'}">Đã hủy</strong>
       </div>
     </div>
 
-    <div th:if="${order.orderStatus != 'CANCELLED' and order.orderStatus != 'REFUNDED'}" class="stepper-wrapper d-flex justify-content-between position-relative">
+    <div th:if="${order.orderStatus.name() != 'CANCELLED' and order.orderStatus.name() != 'REFUNDED'}" class="stepper-wrapper d-flex justify-content-between position-relative">
       <div class="stepper-line"></div>
       
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus == 'PENDING_PAYMENT' or order.orderStatus == 'Pending' or order.orderStatus == 'CONFIRMED' or order.orderStatus == 'PACKING' or order.orderStatus == 'SHIPPING' or order.orderStatus == 'DELIVERED' or order.orderStatus == 'Completed'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.name() != 'CANCELLED' and order.orderStatus.name() != 'REFUNDED'} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-credit-card"></i>
         </div>
@@ -138,7 +136,7 @@
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus == 'CONFIRMED' or order.orderStatus == 'PACKING' or order.orderStatus == 'SHIPPING' or order.orderStatus == 'DELIVERED' or order.orderStatus == 'Completed'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.name() == 'CONFIRMED' or order.orderStatus.name() == 'PACKING' or order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-check-circle"></i>
         </div>
@@ -146,7 +144,7 @@
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus == 'PACKING' or order.orderStatus == 'SHIPPING' or order.orderStatus == 'DELIVERED' or order.orderStatus == 'Completed'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.name() == 'PACKING' or order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-box-seam"></i>
         </div>
@@ -154,7 +152,7 @@
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus == 'SHIPPING' or order.orderStatus == 'DELIVERED' or order.orderStatus == 'Completed'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-truck"></i>
         </div>
@@ -162,7 +160,7 @@
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus == 'DELIVERED' or order.orderStatus == 'Completed'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-house-door"></i>
         </div>
@@ -182,14 +180,7 @@
       </div>
       <div class="col-md-6">
         <p class="mb-2"><strong>Trạng thái đơn:</strong>
-          <span class="badge" th:classappend="${
-            order.orderStatus == 'PENDING_PAYMENT' or order.orderStatus == 'Pending' ? 'bg-warning text-dark' :
-            order.orderStatus == 'CONFIRMED' ? 'bg-info text-white' :
-            order.orderStatus == 'PACKING' ? 'bg-primary text-white' :
-            order.orderStatus == 'SHIPPING' ? 'bg-primary text-white' :
-            order.orderStatus == 'DELIVERED' or order.orderStatus == 'Completed' ? 'bg-success text-white' :
-            'bg-danger text-white'
-          }" th:text="${order.orderStatus}"></span>
+          <span class="badge" th:classappend="${order.orderStatus.badgeClass}" th:text="${order.orderStatus.displayName}"></span>
         </p>
         <p class="mb-2"><strong>Ngày tạo đơn:</strong> <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></span></p>
         <p class="mb-2"><strong>Mã giảm giá:</strong>

@@ -1,7 +1,13 @@
 package com.laptopstore.laptopstore.Service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Map;
 
 /**
@@ -15,6 +21,9 @@ import java.util.Map;
  */
 @Service
 public class PaymentService {
+
+    @Value("${payment.sepay.webhook-secret:}")
+    private String webhookSecret;
 
     // 🔹 SEPAY Config (thay bằng của bạn)
     private final String SEPAY_QR_BASE = "https://qr.sepay.vn/img";
@@ -65,13 +74,26 @@ public class PaymentService {
     }
 
     /**
-     * Xác thực webhook từ SEPAY/VNPay (cần verify signature)
+     * Xác thực webhook từ SEPAY bằng HMAC-SHA256
      */
-    public boolean validateWebhookSignature(String signature, String data, String secret) {
-        // TODO: Implement webhook signature verification
-        // - Dùng HMAC-SHA256
-        // - So sánh signature nhận được với signature tính toán lại
-        return true;
+    public boolean validateWebhookSignature(String payload, String receivedSignature) {
+        if (webhookSecret == null || webhookSecret.isBlank()) {
+            return false;
+        }
+        if (receivedSignature == null || receivedSignature.isBlank()) {
+            return false;
+        }
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKey = new SecretKeySpec(
+                webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKey);
+            byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            String computed = HexFormat.of().formatHex(hash);
+            return computed.equalsIgnoreCase(receivedSignature);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

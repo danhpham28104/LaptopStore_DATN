@@ -1,5 +1,6 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import com.laptopstore.laptopstore.Service.OrderService;
 import com.laptopstore.laptopstore.Service.ProductService;
 import com.laptopstore.laptopstore.Service.UserService;
@@ -59,9 +60,9 @@ public class AdminDashboardController {
         // 🔵 1. Thống kê theo khoảng ngày
         BigDecimal rangeRevenue = orderService.getRevenueByDateRange(startDate, endDate);
         long totalOrders = orderService.countOrdersByDateRange(startDate, endDate);
-        long successOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of("Paid", "Completed", "Delivered", "Shipping"));
-        long pendingOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of("Pending", "Processing"));
-        long cancelledOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of("Cancelled"));
+        long successOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(OrderStatus.CONFIRMED, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED));
+        long pendingOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(OrderStatus.PENDING_PAYMENT));
+        long cancelledOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(OrderStatus.CANCELLED, OrderStatus.REFUNDED));
 
         // AOV (Average Order Value)
         BigDecimal aov = (successOrders > 0)

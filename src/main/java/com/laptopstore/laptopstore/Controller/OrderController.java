@@ -39,12 +39,20 @@ public class OrderController {
 
     /** 🔹 Chi tiết một đơn hàng */
     @GetMapping("/{id}")
-    public String orderDetail(@PathVariable Long id, Model model) {
+    public String orderDetail(@PathVariable Long id, Principal principal, Model model) {
+        if (principal == null) return "redirect:/login";
+
         Order order = orderService.getOrderById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        // 🛡️ BẢO MẬT: Kiểm tra quyền sở hữu đơn hàng
+        if (order.getUser() == null || !order.getUser().getUsername().equals(principal.getName())) {
+            return "redirect:/orders?error=unauthorized";
+        }
+
         model.addAttribute("order", order);
 
-        //  Thêm nếu bạn muốn hiển thị thông tin thanh toán trong giao diện
+        // Thêm thông tin thanh toán nếu có
         if (order.getPayment() != null) {
             model.addAttribute("payment", order.getPayment());
         }
@@ -53,9 +61,19 @@ public class OrderController {
         return "order_detail"; // ↔ templates/order_detail.html
     }
 
-
+    /** 🔹 Hủy đơn hàng */
     @PostMapping("/cancel/{id}")
-    public String cancelOrder(@PathVariable Long id) {
+    public String cancelOrder(@PathVariable Long id, Principal principal) {
+        if (principal == null) return "redirect:/login";
+
+        Order order = orderService.getOrderById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        // 🛡️ BẢO MẬT: Kiểm tra quyền sở hữu đơn hàng
+        if (order.getUser() == null || !order.getUser().getUsername().equals(principal.getName())) {
+            return "redirect:/orders?error=unauthorized";
+        }
+
         orderService.cancelOrder(id);
         return "redirect:/orders?cancelSuccess=true";
     }

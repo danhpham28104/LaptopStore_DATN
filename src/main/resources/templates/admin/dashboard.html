@@ -261,10 +261,7 @@
                             <td th:text="${o.receiverName}"></td>
                             <td class="fw-semibold text-danger" th:text="${#numbers.formatDecimal(o.totalAmount,0,'COMMA',0,'POINT')} + ' ₫'"></td>
                             <td>
-                                <span th:if="${o.orderStatus == 'Completed' || o.orderStatus == 'Paid'}" class="badge bg-success-subtle text-success border border-success-subtle">Thành công</span>
-                                <span th:if="${o.orderStatus == 'Pending'}" class="badge bg-warning-subtle text-warning border border-warning-subtle">Chờ xử lý</span>
-                                <span th:if="${o.orderStatus == 'Cancelled'}" class="badge bg-danger-subtle text-danger border border-danger-subtle">Đã hủy</span>
-                                <span th:if="${o.orderStatus != 'Completed' && o.orderStatus != 'Paid' && o.orderStatus != 'Pending' && o.orderStatus != 'Cancelled'}" class="badge bg-secondary-subtle text-secondary" th:text="${o.orderStatus}"></span>
+                                <span class="badge" th:classappend="${o.orderStatus.badgeClass}" th:text="${o.orderStatus.displayName}"></span>
                             </td>
                             <td>
                                 <span th:if="${o.otpVerified}" class="badge bg-info-subtle text-info border border-info-subtle"><i class="bi bi-shield-check"></i> Verified</span>

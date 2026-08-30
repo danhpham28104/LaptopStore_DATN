@@ -1,5 +1,6 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import com.laptopstore.laptopstore.Service.OrderService;
 import com.laptopstore.laptopstore.entity.Order;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +52,8 @@ public class AdminOrderController {
     /** 🔹 Cập nhật trạng thái đơn hàng */
     @PostMapping("/update-status/{id}")
     public String updateStatus(@PathVariable Long id, @RequestParam String status) {
-        orderService.updateStatus(id, status);
+        OrderStatus newStatus = OrderStatus.fromString(status);
+        orderService.updateStatus(id, newStatus);
         return "redirect:/admin/orders?updated=true";
     }
 

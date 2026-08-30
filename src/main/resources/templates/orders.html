@@ -50,6 +50,11 @@
         Đơn hàng đã được hủy thành công!
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+    <div th:if="${param.error != null}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span th:text="${param.error[0] == 'unauthorized' ? 'Bạn không có quyền truy cập hoặc thao tác trên đơn hàng này!' : param.error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
 
     <!-- Nếu không có đơn -->
     <div th:if="${#lists.isEmpty(orders)}" class="no-orders">
@@ -71,20 +76,8 @@
                     </h5>
 
                     <span class="status-badge"
-                          th:classappend="${
-                              order.orderStatus == 'Pending'   ? 'bg-warning text-dark' :
-                              order.orderStatus == 'Paid'      ? 'bg-info text-dark' :
-                              order.orderStatus == 'Shipped'   ? 'bg-primary text-white' :
-                              order.orderStatus == 'Delivered' ? 'bg-success text-white' :
-                                                                 'bg-secondary text-white'
-                          }"
-                           th:text="${
-                              order.orderStatus == 'Pending'   ? 'Chờ xử lý' :
-                              order.orderStatus == 'Paid'      ? 'Đã thanh toán' :
-                              order.orderStatus == 'Shipped'   ? 'Đang giao hàng' :
-                              order.orderStatus == 'Delivered' ? 'Đã giao' :
-                                                                 'Không xác định'
-                          }">
+                          th:classappend="${order.orderStatus.badgeClass}"
+                          th:text="${order.orderStatus.displayName}">
                     </span>
 
                 </div>
@@ -124,8 +117,8 @@
                         <i class="bi bi-eye"></i> Xem chi tiết
                     </a>
 
-                    <!-- Nút mở modal hủy đơn -->
-                    <button th:if="${order.orderStatus == 'Pending'}"
+                    <!-- Nút mở modal hủy đơn (Cho phép PENDING_PAYMENT và CONFIRMED) -->
+                    <button th:if="${order.orderStatus.name() == 'PENDING_PAYMENT' or order.orderStatus.name() == 'CONFIRMED'}"
                             type="button"
                             class="btn btn-danger btn-sm"
                             data-bs-toggle="modal"
@@ -136,7 +129,7 @@
                     <!-- Trạng thái -->
                     <button class="btn btn-outline-secondary btn-sm" disabled>
                         <i class="bi bi-clock-history"></i>
-                        <span th:text="${order.orderStatus}"></span>
+                        <span th:text="${order.orderStatus.displayName}"></span>
                     </button>
                 </div>
 
