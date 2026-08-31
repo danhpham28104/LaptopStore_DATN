@@ -121,11 +121,11 @@
     }
   </style>
 
-  <!-- Top Left Brand Logo Header -->
-  <div class="admin-brand-header">
+  <!-- Top Left Brand Logo Header (Click để về trang bán hàng) -->
+  <a th:href="@{/}" class="admin-brand-header" style="text-decoration: none;" title="Về trang bán hàng">
     <i class="bi bi-laptop" style="font-size: 1.2rem;"></i>
     <span>LaptopStore Admin</span>
-  </div>
+  </a>
 
   <!-- Sidebar Menu Container -->
   <div class="admin-sidebar-wrapper">
@@ -177,6 +177,14 @@
       </a>
       <a th:href="@{/admin/analytics/ai-chat}" th:classappend="${activePage == 'analytics_aichat'} ? 'active'">
         <i class="bi bi-robot"></i><span>AI Chat Insights</span>
+      </a>
+    </div>
+
+    <!-- 🟢 HỆ THỐNG / CHUYỂN TRANG -->
+    <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px; margin-bottom: 20px;">
+      <div class="admin-sidebar-section">GIAO DIỆN</div>
+      <a th:href="@{/}" style="color: #60a5fa !important;">
+        <i class="bi bi-shop"></i><span>Về trang bán hàng</span>
       </a>
     </div>
 

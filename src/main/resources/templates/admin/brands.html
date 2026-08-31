@@ -22,15 +22,21 @@
 
 <!-- Navbar -->
 <nav class="navbar navbar-light bg-white shadow-sm">
-  <div class="container-fluid justify-content-end align-items-center">
+  <div class="container-fluid justify-content-end align-items-center gap-3">
 
-    <span class="me-3 text-secondary fw-semibold">
+    <a th:href="@{/}" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1">
+      <i class="bi bi-globe"></i> Xem Website
+    </a>
+
+    <span class="text-secondary fw-semibold">
       👋 Xin chào, Admin
     </span>
 
-    <a href="/logout" class="btn btn-sm btn-outline-danger">
-      <i class="bi bi-box-arrow-right"></i> Đăng xuất
-    </a>
+    <form th:action="@{/logout}" method="post">
+      <button class="btn btn-sm btn-outline-danger" type="submit">
+        <i class="bi bi-box-arrow-right"></i> Đăng xuất
+      </button>
+    </form>
 
   </div>
 </nav>

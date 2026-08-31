@@ -43,6 +43,7 @@
         </span>
 
         <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/}" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"><i class="bi bi-globe"></i> Xem Website</a>
             <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Dashboard</a>
             <form th:action="@{/logout}" method="post">
                 <button class="btn btn-outline-danger btn-sm" type="submit">

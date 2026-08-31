@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.Authentication;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,8 +39,21 @@ public class AdminDashboardController {
     public String dashboard(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Authentication authentication,
             Model model
     ) {
+        if (authentication != null) {
+            boolean isSale = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_SALE".equals(a.getAuthority()));
+            if (isSale) {
+                return "redirect:/admin/orders";
+            }
+            boolean isWarehouse = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_WAREHOUSE".equals(a.getAuthority()));
+            if (isWarehouse) {
+                return "redirect:/admin/products";
+            }
+        }
         LocalDate now = LocalDate.now();
 
         // Mặc định 7 ngày gần nhất nếu chưa chọn

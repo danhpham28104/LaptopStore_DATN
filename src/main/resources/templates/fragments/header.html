@@ -133,7 +133,7 @@
                   </a>
                   <!-- Admin link nếu có quyền -->
                   <a th:href="@{/admin}" class="dropdown-item d-flex align-items-center gap-2"
-                     sec:authorize="hasRole('ADMIN')">
+                     sec:authorize="hasAnyRole('ADMIN', 'SALE', 'WAREHOUSE')">
                     <i class="bi bi-gear" style="color:var(--primary);"></i>Trang quản trị
                   </a>
                 </div>
@@ -296,7 +296,7 @@
           <a th:href="@{/user/account}" class="mobile-nav-link" sec:authorize="isAuthenticated()">
             <i class="bi bi-person-circle"></i> Tài khoản
           </a>
-          <a th:href="@{/admin}" class="mobile-nav-link" sec:authorize="hasRole('ADMIN')">
+          <a th:href="@{/admin}" class="mobile-nav-link" sec:authorize="hasAnyRole('ADMIN', 'SALE', 'WAREHOUSE')">
             <i class="bi bi-gear"></i> Quản trị
           </a>
         </nav>

@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 /**
  * Cấu hình bảo mật với phân quyền đa tầng (RBAC):
@@ -53,8 +54,8 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/otp/**", "/api/**", "/webhook/**", "/payment/webhook/**")
             )
             .authorizeHttpRequests(auth -> auth
-                // ─── ADMIN ONLY (Toàn quyền hệ thống) ───
-                .requestMatchers("/admin", "/admin/").hasRole("ADMIN")
+                // ─── ADMIN ENTRY (Cho phép ADMIN, SALE, WAREHOUSE truy cập /admin) ───
+                .requestMatchers("/admin", "/admin/").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")
                 .requestMatchers("/admin/dashboard/**").hasRole("ADMIN")
                 .requestMatchers("/admin/users/**").hasRole("ADMIN")
                 .requestMatchers("/admin/export/**").hasRole("ADMIN")
@@ -86,7 +87,13 @@ public class SecurityConfig {
                 .successHandler(successHandler)
                 .permitAll()
             )
-            .logout(logout -> logout.permitAll());
+            .logout(logout -> logout
+                .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                .logoutSuccessUrl("/login?logout")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .permitAll()
+            );
 
         return http.build();
     }
