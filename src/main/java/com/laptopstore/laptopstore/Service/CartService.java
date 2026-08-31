@@ -98,7 +98,7 @@ public class CartService {
             item.setProduct(product);
             item.setVariant(variant);
             item.setQuantity(addQty);
-            item.setUnitPriceAtAdd(product.getPrice());
+            item.setUnitPriceAtAdd(product.getFinalPrice());
             item.recalc();
             cart.getItems().add(item);
         }

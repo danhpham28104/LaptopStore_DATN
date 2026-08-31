@@ -144,7 +144,7 @@
 
               <div class="section-content">
                 <div class="d-flex">
-                  <input type="text" id="voucherInput" class="form-control" placeholder="Nhập mã giảm giá">
+                  <input type="text" id="voucherInput" name="voucherCode" class="form-control" placeholder="Nhập mã giảm giá">
                   <button type="button" id="applyVoucherBtn" class="btn btn-primary ms-2">Áp dụng</button>
                   <button type="button" id="clearVoucherBtn" class="btn btn-outline-danger ms-2" style="display:none;">
                     Xóa
@@ -248,7 +248,7 @@
 <script th:src="@{/js/glightbox.min.js}"></script>
 <script th:src="@{/js/main.js}"></script>
 <script th:inline="javascript">
-  const subtotal = /*[[${product.price * quantity}]]*/ 0;
+  const subtotal = /*[[${finalPrice * quantity}]]*/ 0;
 </script>
 
 <script>
