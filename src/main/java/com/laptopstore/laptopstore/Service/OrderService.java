@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,13 +35,85 @@ public class OrderService {
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private ProductVariantRepository productVariantRepository;
     @Autowired private StockLogService stockLogService;
+    @Autowired private OrderStatusHistoryRepository orderStatusHistoryRepository;
+
+    @Value("${order.return-window-days:7}")
+    private int returnWindowDays = 7;
+
+    public int getReturnWindowDays() {
+        return returnWindowDays;
+    }
 
     @Transactional
     public void updateStatus(Long id, OrderStatus newStatus) {
         orderRepository.findById(id).ifPresent(order -> {
+            OrderStatus oldStatus = order.getOrderStatus();
             order.setOrderStatus(newStatus);
             orderRepository.save(order);
+
+            OrderStatusHistory history = new OrderStatusHistory(
+                    order,
+                    oldStatus != null ? oldStatus.name() : null,
+                    newStatus.name(),
+                    "System/Admin",
+                    "Cập nhật trạng thái sang " + newStatus.getDisplayName()
+            );
+            orderStatusHistoryRepository.save(history);
         });
+    }
+
+    public boolean isOrderEligibleForReturn(Order order) {
+        if (order == null || !OrderStatus.DELIVERED.equals(order.getOrderStatus())) {
+            return false;
+        }
+
+        LocalDateTime deliveredAt = orderStatusHistoryRepository
+                .findFirstByOrderIdAndNewStatusOrderByCreatedAtDesc(order.getId(), OrderStatus.DELIVERED.name())
+                .map(OrderStatusHistory::getCreatedAt)
+                .orElse(order.getCreatedAt());
+
+        if (deliveredAt == null) {
+            return false;
+        }
+
+        return !deliveredAt.plusDays(returnWindowDays).isBefore(LocalDateTime.now());
+    }
+
+    @Transactional
+    public void requestReturnOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        if (!OrderStatus.DELIVERED.equals(order.getOrderStatus())) {
+            throw new RuntimeException("Đơn hàng chưa được giao");
+        }
+
+        LocalDateTime deliveredAt = orderStatusHistoryRepository
+                .findFirstByOrderIdAndNewStatusOrderByCreatedAtDesc(order.getId(), OrderStatus.DELIVERED.name())
+                .map(OrderStatusHistory::getCreatedAt)
+                .orElse(order.getCreatedAt());
+
+        if (deliveredAt == null) {
+            throw new RuntimeException("Đơn hàng chưa được giao");
+        }
+
+        if (deliveredAt.plusDays(returnWindowDays).isBefore(LocalDateTime.now())) {
+            throw new RuntimeException(
+                    "Chỉ có thể yêu cầu hoàn trả trong vòng " + returnWindowDays + " ngày sau khi nhận hàng");
+        }
+
+        OrderStatus oldStatus = order.getOrderStatus();
+        order.setOrderStatus(OrderStatus.REFUNDED);
+        orderRepository.save(order);
+
+        OrderStatusHistory history = new OrderStatusHistory(
+                order,
+                oldStatus.name(),
+                OrderStatus.REFUNDED.name(),
+                "Customer",
+                "Yêu cầu hoàn trả đơn hàng thành công"
+        );
+        orderStatusHistoryRepository.save(history);
     }
 
     @Transactional
@@ -282,15 +356,27 @@ public class OrderService {
 
         if (!valid) return total;
 
+        if (v.getUsageLimitPerUser() != null && v.getUsageLimitPerUser() > 0) {
+            long used = orderRepository.countVoucherUsageByUser(v.getId(), order.getUser().getId());
+            if (used >= v.getUsageLimitPerUser()) {
+                return total; // User đã dùng đủ số lần
+            }
+        }
+
         BigDecimal discount = calculateDiscount(total, v);
 
         if (discount.compareTo(total) > 0) discount = total;
 
+        int updated = voucherRepository.decrementQuantityIfAvailable(v.getId());
+        if (updated == 0) {
+            // Voucher đã hết trong khi xử lý (race condition)
+            return total; // Bỏ qua voucher, không giảm giá
+        }
+        // Reload voucher từ DB để lấy state mới nhất
+        v = voucherRepository.findById(v.getId()).orElse(v);
+
         order.setVoucher(v);
         order.setDiscount(discount);
-
-        v.setQuantity(v.getQuantity() - 1);
-        voucherRepository.save(v);
 
         return total.subtract(discount);
     }

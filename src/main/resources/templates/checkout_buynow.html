@@ -70,13 +70,15 @@
               <div class="section-content">
 
                 <!-- Nếu chưa có địa chỉ -->
-                <div th:if="${#lists.isEmpty(addresses)}" class="alert alert-warning">
-                  Bạn chưa có địa chỉ giao hàng.
-                  <a th:href="@{/user/account}" class="btn btn-primary btn-sm ms-2">+ Thêm địa chỉ</a>
+                <div id="noAddressAlert" th:classappend="${#lists.isEmpty(addresses)} ? '' : 'd-none'" class="alert alert-warning">
+                  <span>Bạn chưa có địa chỉ giao hàng.</span>
+                  <button type="button" class="btn btn-primary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                    + Thêm địa chỉ
+                  </button>
                 </div>
 
-                <!-- Nếu có địa chỉ -->
-                <div th:if="${!#lists.isEmpty(addresses)}">
+                <!-- Danh sách địa chỉ -->
+                <div id="addressSelectContainer" th:style="${#lists.isEmpty(addresses)} ? 'display:none;' : 'display:block;'">
 
                   <select id="addressSelect" name="addressId" class="form-select" required>
                     <option value="">— Chọn địa chỉ giao hàng —</option>
@@ -86,8 +88,8 @@
                             th:selected="${a.default}"
                             th:text="${a.fullName + ' (' + a.phone + ') - '
                              + a.addressLine + ', '
-                             + a.ward + ', '
-                             + a.district + ', '
+                             + (a.ward != null and a.ward != '' ? a.ward + ', ' : '')
+                             + (a.district != null and a.district != '' ? a.district + ', ' : '')
                              + a.city}">
                     </option>
 
@@ -95,7 +97,9 @@
 
                   <small class="text-muted d-block mt-2">
                     Muốn thêm địa chỉ mới?
-                    <a th:href="@{/user/account}">Thêm ngay</a>
+                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                      Thêm ngay
+                    </button>
                   </small>
 
                 </div>
@@ -313,7 +317,149 @@
   });
 </script>
 
+<!-- Modal Thêm Địa Chỉ Nhanh -->
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="addAddressModalLabel"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Thêm địa chỉ giao hàng mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="quickAddAddressForm">
+        <div class="modal-body">
+          <div id="modalAddressAlert" class="alert alert-danger d-none mb-3"></div>
+          
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+              <input type="text" id="modalFullName" name="fullName" class="form-control" placeholder="Ví dụ: Nguyễn Văn A" required>
+            </div>
 
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+              <input type="tel" id="modalPhone" name="phone" class="form-control" placeholder="Ví dụ: 0987654321" required>
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label fw-semibold">Địa chỉ chi tiết (Số nhà, tên đường...) <span class="text-danger">*</span></label>
+              <input type="text" id="modalAddressLine" name="addressLine" class="form-control" placeholder="Ví dụ: 123 Đường ABC" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Tỉnh / Thành phố <span class="text-danger">*</span></label>
+              <input type="text" id="modalCity" name="city" class="form-control" placeholder="Ví dụ: Hà Nội" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Quận / Huyện</label>
+              <input type="text" id="modalDistrict" name="district" class="form-control" placeholder="Ví dụ: Cầu Giấy">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Phường / Xã</label>
+              <input type="text" id="modalWard" name="ward" class="form-control" placeholder="Ví dụ: Dịch Vọng">
+            </div>
+
+            <div class="col-md-12 form-check mt-3 ms-2">
+              <input type="checkbox" id="modalIsDefault" name="isDefault" class="form-check-input" checked>
+              <label class="form-check-label" for="modalIsDefault">Đặt làm địa chỉ mặc định</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" id="btnSaveAddress" class="btn btn-primary px-4">
+            <span id="btnSaveAddressSpinner" class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
+            Lưu địa chỉ
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const addressForm = document.getElementById("quickAddAddressForm");
+  if (!addressForm) return;
+
+  addressForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const alertBox = document.getElementById("modalAddressAlert");
+    const btnSave = document.getElementById("btnSaveAddress");
+    const spinner = document.getElementById("btnSaveAddressSpinner");
+
+    alertBox.classList.add("d-none");
+    btnSave.disabled = true;
+    spinner.classList.remove("d-none");
+
+    const payload = {
+      fullName: document.getElementById("modalFullName").value.trim(),
+      phone: document.getElementById("modalPhone").value.trim(),
+      addressLine: document.getElementById("modalAddressLine").value.trim(),
+      city: document.getElementById("modalCity").value.trim(),
+      district: document.getElementById("modalDistrict").value.trim(),
+      ward: document.getElementById("modalWard").value.trim(),
+      isDefault: document.getElementById("modalIsDefault").checked,
+      default: document.getElementById("modalIsDefault").checked
+    };
+
+    fetch("/api/addresses", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(err => { throw new Error(err.message || "Không thể thêm địa chỉ"); });
+        }
+        return res.json();
+      })
+      .then(data => {
+        btnSave.disabled = false;
+        spinner.classList.add("d-none");
+
+        if (data.success && data.address) {
+          const addr = data.address;
+          const select = document.getElementById("addressSelect");
+          const noAlert = document.getElementById("noAddressAlert");
+          const container = document.getElementById("addressSelectContainer");
+
+          let text = addr.fullName + " (" + addr.phone + ") - " + addr.addressLine;
+          if (addr.ward) text += ", " + addr.ward;
+          if (addr.district) text += ", " + addr.district;
+          if (addr.city) text += ", " + addr.city;
+
+          const option = new Option(text, addr.id, true, true);
+          select.add(option, undefined);
+          select.value = addr.id;
+
+          if (noAlert) noAlert.classList.add("d-none");
+          if (container) container.style.display = "block";
+
+          addressForm.reset();
+          document.getElementById("modalIsDefault").checked = true;
+
+          const modalEl = document.getElementById("addAddressModal");
+          const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+          modal.hide();
+        } else {
+          alertBox.innerText = data.message || "Có lỗi xảy ra khi lưu địa chỉ";
+          alertBox.classList.remove("d-none");
+        }
+      })
+      .catch(err => {
+        btnSave.disabled = false;
+        spinner.classList.add("d-none");
+        alertBox.innerText = err.message || "Không thể kết nối đến máy chủ";
+        alertBox.classList.remove("d-none");
+      });
+  });
+});
+</script>
 
 </body>
 </html>

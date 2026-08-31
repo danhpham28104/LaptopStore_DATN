@@ -34,13 +34,25 @@ public class ReviewService {
     public Double getAverageRating(Long productId) {
         Double avg = reviewRepository.findAverageRatingByProductIdAndStatus(productId, ReviewStatus.APPROVED);
         if (avg == null) {
-            return 5.0; // Mặc định 5.0 nếu chưa có đánh giá
+            return null; // null = chưa có đánh giá
         }
         return Math.round(avg * 10.0) / 10.0;
     }
 
     public Long getReviewCount(Long productId) {
         return reviewRepository.countByProductIdAndStatus(productId, ReviewStatus.APPROVED);
+    }
+
+    private void recalculateProductRating(Long productId) {
+        Double avg = reviewRepository.findAverageRatingByProductIdAndStatus(productId, ReviewStatus.APPROVED);
+        Long count = reviewRepository.countByProductIdAndStatus(productId, ReviewStatus.APPROVED);
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        product.setAverageRating(avg != null ? Math.round(avg * 10.0) / 10.0 : null);
+        product.setReviewCount(count != null ? count.intValue() : 0);
+        productRepository.save(product);
     }
 
     public boolean canUserReviewProduct(User user, Long productId, Long orderItemId) {
@@ -88,7 +100,9 @@ public class ReviewService {
         review.setImages(dto.getImages());
         review.setStatus(ReviewStatus.APPROVED); // Mặc định duyệt tự động, Admin có thể ẩn/từ chối sau
 
-        return reviewRepository.save(review);
+        Review saved = reviewRepository.save(review);
+        recalculateProductRating(product.getId());
+        return saved;
     }
 
     public List<Review> getAllReviews() {
@@ -100,11 +114,17 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đánh giá!"));
         review.setStatus(status);
-        return reviewRepository.save(review);
+        Review saved = reviewRepository.save(review);
+        recalculateProductRating(review.getProduct().getId());
+        return saved;
     }
 
     @Transactional
     public void deleteReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đánh giá!"));
+        Long productId = review.getProduct().getId();
         reviewRepository.deleteById(reviewId);
+        recalculateProductRating(productId);
     }
 }

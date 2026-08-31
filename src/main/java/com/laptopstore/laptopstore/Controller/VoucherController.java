@@ -37,16 +37,15 @@ public class VoucherController {
             return result;
         }
 
-        // 🚨 Check ngày null
-        if (v.getStartDate() == null || v.getEndDate() == null) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (v.getStartDate() != null && v.getStartDate().isAfter(now)) {
             result.put("valid", false);
-            result.put("message", "❌ Voucher không hợp lệ");
+            result.put("message", "❌ Voucher chưa đến ngày áp dụng");
             return result;
         }
 
-        LocalDateTime now = LocalDateTime.now();
-
-        if (v.getStartDate().isAfter(now) || v.getEndDate().isBefore(now)) {
+        if (v.getEndDate() != null && v.getEndDate().isBefore(now)) {
             result.put("valid", false);
             result.put("message", "❌ Mã đã hết hạn");
             return result;

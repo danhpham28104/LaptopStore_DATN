@@ -59,4 +59,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     /** Tổng tiền giảm giá (discount) trong khoảng ngày */
     @Query("SELECT COALESCE(SUM(o.discount), 0) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus IN :statuses")
     BigDecimal sumDiscountByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<OrderStatus> statuses);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.voucher.id = :voucherId AND o.user.id = :userId AND o.orderStatus NOT IN ('CANCELLED', 'REFUNDED')")
+    long countVoucherUsageByUser(@Param("voucherId") Long voucherId, @Param("userId") Long userId);
 }
+

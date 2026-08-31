@@ -142,9 +142,14 @@
               <div class="d-flex align-items-center gap-2">
                 <span class="badge-category" th:text="${product.brand != null ? product.brand.name : 'Thương hiệu'}">Brand</span>
                 <div class="rating-group d-flex align-items-center gap-1">
-                  <span class="star-rating"><i class="bi bi-star-fill"></i></span>
-                  <strong th:text="${averageRating != null ? averageRating : '5.0'}">4.8</strong>
-                  <span class="text-muted small" th:text="'(' + ${reviewCount != null ? reviewCount : 0} + ' nhận xét)'"></span>
+                  <span th:if="${averageRating != null}" class="d-flex align-items-center gap-1">
+                    <span class="star-rating"><i class="bi bi-star-fill"></i></span>
+                    <strong th:text="${averageRating}">4.8</strong>
+                    <span class="text-muted small" th:text="'(' + ${reviewCount != null ? reviewCount : 0} + ' nhận xét)'"></span>
+                  </span>
+                  <span th:unless="${averageRating != null}" class="text-muted small">
+                    Chưa có đánh giá
+                  </span>
                 </div>
               </div>
 
@@ -357,11 +362,17 @@
                   <!-- Summary Box -->
                   <div class="col-md-4 text-center border-end">
                     <div class="p-3">
-                      <h1 class="display-4 fw-bold text-primary mb-0" th:text="${averageRating != null ? averageRating : '5.0'}">4.8</h1>
-                      <div class="star-rating fs-4 mb-2">
-                        <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                      <div th:if="${averageRating != null}">
+                        <h1 class="display-4 fw-bold text-primary mb-0" th:text="${averageRating}">4.8</h1>
+                        <div class="star-rating fs-4 mb-2">
+                          <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                        </div>
+                        <p class="text-muted" th:text="'Dựa trên ' + ${reviewCount != null ? reviewCount : 0} + ' lượt đánh giá đã xác minh'"></p>
                       </div>
-                      <p class="text-muted" th:text="'Dựa trên ' + ${reviewCount != null ? reviewCount : 0} + ' lượt đánh giá đã xác minh'"></p>
+                      <div th:unless="${averageRating != null}">
+                        <h5 class="text-muted mb-2">Chưa có đánh giá</h5>
+                        <p class="text-muted small mb-0">Hãy là người đầu tiên đánh giá sản phẩm này!</p>
+                      </div>
                     </div>
                   </div>
 

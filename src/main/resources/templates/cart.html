@@ -37,6 +37,10 @@
            th:with="items=${cart != null && cart.items != null ? cart.items : #lists.emptyList()}"
            th:text="${#lists.size(items)} + ' sản phẩm trong giỏ'">0 sản phẩm trong giỏ</p>
       </div>
+    <!-- Flash Error Alert -->
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${error}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 
     <div th:with="items=${cart != null && cart.items != null ? cart.items : #lists.emptyList()}">

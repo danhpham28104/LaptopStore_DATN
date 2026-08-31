@@ -117,6 +117,7 @@ class OrderServiceTest {
     @DisplayName("Áp dụng mã Voucher phần trăm có giới hạn giảm tối đa (Max Discount)")
     void testApplyVoucher_PercentageWithMaxLimit() {
         Voucher voucher = new Voucher();
+        voucher.setId(1L);
         voucher.setCode("SALE50");
         voucher.setDiscountType("PERCENT");
         voucher.setDiscountValue(BigDecimal.valueOf(50)); // Giảm 50%
@@ -126,6 +127,8 @@ class OrderServiceTest {
         voucher.setMinOrderValue(BigDecimal.valueOf(5000000));
 
         when(voucherRepository.findByCode("SALE50")).thenReturn(Optional.of(voucher));
+        when(voucherRepository.decrementQuantityIfAvailable(any())).thenReturn(1);
+        when(voucherRepository.findById(any())).thenReturn(Optional.of(voucher));
         when(orderRepository.save(any(Order.class))).thenAnswer(i -> i.getArgument(0));
 
         Order order = orderService.createOrderInstant(
@@ -138,6 +141,5 @@ class OrderServiceTest {
         // Đơn 20 tr, 50% = 10 tr, nhưng bị khống chế tối đa 1 tr => Tổng tiền 19 tr
         assertEquals(BigDecimal.valueOf(19000000), order.getTotalAmount());
         assertEquals(BigDecimal.valueOf(1000000), order.getDiscount());
-        assertEquals(9, voucher.getQuantity()); // Đã dùng 1 lần
     }
 }

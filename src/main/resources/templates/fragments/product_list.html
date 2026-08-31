@@ -91,6 +91,18 @@
                 th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></span>
         </div>
 
+        <!-- Rating -->
+        <div class="small mb-2">
+          <span th:if="${p.averageRating != null}">
+            <span class="text-warning"><i class="bi bi-star-fill"></i></span>
+            <strong class="ms-1" th:text="${p.averageRating}">4.8</strong>
+            <span class="text-muted small" th:text="'(' + ${p.reviewCount} + ')'"></span>
+          </span>
+          <span th:unless="${p.averageRating != null}" class="text-muted small">
+            Chưa có đánh giá
+          </span>
+        </div>
+
         <!-- Dual CTA Buttons & Compare Button -->
         <div class="card-btn-group d-flex gap-2">
           <button type="button"

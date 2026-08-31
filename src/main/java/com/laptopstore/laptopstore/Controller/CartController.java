@@ -17,6 +17,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import com.laptopstore.laptopstore.entity.CartItem;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import java.security.Principal;
 
 @Controller
@@ -66,7 +69,8 @@ public class CartController {
     public String addToCart(@RequestParam Long productId,
                             @RequestParam(required = false) Long variantId,
                             @RequestParam(defaultValue = "1") int quantity,
-                            Principal principal) {
+                            Principal principal,
+                            RedirectAttributes redirectAttributes) {
 
         if (principal == null) return "redirect:/login";
 
@@ -75,7 +79,7 @@ public class CartController {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
         Cart cart = cartService.getCartByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
+                .orElseGet(() -> cartService.createCartForUser(user));
 
         Product product = productService.getProductById(productId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
@@ -84,6 +88,30 @@ public class CartController {
         if (variantId != null) {
             variant = productVariantService.getVariantById(variantId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy phiên bản"));
+        }
+
+        // Kiểm tra stock
+        int availableStock = (variant != null) ? (variant.getStock() != null ? variant.getStock() : 0) : (product.getStock() != null ? product.getStock() : 0);
+        int reservedStock = (variant != null) ? (variant.getReservedStock() != null ? variant.getReservedStock() : 0) : (product.getReservedStock() != null ? product.getReservedStock() : 0);
+        int realAvailable = availableStock - reservedStock;
+
+        int currentInCart = 0;
+        if (cart.getItems() != null) {
+            final Long targetVariantId = variantId;
+            for (CartItem item : cart.getItems()) {
+                boolean sameProduct = item.getProduct().getId().equals(productId);
+                boolean sameVariant = (targetVariantId == null && item.getVariant() == null) ||
+                        (targetVariantId != null && item.getVariant() != null && item.getVariant().getId().equals(targetVariantId));
+                if (sameProduct && sameVariant) {
+                    currentInCart += item.getQuantity();
+                }
+            }
+        }
+
+        if (quantity + currentInCart > realAvailable) {
+            redirectAttributes.addFlashAttribute("error",
+                    "Sản phẩm '" + product.getName() + "' không đủ tồn kho. Còn lại: " + realAvailable);
+            return "redirect:/product/" + productId;
         }
 
         cartService.addToCart(cart, product, variant, quantity);
@@ -96,21 +124,38 @@ public class CartController {
     @PostMapping("/update")
     public String updateItem(@RequestParam Long itemId,
                              @RequestParam String action,
-                             @RequestParam(required = false) Integer quantity) {
+                             @RequestParam(required = false) Integer quantity,
+                             RedirectAttributes redirectAttributes) {
 
-        cartItemRepository.findById(itemId).ifPresent(item -> {
+        CartItem item = cartItemRepository.findById(itemId).orElse(null);
+        if (item != null) {
             int current = item.getQuantity();
+            int newQty = current;
 
-            if ("increase".equals(action)) item.setQuantity(current + 1);
-            else if ("decrease".equals(action) && current > 1) item.setQuantity(current - 1);
-            else if (quantity != null && quantity > 0) item.setQuantity(quantity);
+            if ("increase".equals(action)) newQty = current + 1;
+            else if ("decrease".equals(action) && current > 1) newQty = current - 1;
+            else if (quantity != null && quantity > 0) newQty = quantity;
 
+            Product product = item.getProduct();
+            ProductVariant variant = item.getVariant();
+
+            int availableStock = (variant != null) ? (variant.getStock() != null ? variant.getStock() : 0) : (product.getStock() != null ? product.getStock() : 0);
+            int reservedStock = (variant != null) ? (variant.getReservedStock() != null ? variant.getReservedStock() : 0) : (product.getReservedStock() != null ? product.getReservedStock() : 0);
+            int realAvailable = availableStock - reservedStock;
+
+            if (newQty > realAvailable) {
+                redirectAttributes.addFlashAttribute("error",
+                        "Sản phẩm '" + product.getName() + "' không đủ tồn kho. Còn lại: " + realAvailable);
+                return "redirect:/cart";
+            }
+
+            item.setQuantity(newQty);
             item.recalc();
 
             Cart cart = item.getCart();
             cart.recalcTotals();
             cartRepository.save(cart);
-        });
+        }
 
         return "redirect:/cart";
     }

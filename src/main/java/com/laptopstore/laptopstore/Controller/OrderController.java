@@ -57,6 +57,9 @@ public class OrderController {
             model.addAttribute("payment", order.getPayment());
         }
 
+        model.addAttribute("isEligibleForReturn", orderService.isOrderEligibleForReturn(order));
+        model.addAttribute("returnWindowDays", orderService.getReturnWindowDays());
+
         model.addAttribute("pageTitle", "Chi tiết đơn hàng #" + id);
         return "order_detail"; // ↔ templates/order_detail.html
     }
@@ -76,6 +79,29 @@ public class OrderController {
 
         orderService.cancelOrder(id);
         return "redirect:/orders?cancelSuccess=true";
+    }
+
+    /** 🔹 Yêu cầu hoàn trả đơn hàng */
+    @PostMapping("/return/{id}")
+    public String requestReturnOrder(@PathVariable Long id, Principal principal, org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        if (principal == null) return "redirect:/login";
+
+        Order order = orderService.getOrderById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        // 🛡️ BẢO MẬT: Kiểm tra quyền sở hữu đơn hàng
+        if (order.getUser() == null || !order.getUser().getUsername().equals(principal.getName())) {
+            return "redirect:/orders?error=unauthorized";
+        }
+
+        try {
+            orderService.requestReturnOrder(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Yêu cầu hoàn trả đơn hàng đã được xử lý thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/orders/" + id;
     }
 
 

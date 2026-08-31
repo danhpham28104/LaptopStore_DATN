@@ -106,6 +106,12 @@ public class Product {
     @Column(name = "badge")
     private String badge; // HOT / NEW / SALE...
 
+    @Column(name = "average_rating")
+    private Double averageRating;
+
+    @Column(name = "review_count")
+    private Integer reviewCount = 0;
+
 
 
     public Product() {}
@@ -266,6 +272,22 @@ public class Product {
 
     public void setBadge(String badge) {
         this.badge = badge;
+    }
+
+    public Double getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public Integer getReviewCount() {
+        return reviewCount != null ? reviewCount : 0;
+    }
+
+    public void setReviewCount(Integer reviewCount) {
+        this.reviewCount = (reviewCount != null) ? reviewCount : 0;
     }
 
     // ===============================================================

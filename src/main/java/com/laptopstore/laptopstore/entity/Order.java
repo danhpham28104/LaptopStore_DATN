@@ -50,7 +50,7 @@ public class Order {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal totalAmount = BigDecimal.ZERO;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = com.laptopstore.laptopstore.config.OrderStatusConverter.class)
     @Column(length = 30, nullable = false)
     private OrderStatus orderStatus = OrderStatus.PENDING_PAYMENT;
 

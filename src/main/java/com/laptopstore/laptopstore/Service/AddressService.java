@@ -30,19 +30,24 @@ public class AddressService {
      * Thêm địa chỉ mới cho user
      */
     @Transactional
-    public void addAddress(Long userId, Address address) {
+    public Address addAddress(Long userId, Address address) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
         address.setUser(user);
 
-        // Nếu user chưa có địa chỉ nào → đặt mặc định
         List<Address> existing = addressRepository.findByUser_Id(userId);
-        if (existing.isEmpty()) {
+        if (existing.isEmpty() || address.isDefault()) {
+            if (address.isDefault() && !existing.isEmpty()) {
+                for (Address addr : existing) {
+                    addr.setDefault(false);
+                }
+                addressRepository.saveAll(existing);
+            }
             address.setDefault(true);
         }
 
-        addressRepository.save(address);
+        return addressRepository.save(address);
     }
 
     /**

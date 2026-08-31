@@ -126,10 +126,27 @@ public class CartApiController {
             }
 
             // Kiểm tra hàng tồn kho
-            if (variant != null && (variant.getStock() == null || variant.getStock() <= 0)) {
+            int availableStock = (variant != null) ? (variant.getStock() != null ? variant.getStock() : 0) : (product.getStock() != null ? product.getStock() : 0);
+            int reservedStock = (variant != null) ? (variant.getReservedStock() != null ? variant.getReservedStock() : 0) : (product.getReservedStock() != null ? product.getReservedStock() : 0);
+            int realAvailable = availableStock - reservedStock;
+
+            int currentInCart = 0;
+            if (cart.getItems() != null) {
+                final ProductVariant targetVariant = variant;
+                for (var item : cart.getItems()) {
+                    boolean sameProd = item.getProduct().getId().equals(productId);
+                    boolean sameVar = (targetVariant == null && item.getVariant() == null) ||
+                            (targetVariant != null && item.getVariant() != null && item.getVariant().getId().equals(targetVariant.getId()));
+                    if (sameProd && sameVar) {
+                        currentInCart += item.getQuantity();
+                    }
+                }
+            }
+
+            if (quantity + currentInCart > realAvailable) {
                 return ResponseEntity.ok(Map.of(
                         "success", false,
-                        "message", "Sản phẩm này hiện đã hết hàng"
+                        "message", "Sản phẩm '" + product.getName() + "' không đủ tồn kho. Còn lại: " + realAvailable
                 ));
             }
 

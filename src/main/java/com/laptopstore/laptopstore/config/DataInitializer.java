@@ -32,9 +32,23 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @Override
     public void run(String... args) throws Exception {
         log.info("[DataInitializer] Kiểm tra và mở khoá tài khoản hệ thống...");
+
+        // 0. Migration các chuỗi order_status cũ trong DB sang tên Enum chuẩn
+        try {
+            jdbcTemplate.update("UPDATE orders SET order_status = 'PENDING_PAYMENT' WHERE order_status IN ('Pending', 'pending')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'CONFIRMED' WHERE order_status IN ('Paid', 'paid', 'Confirmed', 'confirmed')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'SHIPPING' WHERE order_status IN ('Shipped', 'shipped')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'DELIVERED' WHERE order_status IN ('Delivered', 'delivered', 'Completed', 'completed')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'CANCELLED' WHERE order_status IN ('Cancelled', 'cancelled', 'Payment Timeout', 'Payment Failed')");
+        } catch (Exception e) {
+            log.warn("[DataInitializer] SQL Migration order_status: {}", e.getMessage());
+        }
 
         // 1. Đảm bảo các Role cơ bản tồn tại
         Role adminRole = roleRepository.findByName("ROLE_ADMIN")
