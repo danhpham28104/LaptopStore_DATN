@@ -530,6 +530,8 @@ public class OrderService {
 
     public Optional<Order> getOrderById(Long id) { return orderRepository.findById(id); }
 
+    public Optional<Order> findById(Long id) { return orderRepository.findById(id); }
+
     public void deleteOrder(Long id) { orderRepository.deleteById(id); }
 
     public Order saveOrder(Order order) { return orderRepository.save(order); }

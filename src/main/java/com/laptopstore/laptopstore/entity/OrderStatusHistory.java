@@ -41,11 +41,24 @@ public class OrderStatusHistory {
     private LocalDateTime changedAt;
 
     @CreationTimestamp
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (this.changedAt == null) {
+            this.changedAt = now;
+        }
+        if (this.createdAt == null) {
+            this.createdAt = now;
+        }
+    }
+
     public OrderStatusHistory() {
-        this.changedAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        this.changedAt = now;
+        this.createdAt = now;
     }
 
     public OrderStatusHistory(Order order, String oldStatus, String newStatus, String updatedBy, String note) {
@@ -57,7 +70,9 @@ public class OrderStatusHistory {
         }
         this.updatedBy = updatedBy;
         this.note = note;
-        this.changedAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        this.changedAt = now;
+        this.createdAt = now;
     }
 
     public Long getId() {

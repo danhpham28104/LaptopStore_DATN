@@ -4,6 +4,7 @@ import com.laptopstore.laptopstore.Repository.OrderRepository;
 import com.laptopstore.laptopstore.Repository.OrderStatusHistoryRepository;
 import com.laptopstore.laptopstore.Service.CartService;
 import com.laptopstore.laptopstore.Service.OrderService;
+import com.laptopstore.laptopstore.Service.ProductService;
 import com.laptopstore.laptopstore.Service.UserService;
 import com.laptopstore.laptopstore.entity.*;
 import com.laptopstore.laptopstore.enums.OrderStatus;
@@ -30,6 +31,8 @@ public class OrderController {
     private UserService userService;
     @Autowired
     private CartService cartService;
+    @Autowired
+    private ProductService productService;
     @Autowired
     private OrderStatusHistoryRepository orderStatusHistoryRepository;
     @Autowired
@@ -210,8 +213,27 @@ public class OrderController {
 
     /** 🔹 Trang xác nhận thành công */
     @GetMapping("/success")
-    public String orderSuccess(Model model) {
+    public String orderSuccess(@RequestParam(required = false) Long orderId, Principal principal, Model model) {
         model.addAttribute("pageTitle", "Đặt hàng thành công – LaptopStore");
+
+        if (orderId != null && principal != null) {
+            Order order = orderService.findById(orderId).orElse(null);
+
+            if (order != null && order.getUser() != null && order.getUser().getUsername().equals(principal.getName())) {
+                model.addAttribute("order", order);
+
+                // Gợi ý SP cùng brand với SP vừa mua
+                if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                    OrderItem firstItem = order.getOrderItems().get(0);
+                    if (firstItem != null && firstItem.getProduct() != null && firstItem.getProduct().getBrand() != null) {
+                        List<Product> recommended = productService
+                                .findByBrand(firstItem.getProduct().getBrand(), 4); // lấy 4 SP
+                        model.addAttribute("recommendedProducts", recommended);
+                    }
+                }
+            }
+        }
+
         return "order_success"; // ↔ templates/order_success.html
     }
 }

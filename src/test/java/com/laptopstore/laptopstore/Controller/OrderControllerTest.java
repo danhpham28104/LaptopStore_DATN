@@ -1,5 +1,6 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.laptopstore.laptopstore.Repository.OrderStatusHistoryRepository;
 import com.laptopstore.laptopstore.Service.OrderService;
 import com.laptopstore.laptopstore.Service.UserService;
 import com.laptopstore.laptopstore.entity.Order;
@@ -24,6 +25,7 @@ class OrderControllerTest {
 
     @Mock private OrderService orderService;
     @Mock private UserService userService;
+    @Mock private OrderStatusHistoryRepository orderStatusHistoryRepository;
     @Mock private Model model;
     @Mock private Principal principal;
 

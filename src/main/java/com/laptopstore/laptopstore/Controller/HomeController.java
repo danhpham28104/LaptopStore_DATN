@@ -55,4 +55,18 @@ public class HomeController {
 
         return "home";
     }
+
+    /** Trang chính sách bảo hành & đổi trả */
+    @GetMapping("/warranty-policy")
+    public String warrantyPolicy(Model model) {
+        model.addAttribute("pageTitle", "Chính sách bảo hành & đổi trả – LaptopStore");
+        return "warranty-policy";
+    }
+
+    /** Trang chính sách bảo mật thông tin */
+    @GetMapping("/privacy-policy")
+    public String privacyPolicy(Model model) {
+        model.addAttribute("pageTitle", "Chính sách bảo mật thông tin – LaptopStore");
+        return "privacy-policy";
+    }
 }

@@ -2,6 +2,7 @@ package com.laptopstore.laptopstore.Service;
 
 import com.laptopstore.laptopstore.Repository.ProductRepository;
 import com.laptopstore.laptopstore.dto.BestSellerDTO;
+import com.laptopstore.laptopstore.entity.Brand;
 import com.laptopstore.laptopstore.entity.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -65,6 +66,12 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<Product> getProductsByBrandId(Long brandId) {
         return productRepository.findByBrand_Id(brandId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Product> findByBrand(Brand brand, int limit) {
+        if (brand == null) return List.of();
+        return productRepository.findByBrandAndIsDeletedFalse(brand, PageRequest.of(0, limit)).getContent();
     }
 
     // Lưu hoặc cập nhật sản phẩm

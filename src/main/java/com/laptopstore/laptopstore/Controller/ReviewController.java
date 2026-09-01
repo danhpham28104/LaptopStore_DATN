@@ -1,10 +1,12 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.laptopstore.laptopstore.Repository.ReviewRepository;
 import com.laptopstore.laptopstore.Service.ReviewService;
 import com.laptopstore.laptopstore.Service.UserService;
 import com.laptopstore.laptopstore.dto.ReviewRequestDto;
 import com.laptopstore.laptopstore.entity.Review;
 import com.laptopstore.laptopstore.entity.User;
+import com.laptopstore.laptopstore.enums.ReviewStatus;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,9 @@ public class ReviewController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ReviewRepository reviewRepository;
 
     @PostMapping("/reviews/add")
     public String submitReview(@Valid @ModelAttribute ReviewRequestDto reviewDto,
@@ -74,16 +79,52 @@ public class ReviewController {
 
     @GetMapping("/api/reviews/product/{productId}")
     @ResponseBody
-    public ResponseEntity<?> getProductReviews(@PathVariable Long productId) {
-        List<Review> reviews = reviewService.getApprovedReviewsByProduct(productId);
+    public Map<String, Object> getReviews(
+            @PathVariable Long productId,
+            @RequestParam(required = false) Integer rating) {
+
+        List<Review> reviews;
+        if (rating != null) {
+            if (rating <= 2) {
+                reviews = reviewRepository.findByProductIdAndStatusAndRatingLessThanEqualOrderByCreatedAtDesc(
+                        productId, ReviewStatus.APPROVED, 2);
+            } else {
+                reviews = reviewRepository.findByProductIdAndStatusAndRatingOrderByCreatedAtDesc(
+                        productId, ReviewStatus.APPROVED, rating);
+            }
+        } else {
+            reviews = reviewService.getApprovedReviewsByProduct(productId);
+        }
+
+        // Đếm theo từng sao
+        Map<Integer, Long> starCounts = new HashMap<>();
+        for (int i = 1; i <= 5; i++) starCounts.put(i, 0L);
+        reviewRepository.countByProductIdAndStatusGroupByRating(productId, ReviewStatus.APPROVED)
+                .forEach(row -> {
+                    if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+                        starCounts.put((Integer) row[0], (Long) row[1]);
+                    }
+                });
+
+        List<Map<String, Object>> reviewList = reviews.stream().map(r -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", r.getId());
+            map.put("rating", r.getRating());
+            map.put("comment", r.getComment());
+            map.put("createdAt", r.getCreatedAt());
+            map.put("user", Map.of("fullName", r.getUser() != null ? (r.getUser().getFullName() != null && !r.getUser().getFullName().isBlank() ? r.getUser().getFullName() : r.getUser().getUsername()) : "Khách hàng TechStore"));
+            return map;
+        }).toList();
+
         Double avgRating = reviewService.getAverageRating(productId);
-        Long count = reviewService.getReviewCount(productId);
+        Long totalReviews = reviewService.getReviewCount(productId);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("reviews", reviews);
-        data.put("averageRating", avgRating);
-        data.put("totalReviews", count);
-
-        return ResponseEntity.ok(data);
+        Map<String, Object> result = new HashMap<>();
+        result.put("reviews", reviewList);
+        result.put("starCounts", starCounts);
+        result.put("total", reviewList.size());
+        result.put("totalReviews", totalReviews);
+        result.put("averageRating", avgRating);
+        return result;
     }
 }

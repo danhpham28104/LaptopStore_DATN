@@ -1,7 +1,10 @@
 package com.laptopstore.laptopstore.Repository;
 
+import com.laptopstore.laptopstore.entity.Brand;
 import com.laptopstore.laptopstore.dto.BestSellerDTO;
 import com.laptopstore.laptopstore.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +16,8 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
+
+    Page<Product> findByBrandAndIsDeletedFalse(Brand brand, Pageable pageable);
 
     List<Product> findByBrand_Id(Long id);
 
