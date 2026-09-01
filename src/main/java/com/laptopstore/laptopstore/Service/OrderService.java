@@ -388,7 +388,8 @@ public class OrderService {
             // Voucher đã hết trong khi xử lý (race condition)
             return total; // Bỏ qua voucher, không giảm giá
         }
-        // Reload voucher từ DB để lấy state mới nhất
+        // Cập nhật số lượng trong Java memory & reload từ DB để có state mới nhất
+        v.setQuantity(v.getQuantity() - 1);
         v = voucherRepository.findById(v.getId()).orElse(v);
 
         order.setVoucher(v);

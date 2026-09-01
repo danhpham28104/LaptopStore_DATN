@@ -32,7 +32,7 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long> {
 """)
     List<Voucher> findAllAvailableNow(@Param("now") LocalDateTime now);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Voucher v SET v.quantity = v.quantity - 1 WHERE v.id = :id AND v.quantity > 0")
     int decrementQuantityIfAvailable(@Param("id") Long id);
 }
