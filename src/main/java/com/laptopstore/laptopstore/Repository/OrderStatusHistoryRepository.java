@@ -10,6 +10,8 @@ import java.util.Optional;
 @Repository
 public interface OrderStatusHistoryRepository extends JpaRepository<OrderStatusHistory, Long> {
 
+    List<OrderStatusHistory> findByOrderIdOrderByChangedAtAsc(Long orderId);
+
     List<OrderStatusHistory> findByOrderIdOrderByCreatedAtAsc(Long orderId);
 
     Optional<OrderStatusHistory> findFirstByOrderIdAndNewStatusOrderByCreatedAtDesc(Long orderId, String newStatus);

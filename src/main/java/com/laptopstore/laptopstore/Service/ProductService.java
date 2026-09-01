@@ -102,16 +102,16 @@ public class ProductService {
 
     // Tìm kiếm nâng cao (Laptop)
     public List<Product> advancedSearch(String q, String brand, String ram, String cpu,
-                                        String storage, Double minPrice, Double maxPrice) {
+                                        String color, String storage, Double minPrice, Double maxPrice) {
 
         String keyword = (q != null && !q.isBlank()) ? q.trim() : null;
         String brandName = (brand != null && !brand.isBlank()) ? brand.trim() : null;
         String ramValue = (ram != null && !ram.isBlank()) ? ram.trim() : null;
         String cpuValue = (cpu != null && !cpu.isBlank()) ? cpu.trim() : null;
+        String colorValue = (color != null && !color.isBlank()) ? color.trim() : null;
         String storageValue = (storage != null && !storage.isBlank()) ? storage.trim() : null;
 
-        // color có thể để null nếu chưa cần lọc theo màu
-        return productRepository.searchAdvanced(keyword, brandName, ramValue, cpuValue, null, storageValue, minPrice, maxPrice);
+        return productRepository.searchAdvanced(keyword, brandName, ramValue, cpuValue, colorValue, storageValue, minPrice, maxPrice);
     }
 
     @Transactional(readOnly = true)

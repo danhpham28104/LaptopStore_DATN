@@ -188,7 +188,7 @@
               <div class="order-items">
                 <div class="order-item d-flex align-items-center mb-3 border-bottom pb-2">
                   <div class="order-item-image me-3">
-                    <img th:src="${product.images}" alt="Product" style="width:70px; height:70px; object-fit:cover;">
+                    <img th:src="${selectedVariant != null and selectedVariant.image != null and !selectedVariant.image.isEmpty() ? selectedVariant.image : (product != null and product.images != null ? #strings.arraySplit(product.images, ',')[0] : '/images/default-avatar.png')}" alt="Product" style="width:70px; height:70px; object-fit:cover;">
                   </div>
                   <div class="order-item-details flex-grow-1">
                     <h6 th:text="${product.name}"></h6>

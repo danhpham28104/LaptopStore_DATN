@@ -56,11 +56,36 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- Nếu không có đơn -->
-    <div th:if="${#lists.isEmpty(orders)}" class="no-orders">
-        <i class="bi bi-bag-x" style="font-size: 50px"></i>
-        <p class="mt-3">Bạn chưa có đơn hàng nào.</p>
-        <a th:href="@{/}" class="btn btn-primary mt-2">Mua sắm ngay</a>
+    <!-- Tabs navigation lọc trạng thái đơn hàng -->
+    <ul class="nav nav-tabs mb-4" id="orderTabs">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${currentStatus == null or currentStatus == ''} ? 'active'" 
+               href="/orders">Tất cả</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" 
+               th:classappend="${currentStatus == 'PENDING_PAYMENT' or currentStatus == 'CONFIRMED'} ? 'active'"
+               href="/orders?status=PENDING_PAYMENT">Chờ xác nhận</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${currentStatus == 'SHIPPING'} ? 'active'"
+               href="/orders?status=SHIPPING">Đang giao</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${currentStatus == 'DELIVERED'} ? 'active'"
+               href="/orders?status=DELIVERED">Đã giao</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${currentStatus == 'CANCELLED'} ? 'active'"
+               href="/orders?status=CANCELLED">Đã hủy</a>
+        </li>
+    </ul>
+
+    <!-- Hiển thị thông báo khi không có đơn -->
+    <div th:if="${orders.isEmpty()}" class="text-center py-5">
+        <i class="bi bi-inbox fs-1 text-muted"></i>
+        <p class="mt-3 text-muted">Không có đơn hàng nào</p>
+        <a href="/" class="btn btn-primary">Mua sắm ngay</a>
     </div>
 
     <!-- Danh sách đơn -->

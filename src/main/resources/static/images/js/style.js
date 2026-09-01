@@ -79,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener("DOMContentLoaded", () => {
   const ramSelect = document.getElementById("filter-ram");
   const cpuSelect = document.getElementById("filter-cpu");
+  const colorSelect = document.getElementById("filter-color");
   const storageSelect = document.getElementById("filter-storage");
   const priceSelect = document.getElementById("filter-price");
   const applyBtn = document.getElementById("applyFilters");
@@ -90,10 +91,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   applyBtn.addEventListener("click", async () => {
-    const ram = ramSelect.value;
+    const ram = ramSelect ? ramSelect.value : "";
     const cpu = cpuSelect ? cpuSelect.value : "";
-    const storage = storageSelect.value;
-    const price = priceSelect.value;
+    const color = colorSelect ? colorSelect.value : "";
+    const storage = storageSelect ? storageSelect.value : "";
+    const price = priceSelect ? priceSelect.value : "";
 
     let minPrice = null;
     let maxPrice = null;
@@ -114,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const params = new URLSearchParams();
       if (ram) params.append("ram", ram);
       if (cpu) params.append("cpu", cpu);
+      if (color) params.append("color", color);
       if (storage) params.append("storage", storage);
       if (minPrice) params.append("minPrice", minPrice);
       if (maxPrice) params.append("maxPrice", maxPrice);

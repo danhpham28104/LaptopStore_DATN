@@ -36,7 +36,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
       AND (:brand IS NULL OR LOWER(b.name) LIKE LOWER(CONCAT('%', :brand, '%')))
       AND (:ram IS NULL OR LOWER(p.ram) = LOWER(:ram))
       AND (:cpu IS NULL OR LOWER(p.cpu) LIKE LOWER(CONCAT('%', :cpu, '%')))
-      AND (:color IS NULL OR LOWER(v.color) = LOWER(:color))
+      AND (:color IS NULL OR LOWER(v.color) LIKE LOWER(CONCAT('%', :color, '%')))
       AND (:storage IS NULL OR LOWER(v.storage) = LOWER(:storage))
       AND (:minPrice IS NULL OR p.price >= :minPrice)
       AND (:maxPrice IS NULL OR p.price <= :maxPrice)

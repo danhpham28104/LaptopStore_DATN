@@ -37,6 +37,12 @@ public class CartService {
         return cartRepository.findByUser_Id(userId);
     }
 
+    @Transactional
+    public Cart getOrCreateCart(com.laptopstore.laptopstore.entity.User user) {
+        return cartRepository.findByUser_Id(user.getId())
+                .orElseGet(() -> createCartForUser(user));
+    }
+
     /**
      * Tạo cart mới cho user (dùng khi user chưa có cart — e.g. user mới hoặc
      * được tạo thủ công mà chưa qua luồng đăng ký có init cart).

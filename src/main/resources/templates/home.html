@@ -219,7 +219,7 @@
 
         <div class="row g-3 align-items-end">
             <!-- CPU -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg col-md-4">
                 <label class="form-label mb-1">CPU</label>
                 <select id="filter-cpu" class="form-select">
                     <option value="">Tất cả CPU</option>
@@ -235,7 +235,7 @@
             </div>
 
             <!-- RAM -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg col-md-4">
                 <label class="form-label mb-1">RAM</label>
                 <select id="filter-ram" class="form-select">
                     <option value="">Tất cả RAM</option>
@@ -247,7 +247,7 @@
             </div>
 
             <!-- SSD -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg col-md-4">
                 <label class="form-label mb-1">SSD</label>
                 <select id="filter-storage" class="form-select">
                     <option value="">Tất cả SSD</option>
@@ -258,8 +258,22 @@
                 </select>
             </div>
 
+            <!-- Màu sắc -->
+            <div class="col-lg col-md-4">
+                <label class="form-label mb-1">Màu sắc</label>
+                <select id="filter-color" class="form-select">
+                    <option value="">Tất cả màu sắc</option>
+                    <option value="Black" th:selected="${searchColor == 'Black'}">Đen (Black)</option>
+                    <option value="Silver" th:selected="${searchColor == 'Silver'}">Bạc (Silver)</option>
+                    <option value="Gray" th:selected="${searchColor == 'Gray'}">Xám (Gray)</option>
+                    <option value="White" th:selected="${searchColor == 'White'}">Trắng (White)</option>
+                    <option value="Gold" th:selected="${searchColor == 'Gold'}">Vàng (Gold)</option>
+                    <option value="Blue" th:selected="${searchColor == 'Blue'}">Xanh (Blue)</option>
+                </select>
+            </div>
+
             <!-- Giá -->
-            <div class="col-lg-3 col-md-6">
+            <div class="col-lg col-md-4">
                 <label class="form-label mb-1">Mức giá</label>
                 <select id="filter-price" class="form-select">
                     <option value="">Tất cả mức giá</option>

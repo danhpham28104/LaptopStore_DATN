@@ -62,5 +62,18 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.voucher.id = :voucherId AND o.user.id = :userId AND o.orderStatus NOT IN ('CANCELLED', 'REFUNDED')")
     long countVoucherUsageByUser(@Param("voucherId") Long voucherId, @Param("userId") Long userId);
+
+    List<Order> findByUser_UsernameOrderByCreatedAtDesc(String username);
+
+    List<Order> findByUser_UsernameAndOrderStatusOrderByCreatedAtDesc(String username, OrderStatus status);
+
+    List<Order> findByUser_UsernameAndOrderStatusInOrderByCreatedAtDesc(String username, List<OrderStatus> statuses);
+
+    @Query("SELECT o FROM Order o WHERE o.user.username = :username " +
+           "AND (:status IS NULL OR o.orderStatus = :status) " +
+           "ORDER BY o.createdAt DESC")
+    List<Order> findByUsernameAndStatus(
+        @Param("username") String username, 
+        @Param("status") OrderStatus status);
 }
 

@@ -44,6 +44,16 @@
     .step-item.active .step-title {
       color: #2563eb;
     }
+
+    /* Timeline CSS */
+    .timeline { position: relative; padding-left: 40px; }
+    .timeline::before { content: ''; position: absolute; left: 14px; top: 0; bottom: 0; 
+      width: 2px; background: #dee2e6; }
+    .timeline-item { position: relative; margin-bottom: 20px; }
+    .timeline-badge { width: 28px; height: 28px; border-radius: 50%; 
+      display: flex; align-items: center; justify-content: center;
+      position: absolute; left: -41px; font-size: 12px; }
+    .timeline-content { background: #f8f9fa; border-radius: 8px; padding: 10px 15px; }
   </style>
 </head>
 
@@ -149,6 +159,26 @@
       <div class="col-12" th:if="${order.voucher != null}">
         <strong>Mã giảm giá đã áp dụng:</strong>
         <span class="badge bg-outline-primary text-primary" th:text="${order.voucher.code}"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📦 Timeline Lịch sử đơn hàng -->
+  <div class="order-timeline order-box shadow-sm mt-4">
+    <h5 class="mb-3 fw-bold">📦 Lịch sử đơn hàng</h5>
+    <div class="timeline">
+      <!-- Loop qua statusHistories -->
+      <div th:each="h : ${statusHistories}" class="timeline-item">
+        <div class="timeline-badge bg-success text-white">✓</div>
+        <div class="timeline-content">
+          <strong th:text="${h.status != null ? h.status.displayName : h.newStatus}">Trạng thái</strong>
+          <small class="text-muted d-block" 
+                 th:text="${#temporals.format(h.changedAt, 'dd/MM/yyyy HH:mm')}">
+            Thời gian
+          </small>
+          <p th:if="${h.note != null and !h.note.isEmpty()}" 
+             class="text-muted small mb-0 mt-1" th:text="${h.note}"></p>
+        </div>
       </div>
     </div>
   </div>

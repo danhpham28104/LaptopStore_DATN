@@ -51,13 +51,13 @@ public class OrderService {
             order.setOrderStatus(newStatus);
             orderRepository.save(order);
 
-            OrderStatusHistory history = new OrderStatusHistory(
-                    order,
-                    oldStatus != null ? oldStatus.name() : null,
-                    newStatus.name(),
-                    "System/Admin",
-                    "Cập nhật trạng thái sang " + newStatus.getDisplayName()
-            );
+            OrderStatusHistory history = new OrderStatusHistory();
+            history.setOrder(order);
+            history.setOldStatus(oldStatus != null ? oldStatus.name() : null);
+            history.setStatus(newStatus);
+            history.setChangedAt(LocalDateTime.now());
+            history.setNote("Cập nhật trạng thái sang " + newStatus.getDisplayName());
+            history.setUpdatedBy("System/Admin");
             orderStatusHistoryRepository.save(history);
         });
     }
@@ -231,6 +231,14 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         paymentRepository.save(payment);
 
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setOrder(saved);
+        history.setStatus(saved.getOrderStatus());
+        history.setChangedAt(LocalDateTime.now());
+        history.setNote("Đơn hàng đã được khởi tạo");
+        history.setUpdatedBy(user != null ? user.getUsername() : "Customer");
+        orderStatusHistoryRepository.save(history);
+
         cartItemRepository.deleteAll(cart.getItems());
         cart.getItems().clear();
         cart.recalcTotals();
@@ -335,6 +343,14 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         paymentRepository.save(payment);
+
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setOrder(savedOrder);
+        history.setStatus(savedOrder.getOrderStatus());
+        history.setChangedAt(LocalDateTime.now());
+        history.setNote("Đơn hàng đã được khởi tạo (Mua ngay)");
+        history.setUpdatedBy(user != null ? user.getUsername() : "Customer");
+        orderStatusHistoryRepository.save(history);
 
         return savedOrder;
     }
@@ -443,8 +459,18 @@ public class OrderService {
             }
         }
 
+        OrderStatus oldStatus = order.getOrderStatus();
         order.setOrderStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
+
+        OrderStatusHistory history = new OrderStatusHistory();
+        history.setOrder(order);
+        history.setOldStatus(oldStatus != null ? oldStatus.name() : null);
+        history.setStatus(OrderStatus.CANCELLED);
+        history.setChangedAt(LocalDateTime.now());
+        history.setNote("Đơn hàng đã bị hủy");
+        history.setUpdatedBy("System/Customer");
+        orderStatusHistoryRepository.save(history);
     }
 
     /**
@@ -480,8 +506,18 @@ public class OrderService {
             }
         }
 
+        OrderStatus oldStatus2 = order.getOrderStatus();
         order.setOrderStatus(OrderStatus.CONFIRMED);
         orderRepository.save(order);
+
+        OrderStatusHistory history2 = new OrderStatusHistory();
+        history2.setOrder(order);
+        history2.setOldStatus(oldStatus2 != null ? oldStatus2.name() : null);
+        history2.setStatus(OrderStatus.CONFIRMED);
+        history2.setChangedAt(LocalDateTime.now());
+        history2.setNote("Thanh toán thành công & đã xác nhận đơn hàng");
+        history2.setUpdatedBy(performedBy != null ? performedBy : "System");
+        orderStatusHistoryRepository.save(history2);
     }
 
     // ===========================

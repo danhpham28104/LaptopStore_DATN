@@ -1,6 +1,7 @@
 package com.laptopstore.laptopstore.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.laptopstore.laptopstore.enums.OrderStatus;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -19,6 +20,10 @@ public class OrderStatusHistory {
     @JsonIgnore
     private Order order;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 50)
+    private OrderStatus status;
+
     @Column(length = 50)
     private String oldStatus;
 
@@ -32,17 +37,27 @@ public class OrderStatusHistory {
     private String note;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "changed_at")
+    private LocalDateTime changedAt;
+
+    @CreationTimestamp
+    @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    public OrderStatusHistory() {}
+    public OrderStatusHistory() {
+        this.changedAt = LocalDateTime.now();
+    }
 
     public OrderStatusHistory(Order order, String oldStatus, String newStatus, String updatedBy, String note) {
         this.order = order;
         this.oldStatus = oldStatus;
         this.newStatus = newStatus;
+        if (newStatus != null) {
+            this.status = OrderStatus.fromString(newStatus);
+        }
         this.updatedBy = updatedBy;
         this.note = note;
+        this.changedAt = LocalDateTime.now();
     }
 
     public Long getId() {
@@ -61,6 +76,23 @@ public class OrderStatusHistory {
         this.order = order;
     }
 
+    public OrderStatus getStatus() {
+        if (status != null) {
+            return status;
+        }
+        if (newStatus != null) {
+            return OrderStatus.fromString(newStatus);
+        }
+        return null;
+    }
+
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+        if (status != null) {
+            this.newStatus = status.name();
+        }
+    }
+
     public String getOldStatus() {
         return oldStatus;
     }
@@ -75,6 +107,9 @@ public class OrderStatusHistory {
 
     public void setNewStatus(String newStatus) {
         this.newStatus = newStatus;
+        if (newStatus != null && this.status == null) {
+            this.status = OrderStatus.fromString(newStatus);
+        }
     }
 
     public String getUpdatedBy() {
@@ -93,11 +128,28 @@ public class OrderStatusHistory {
         this.note = note;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public LocalDateTime getChangedAt() {
+        if (changedAt != null) {
+            return changedAt;
+        }
         return createdAt;
+    }
+
+    public void setChangedAt(LocalDateTime changedAt) {
+        this.changedAt = changedAt;
+        this.createdAt = changedAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        if (createdAt != null) {
+            return createdAt;
+        }
+        return changedAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+        this.changedAt = createdAt;
     }
 }
+

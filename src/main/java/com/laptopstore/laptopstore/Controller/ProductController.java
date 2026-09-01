@@ -31,18 +31,30 @@ public class ProductController {
     @GetMapping
     public String listProducts(@RequestParam(required = false) String q,
                                @RequestParam(required = false) String brand,
+                               @RequestParam(required = false) String ram,
+                               @RequestParam(required = false) String cpu,
+                               @RequestParam(required = false) String color,
+                               @RequestParam(required = false) String storage,
+                               @RequestParam(required = false) Double minPrice,
+                               @RequestParam(required = false) Double maxPrice,
                                Model model) {
 
         model.addAttribute("brands", brandService.getAllBrands());
 
         List<Product> products;
-        if (q != null && !q.isBlank()) {
-            products = productService.searchByName(q);
+        boolean hasFilter = (q != null && !q.isBlank()) ||
+                            (brand != null && !brand.isBlank()) ||
+                            (ram != null && !ram.isBlank()) ||
+                            (cpu != null && !cpu.isBlank()) ||
+                            (color != null && !color.isBlank()) ||
+                            (storage != null && !storage.isBlank()) ||
+                            minPrice != null || maxPrice != null;
+
+        if (hasFilter) {
+            products = productService.advancedSearch(q, brand, ram, cpu, color, storage, minPrice, maxPrice);
             model.addAttribute("searchQuery", q);
-            model.addAttribute("isSearch", true);
-        } else if (brand != null && !brand.isBlank()) {
-            products = productService.searchByBrandName(brand);
             model.addAttribute("searchBrand", brand);
+            model.addAttribute("searchColor", color);
             model.addAttribute("isSearch", true);
         } else {
             products = productService.getAllProducts();

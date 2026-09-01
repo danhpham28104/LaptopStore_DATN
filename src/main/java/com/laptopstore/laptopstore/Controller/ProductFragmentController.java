@@ -23,19 +23,20 @@ public class ProductFragmentController {
         return "fragments/product_list :: productList";
     }
 
-    /**  theo RAM / ROM / Giá / Tên / Thương hiệu */
+    /**  theo RAM / ROM / Màu sắc / Giá / Tên / Thương hiệu */
     @GetMapping("/products/filter")
     public String filterProductsFragment(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) String ram,
             @RequestParam(required = false) String cpu,
+            @RequestParam(required = false) String color,
             @RequestParam(required = false) String storage,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             Model model
     ) {
-        List<Product> products = productService.advancedSearch(q, brand, ram, cpu, storage, minPrice, maxPrice);
+        List<Product> products = productService.advancedSearch(q, brand, ram, cpu, color, storage, minPrice, maxPrice);
         model.addAttribute("products", products);
         return "fragments/product_list :: productList";
     }
