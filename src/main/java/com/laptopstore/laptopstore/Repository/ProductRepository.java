@@ -23,6 +23,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByBrand_NameContainingIgnoreCase(String brandName);
 
+    long countByCategory_Id(Long categoryId);
+
+    List<Product> findByCategory_SlugAndIsDeletedFalse(String categorySlug);
+
+    Page<Product> findByCategory_SlugAndIsDeletedFalse(String categorySlug, Pageable pageable);
+
     List<Product> findByNameContainingIgnoreCase(String name);
 
     Optional<Product> findByModel(String model);
@@ -36,9 +42,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("""
     SELECT DISTINCT p FROM Product p
     LEFT JOIN p.brand b
+    LEFT JOIN p.category c
     LEFT JOIN p.variants v
     WHERE (:q IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')))
       AND (:brand IS NULL OR LOWER(b.name) LIKE LOWER(CONCAT('%', :brand, '%')))
+      AND (:categorySlug IS NULL OR LOWER(c.slug) = LOWER(:categorySlug))
       AND (:ram IS NULL OR LOWER(p.ram) = LOWER(:ram))
       AND (:cpu IS NULL OR LOWER(p.cpu) LIKE LOWER(CONCAT('%', :cpu, '%')))
       AND (:color IS NULL OR LOWER(v.color) LIKE LOWER(CONCAT('%', :color, '%')))
@@ -49,6 +57,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> searchAdvanced(
             @Param("q") String q,
             @Param("brand") String brand,
+            @Param("categorySlug") String categorySlug,
             @Param("ram") String ram,
             @Param("cpu") String cpu,
             @Param("color") String color,

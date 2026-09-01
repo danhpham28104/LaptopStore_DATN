@@ -62,11 +62,32 @@
       </form>
     </div>
 
+    <input type="hidden" name="_csrf" th:value="${_csrf?.token}" />
+
+    <!-- 🔹 Bulk Action Toolbar -->
+    <div id="bulkToolbar" style="display:none;" class="mb-3 p-3 bg-white border rounded shadow-sm">
+      <div class="d-flex align-items-center gap-2">
+        <span class="fw-semibold text-primary"><span id="selectedCount">0</span> đơn hàng được chọn</span>
+        <select id="bulkStatus" class="form-select form-select-sm d-inline-block w-auto ms-2">
+          <option value="">-- Chuyển sang trạng thái --</option>
+          <option value="CONFIRMED">Đã xác nhận</option>
+          <option value="PACKING">Đang đóng gói</option>
+          <option value="SHIPPING">Đang giao hàng</option>
+          <option value="DELIVERED">Đã giao hàng</option>
+          <option value="CANCELLED">Đã hủy</option>
+        </select>
+        <button class="btn btn-primary btn-sm ms-1" onclick="applyBulkStatus()">
+          <i class="bi bi-check-circle"></i> Áp dụng
+        </button>
+      </div>
+    </div>
+
     <div class="card shadow-sm">
       <div class="card-body table-responsive">
         <table class="table align-middle table-hover">
           <thead class="table-light">
           <tr>
+            <th><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
             <th>ID</th>
             <th>Người đặt</th>
             <th>SĐT</th>
@@ -78,6 +99,7 @@
           </thead>
           <tbody>
           <tr th:each="o : ${orders}">
+            <td><input type="checkbox" class="order-checkbox" th:value="${o.id}"></td>
             <td th:text="${o.id}"></td>
             <td th:text="${o.receiverName}"></td>
             <td th:text="${o.receiverPhone}"></td>
@@ -115,7 +137,7 @@
             </td>
           </tr>
           <tr th:if="${#lists.isEmpty(orders)}">
-            <td colspan="7" class="text-center text-muted">Không có đơn hàng nào</td>
+            <td colspan="8" class="text-center text-muted">Không có đơn hàng nào</td>
           </tr>
           </tbody>
         </table>
@@ -154,7 +176,54 @@
   </div>
 
   <script>
+    function toggleAll(source) {
+      document.querySelectorAll('.order-checkbox').forEach(cb => cb.checked = source.checked);
+      updateBulkToolbar();
+    }
+
+    function updateBulkToolbar() {
+      const checked = document.querySelectorAll('.order-checkbox:checked');
+      const count = checked.length;
+      const countEl = document.getElementById('selectedCount');
+      const toolbar = document.getElementById('bulkToolbar');
+      if (countEl) countEl.textContent = count;
+      if (toolbar) toolbar.style.display = count > 0 ? 'block' : 'none';
+
+      const all = document.querySelectorAll('.order-checkbox');
+      const selectAll = document.getElementById('selectAll');
+      if (selectAll && all.length > 0) {
+        selectAll.checked = (checked.length === all.length);
+      }
+    }
+
+    function applyBulkStatus() {
+      const ids = [...document.querySelectorAll('.order-checkbox:checked')].map(cb => cb.value);
+      const status = document.getElementById('bulkStatus').value;
+      if (!status || ids.length === 0) return alert('Vui lòng chọn trạng thái và ít nhất 1 đơn hàng');
+
+      const csrfToken = document.querySelector('[name=_csrf]')?.value || '';
+
+      fetch('/admin/orders/bulk-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({ ids: ids.map(Number), status: status })
+      }).then(r => r.json()).then(data => {
+        alert(`Đã cập nhật ${data.updated} đơn hàng`);
+        location.reload();
+      }).catch(err => {
+        console.error(err);
+        alert('Đã xảy ra lỗi khi cập nhật đơn hàng hàng loạt');
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll('.order-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateBulkToolbar);
+      });
+
       const params = new URLSearchParams(window.location.search);
 
       let message = "";

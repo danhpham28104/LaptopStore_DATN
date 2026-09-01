@@ -124,4 +124,26 @@ public class AdminOrderController {
         return "admin/orders";
     }
 
+    @PostMapping("/bulk-status")
+    @ResponseBody
+    public java.util.Map<String, Object> bulkUpdateStatus(@RequestBody java.util.Map<String, Object> body) {
+        List<Long> ids = ((List<?>) body.get("ids")).stream()
+                .map(o -> Long.parseLong(o.toString())).collect(java.util.stream.Collectors.toList());
+        String status = (String) body.get("status");
+        OrderStatus newStatus = OrderStatus.fromString(status);
+
+        int updated = 0;
+        for (Long id : ids) {
+            try {
+                orderService.updateStatus(id, newStatus);
+                updated++;
+            } catch (Exception ignored) {}
+        }
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("updated", updated);
+        result.put("total", ids.size());
+        return result;
+    }
+
 }

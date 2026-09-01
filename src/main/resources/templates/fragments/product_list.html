@@ -55,8 +55,8 @@
       <!-- Product Info -->
       <div class="product-info p-3 d-flex flex-column flex-grow-1">
 
-        <!-- Brand name -->
-        <div class="text-muted small mb-1" th:text="${p.brand != null ? p.brand.name : 'Khác'}">Hãng</div>
+        <!-- Brand and Category name -->
+        <div class="text-muted small mb-1" th:text="${(p.brand != null ? p.brand.name : 'Khác') + (p.category != null ? ' • ' + p.category.name : '')}">Hãng</div>
 
         <!-- Product name + sale badge -->
         <h6 class="product-name fw-bold mb-1 text-truncate">

@@ -31,11 +31,19 @@ public class HomeController {
     @Autowired
     private com.laptopstore.laptopstore.Service.RecommendationService recommendationService;
 
-    /** Trang chủ: hiển thị sản phẩm + thương hiệu */
+    /** Trang chủ: hiển thị sản phẩm + thương hiệu + danh mục */
     @GetMapping({"/", "/home"})
-    public String home(@RequestParam(defaultValue = "0") int page, Model model) {
+    public String home(@RequestParam(defaultValue = "0") int page,
+                       @RequestParam(required = false) String categorySlug,
+                       Model model) {
         int pageSize = 12;
-        Page<Product> productPage = productService.getPaginatedProducts(page, pageSize);
+        Page<Product> productPage;
+        if (categorySlug != null && !categorySlug.isBlank()) {
+            productPage = productService.getPaginatedProductsByCategorySlug(categorySlug, page, pageSize);
+            model.addAttribute("selectedCategorySlug", categorySlug);
+        } else {
+            productPage = productService.getPaginatedProducts(page, pageSize);
+        }
         model.addAttribute("brands", brandService.getAllBrands());
         model.addAttribute("products", productPage.getContent());
         model.addAttribute("currentPage", page);

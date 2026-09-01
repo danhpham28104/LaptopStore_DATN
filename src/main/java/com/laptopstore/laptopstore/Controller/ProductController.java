@@ -31,6 +31,7 @@ public class ProductController {
     @GetMapping
     public String listProducts(@RequestParam(required = false) String q,
                                @RequestParam(required = false) String brand,
+                               @RequestParam(required = false) String categorySlug,
                                @RequestParam(required = false) String ram,
                                @RequestParam(required = false) String cpu,
                                @RequestParam(required = false) String color,
@@ -44,6 +45,7 @@ public class ProductController {
         List<Product> products;
         boolean hasFilter = (q != null && !q.isBlank()) ||
                             (brand != null && !brand.isBlank()) ||
+                            (categorySlug != null && !categorySlug.isBlank()) ||
                             (ram != null && !ram.isBlank()) ||
                             (cpu != null && !cpu.isBlank()) ||
                             (color != null && !color.isBlank()) ||
@@ -51,9 +53,10 @@ public class ProductController {
                             minPrice != null || maxPrice != null;
 
         if (hasFilter) {
-            products = productService.advancedSearch(q, brand, ram, cpu, color, storage, minPrice, maxPrice);
+            products = productService.advancedSearch(q, brand, categorySlug, ram, cpu, color, storage, minPrice, maxPrice);
             model.addAttribute("searchQuery", q);
             model.addAttribute("searchBrand", brand);
+            model.addAttribute("selectedCategorySlug", categorySlug);
             model.addAttribute("searchColor", color);
             model.addAttribute("isSearch", true);
         } else {

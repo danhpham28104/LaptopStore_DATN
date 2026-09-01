@@ -33,6 +33,9 @@ public class DataInitializer implements CommandLineRunner {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
+    private com.laptopstore.laptopstore.Repository.CategoryRepository categoryRepository;
+
+    @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @Override
@@ -118,6 +121,28 @@ public class DataInitializer implements CommandLineRunner {
             log.info("[DataInitializer] ✅ Đã khôi phục trạng thái hoạt động cho {} người dùng!", restoredUsers);
         }
 
+        // 3. Đảm bảo các Category mặc định tồn tại
+        if (categoryRepository.count() == 0) {
+            log.info("[DataInitializer] Khởi tạo các danh mục mặc định...");
+            createCategoryIfNotExist("Laptop Gaming", "laptop-gaming", "bi-controller", "Cấu hình khủng, card đồ họa rời cho game thủ");
+            createCategoryIfNotExist("Laptop Văn phòng", "laptop-van-phong", "bi-briefcase", "Mỏng nhẹ, pin trâu, mượt mà các tác vụ văn phòng");
+            createCategoryIfNotExist("Laptop Đồ họa", "laptop-do-hoa", "bi-palette", "Màn hình chuẩn màu, hiệu năng cao cho thiết kế & đồ họa");
+            createCategoryIfNotExist("Laptop Sinh viên", "laptop-sinh-vien", "bi-mortarboard", "Giá cả hợp lý, đáp ứng nhu cầu học tập và giải trí");
+            log.info("[DataInitializer] ✅ Đã khởi tạo thành công 4 danh mục mặc định!");
+        }
+
         log.info("[DataInitializer] Kiểm tra hoàn tất. Tất cả tài khoản ADMIN đều đang hoạt động.");
+    }
+
+    private void createCategoryIfNotExist(String name, String slug, String icon, String description) {
+        if (!categoryRepository.existsByName(name)) {
+            com.laptopstore.laptopstore.entity.Category cat = new com.laptopstore.laptopstore.entity.Category();
+            cat.setName(name);
+            cat.setSlug(slug);
+            cat.setIcon(icon);
+            cat.setDescription(description);
+            cat.setActive(true);
+            categoryRepository.save(cat);
+        }
     }
 }

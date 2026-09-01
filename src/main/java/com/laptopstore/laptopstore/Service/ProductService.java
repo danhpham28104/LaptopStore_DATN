@@ -81,6 +81,14 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    @Transactional
+    public void toggleActive(Long id) {
+        productRepository.findById(id).ifPresent(product -> {
+            product.setActive(!product.isActive());
+            productRepository.save(product);
+        });
+    }
+
     // Xóa sản phẩm (Soft delete)
     @Transactional
     public void delete(Long id) {
@@ -107,18 +115,36 @@ public class ProductService {
         return productRepository.findAnyByModelIncludingDeleted(model.trim());
     }
 
+    @Transactional(readOnly = true)
+    public List<Product> getProductsByCategorySlug(String categorySlug) {
+        if (categorySlug == null || categorySlug.isBlank()) return List.of();
+        return productRepository.findByCategory_SlugAndIsDeletedFalse(categorySlug);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Product> getPaginatedProductsByCategorySlug(String categorySlug, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepository.findByCategory_SlugAndIsDeletedFalse(categorySlug, pageable);
+    }
+
     // Tìm kiếm nâng cao (Laptop)
     public List<Product> advancedSearch(String q, String brand, String ram, String cpu,
+                                        String color, String storage, Double minPrice, Double maxPrice) {
+        return advancedSearch(q, brand, null, ram, cpu, color, storage, minPrice, maxPrice);
+    }
+
+    public List<Product> advancedSearch(String q, String brand, String categorySlug, String ram, String cpu,
                                         String color, String storage, Double minPrice, Double maxPrice) {
 
         String keyword = (q != null && !q.isBlank()) ? q.trim() : null;
         String brandName = (brand != null && !brand.isBlank()) ? brand.trim() : null;
+        String catSlug = (categorySlug != null && !categorySlug.isBlank()) ? categorySlug.trim() : null;
         String ramValue = (ram != null && !ram.isBlank()) ? ram.trim() : null;
         String cpuValue = (cpu != null && !cpu.isBlank()) ? cpu.trim() : null;
         String colorValue = (color != null && !color.isBlank()) ? color.trim() : null;
         String storageValue = (storage != null && !storage.isBlank()) ? storage.trim() : null;
 
-        return productRepository.searchAdvanced(keyword, brandName, ramValue, cpuValue, colorValue, storageValue, minPrice, maxPrice);
+        return productRepository.searchAdvanced(keyword, brandName, catSlug, ramValue, cpuValue, colorValue, storageValue, minPrice, maxPrice);
     }
 
     @Transactional(readOnly = true)

@@ -90,11 +90,20 @@ public class Product {
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
+    @Column(nullable = false)
+    private boolean active = true;
+
     // 🔹 Liên kết với thương hiệu
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id")
     @JsonIgnore
     private Brand brand;
+
+    // 🔹 Liên kết với danh mục
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    @JsonIgnore
+    private Category category;
 
     // 🔹 Danh sách biến thể (color, storage, giá, tồn kho riêng)
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -231,6 +240,9 @@ public class Product {
     public Brand getBrand() { return brand; }
     public void setBrand(Brand brand) { this.brand = brand; }
 
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
+
     public List<ProductVariant> getVariants() { return variants; }
     public void setVariants(List<ProductVariant> variants) { this.variants = variants; }
 
@@ -240,6 +252,14 @@ public class Product {
 
     public void setDeleted(boolean deleted) {
         isDeleted = deleted;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
     public LocalDateTime getUpdatedAt() {

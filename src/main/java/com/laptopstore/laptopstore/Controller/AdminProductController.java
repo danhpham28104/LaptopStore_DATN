@@ -1,10 +1,12 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.laptopstore.laptopstore.Repository.CategoryRepository;
 import com.laptopstore.laptopstore.Service.BrandService;
 import com.laptopstore.laptopstore.Service.ProductService;
 import com.laptopstore.laptopstore.Service.ProductVariantService;
 import com.laptopstore.laptopstore.Service.RagIntegrationService;
 import com.laptopstore.laptopstore.entity.Brand;
+import com.laptopstore.laptopstore.entity.Category;
 import com.laptopstore.laptopstore.entity.Product;
 import com.laptopstore.laptopstore.entity.ProductVariant;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +40,7 @@ public class AdminProductController {
 
     @Autowired private ProductService productService;
     @Autowired private BrandService brandService;
+    @Autowired private CategoryRepository categoryRepository;
     @Autowired private ProductVariantService variantService;
     @Autowired private RagIntegrationService ragIntegrationService;
 
@@ -47,14 +50,16 @@ public class AdminProductController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false, defaultValue = "false") boolean lowStockOnly,
+            @RequestParam(required = false) String filter,
             Model model
     ) {
-        long lowStockCount = productService.countLowStockProducts(3);
+        boolean isLowStockFilter = lowStockOnly || "low-stock".equalsIgnoreCase(filter);
+        long lowStockCount = productService.countLowStockProducts(5);
         model.addAttribute("lowStockCount", lowStockCount);
-        model.addAttribute("lowStockOnly", lowStockOnly);
+        model.addAttribute("lowStockOnly", isLowStockFilter);
 
-        if (lowStockOnly) {
-            List<Product> lowStockProducts = productService.getLowStockProducts(3);
+        if (isLowStockFilter) {
+            List<Product> lowStockProducts = productService.getLowStockProducts(5);
             model.addAttribute("products", lowStockProducts);
             model.addAttribute("currentPage", 0);
             model.addAttribute("totalPages", 1);
@@ -68,6 +73,7 @@ public class AdminProductController {
         }
 
         model.addAttribute("brands", brandService.getAllBrands());
+        model.addAttribute("categories", categoryRepository.findAll());
         model.addAttribute("active", "products");
         model.addAttribute("pageTitle", "Quản lý sản phẩm - LaptopStore Admin");
 
@@ -83,6 +89,7 @@ public class AdminProductController {
             @RequestParam BigDecimal price,
             @RequestParam Integer stock,
             @RequestParam Long brandId,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String ram,
             @RequestParam(required = false) String display,
@@ -104,6 +111,7 @@ public class AdminProductController {
             redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy thương hiệu!");
             return "redirect:/admin/products";
         }
+        Category category = categoryId != null ? categoryRepository.findById(categoryId).orElse(null) : null;
 
         // --- KIỂM TRA SẢN PHẨM ĐÃ TỒN TẠI (ĐANG HOẠT ĐỘNG HOẶC ĐÃ XÓA MỀM) ---
         Optional<Product> existingOpt = productService.findAnyByModel(modelName);
@@ -124,6 +132,7 @@ public class AdminProductController {
             if (name != null && !name.isBlank()) p.setName(name);
             if (price != null) p.setPrice(price);
             if (brand != null) p.setBrand(brand);
+            if (category != null) p.setCategory(category);
             if (description != null && !description.isBlank()) p.setDescription(description);
             if (ram != null && !ram.isBlank()) p.setRam(ram);
             if (display != null && !display.isBlank()) p.setDisplay(display);
@@ -225,6 +234,7 @@ public class AdminProductController {
         p.setStock(stock);
         p.setDescription(description);
         p.setBrand(brand);
+        p.setCategory(category);
         p.setBadge(badge);
         p.setSalePercent(salePercent);
 
@@ -323,6 +333,7 @@ public class AdminProductController {
             @RequestParam BigDecimal price,
             @RequestParam Integer stock,
             @RequestParam Long brandId,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String ram,
             @RequestParam(required = false) String display,
@@ -372,6 +383,7 @@ public class AdminProductController {
         }
 
         Brand brand = brandService.getById(brandId).orElse(p.getBrand());
+        Category category = categoryId != null ? categoryRepository.findById(categoryId).orElse(null) : null;
 
         // --- cập nhật product ---
         p.setName(name);
@@ -379,6 +391,7 @@ public class AdminProductController {
         p.setPrice(price);
         p.setStock(stock);
         p.setBrand(brand);
+        p.setCategory(category);
         p.setDescription(description);
         p.setRam(ram);
         p.setDisplay(display);
@@ -785,6 +798,43 @@ public class AdminProductController {
 
         file.transferTo(dest);
         return "/images/products/" + fileName;
+    }
+
+    @PostMapping("/bulk-toggle")
+    @ResponseBody
+    public java.util.Map<String, Object> bulkToggleStatus(@RequestBody java.util.Map<String, Object> body) {
+        List<Long> ids = ((List<?>) body.get("ids")).stream()
+                .map(o -> Long.parseLong(o.toString())).collect(java.util.stream.Collectors.toList());
+        int updated = 0;
+        for (Long id : ids) {
+            try {
+                productService.toggleActive(id);
+                updated++;
+            } catch (Exception ignored) {}
+        }
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("updated", updated);
+        result.put("total", ids.size());
+        return result;
+    }
+
+    @PostMapping("/bulk-delete")
+    @ResponseBody
+    public java.util.Map<String, Object> bulkDeleteProducts(@RequestBody java.util.Map<String, Object> body) {
+        List<Long> ids = ((List<?>) body.get("ids")).stream()
+                .map(o -> Long.parseLong(o.toString())).collect(java.util.stream.Collectors.toList());
+        int updated = 0;
+        for (Long id : ids) {
+            try {
+                productService.delete(id);
+                updated++;
+            } catch (Exception ignored) {}
+        }
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("updated", updated);
+        result.put("deleted", updated);
+        result.put("total", ids.size());
+        return result;
     }
 
 }

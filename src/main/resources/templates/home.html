@@ -102,6 +102,28 @@
         </div>
     </section>
 
+    <!-- ══ CATEGORY SECTION ══════════════════════════════════════ -->
+    <section class="category-section container py-2">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <div style="width:4px;height:20px;background:var(--primary);border-radius:2px;"></div>
+            <h5 class="fw-bold mb-0" style="font-size:0.95rem;">Danh mục sản phẩm</h5>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a th:href="@{/}" 
+               class="btn btn-sm px-3 rounded-pill" 
+               th:classappend="${selectedCategorySlug == null or selectedCategorySlug == ''} ? 'btn-danger fw-bold' : 'btn-outline-secondary'">
+               Tất cả
+            </a>
+            <a th:each="cat : ${categories}" 
+               th:href="@{/(categorySlug=${cat.slug})}"
+               class="btn btn-sm px-3 rounded-pill" 
+               th:classappend="${selectedCategorySlug == cat.slug} ? 'btn-danger fw-bold' : 'btn-outline-secondary'">
+               <i th:if="${cat.icon != null and !#strings.isEmpty(cat.icon)}" th:class="'bi ' + ${cat.icon} + ' me-1'"></i>
+               <span th:text="${cat.name}">Gaming</span>
+            </a>
+        </div>
+    </section>
+
     <!-- ══ AI RECOMMENDATIONS ════════════════════════════════════ -->
     <section th:if="${recommendations != null and !recommendations.isEmpty()}"
              class="recommendation-section container my-3">

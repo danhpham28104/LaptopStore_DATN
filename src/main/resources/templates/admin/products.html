@@ -256,16 +256,29 @@
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <!-- 🔹 Thanh action cho sản phẩm đã chọn -->
-    <form id="syncSelectedForm" th:action="@{/admin/products/sync-rag-selected}" method="post" class="mb-2">
-      <div class="d-flex gap-2 align-items-center">
-        <button type="submit" class="btn btn-outline-primary btn-sm" id="syncSelectedBtn" disabled
-                onclick="return confirm('Sọn bộ sản phẩm đã chọn sang AI RAG?');">
-          <i class="bi bi-cloud-upload"></i> Đồng bộ đã chọn sang RAG
+    <input type="hidden" name="_csrf" th:value="${_csrf?.token}" />
+
+    <!-- 🔹 Thanh action cho sản phẩm đã chọn (Bulk Actions) -->
+    <div class="mb-3 p-3 bg-white border rounded shadow-sm">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <form id="syncSelectedForm" th:action="@{/admin/products/sync-rag-selected}" method="post" class="d-inline">
+          <button type="submit" class="btn btn-outline-primary btn-sm" id="syncSelectedBtn" disabled
+                  onclick="return confirm('Đồng bộ sản phẩm đã chọn sang AI RAG?');">
+            <i class="bi bi-cloud-upload"></i> Đồng bộ sang RAG
+          </button>
+        </form>
+
+        <button type="button" class="btn btn-outline-warning btn-sm bulk-product-action-btn" disabled id="bulkToggleBtn" onclick="applyProductBulkToggle()">
+          <i class="bi bi-toggle-on"></i> Bật/Tắt trạng thái hàng loạt
         </button>
-        <span class="text-muted small" id="selectedCountLabel"></span>
+
+        <button type="button" class="btn btn-outline-danger btn-sm bulk-product-action-btn" disabled id="bulkDeleteBtn" onclick="applyProductBulkDelete()">
+          <i class="bi bi-trash"></i> Xóa hàng loạt
+        </button>
+
+        <span class="text-muted small fw-semibold ms-2" id="selectedCountLabel"></span>
       </div>
-    </form>
+    </div>
 
     <!-- 🔹 Bảng sản phẩm -->
     <div class="card shadow-sm">
@@ -442,6 +455,16 @@
                 </div>
 
                 <div class="col-md-6">
+                  <label class="form-label">Danh mục</label>
+                  <select name="categoryId" class="form-select">
+                    <option value="">-- Chọn danh mục --</option>
+                    <option th:each="cat : ${categories}" 
+                            th:value="${cat.id}" 
+                            th:text="${cat.name}"></option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
                   <label class="form-label">Ảnh đại diện</label>
                   <input type="file" name="imageFiles" class="form-control" multiple onchange="previewMainImages(event)">
 
@@ -600,8 +623,19 @@
                     <option th:each="b : ${brands}"
                             th:value="${b.id}"
                             th:text="${b.name}"
-                            th:selected="${b.id == p.brand.id}">
+                            th:selected="${p.brand != null and b.id == p.brand.id}">
                     </option>
+                  </select>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Danh mục</label>
+                  <select name="categoryId" class="form-select">
+                    <option value="">-- Chọn danh mục --</option>
+                    <option th:each="cat : ${categories}" 
+                            th:value="${cat.id}" 
+                            th:text="${cat.name}"
+                            th:selected="${p.category != null and cat.id == p.category.id}"></option>
                   </select>
                 </div>
 
@@ -1017,19 +1051,68 @@
 </div>
 
 
-<!-- Script: Checkbox select-all + sync-selected enable/disable -->
+<!-- Script: Checkbox select-all + bulk actions enable/disable -->
 <script>
+  function applyProductBulkToggle() {
+    const ids = [...document.querySelectorAll('.product-checkbox:checked')].map(cb => Number(cb.value));
+    if (ids.length === 0) return alert('Vui lòng chọn ít nhất 1 sản phẩm');
+
+    const csrfToken = document.querySelector('[name=_csrf]')?.value || '';
+
+    fetch('/admin/products/bulk-toggle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken
+      },
+      body: JSON.stringify({ ids: ids })
+    }).then(r => r.json()).then(data => {
+      alert(`Đã cập nhật trạng thái ${data.updated} sản phẩm`);
+      location.reload();
+    }).catch(err => {
+      console.error(err);
+      alert('Đã xảy ra lỗi khi cập nhật sản phẩm hàng loạt');
+    });
+  }
+
+  function applyProductBulkDelete() {
+    const ids = [...document.querySelectorAll('.product-checkbox:checked')].map(cb => Number(cb.value));
+    if (ids.length === 0) return alert('Vui lòng chọn ít nhất 1 sản phẩm');
+    if (!confirm(`Bạn có chắc chắn muốn xóa ${ids.length} sản phẩm đã chọn?`)) return;
+
+    const csrfToken = document.querySelector('[name=_csrf]')?.value || '';
+
+    fetch('/admin/products/bulk-delete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken
+      },
+      body: JSON.stringify({ ids: ids })
+    }).then(r => r.json()).then(data => {
+      alert(`Đã xóa ${data.updated || data.deleted} sản phẩm`);
+      location.reload();
+    }).catch(err => {
+      console.error(err);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm hàng loạt');
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     const selectAll     = document.getElementById('selectAllCheckbox');
     const checkboxes    = document.querySelectorAll('.product-checkbox');
     const syncBtn       = document.getElementById('syncSelectedBtn');
+    const toggleBtn     = document.getElementById('bulkToggleBtn');
+    const deleteBtn     = document.getElementById('bulkDeleteBtn');
     const countLabel    = document.getElementById('selectedCountLabel');
 
     function updateSyncBtn() {
       const checked = document.querySelectorAll('.product-checkbox:checked');
       const n = checked.length;
-      syncBtn.disabled = n === 0;
-      countLabel.textContent = n > 0 ? `Đã chọn ${n} sản phẩm` : '';
+      if (syncBtn) syncBtn.disabled = n === 0;
+      if (toggleBtn) toggleBtn.disabled = n === 0;
+      if (deleteBtn) deleteBtn.disabled = n === 0;
+      if (countLabel) countLabel.textContent = n > 0 ? `Đã chọn ${n} sản phẩm` : '';
     }
 
     if (selectAll) {

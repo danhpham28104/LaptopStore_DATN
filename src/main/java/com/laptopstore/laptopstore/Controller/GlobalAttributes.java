@@ -1,9 +1,11 @@
 package com.laptopstore.laptopstore.Controller;
 
+import com.laptopstore.laptopstore.Service.CategoryService;
 import com.laptopstore.laptopstore.Service.CartService;
 import com.laptopstore.laptopstore.Service.UserService;
 import com.laptopstore.laptopstore.Service.VoucherService;
 import com.laptopstore.laptopstore.Service.WishlistService;
+import com.laptopstore.laptopstore.entity.Category;
 import com.laptopstore.laptopstore.entity.User;
 import com.laptopstore.laptopstore.entity.Voucher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,13 @@ public class GlobalAttributes {
     private CartService cartService;
     @Autowired
     private WishlistService wishlistService;
+    @Autowired
+    private CategoryService categoryService;
+
+    @ModelAttribute("categories")
+    public List<Category> getActiveCategories() {
+        return categoryService.getActiveCategories();
+    }
 
     @ModelAttribute("vouchers")
     public List<Voucher> userVouchers() {

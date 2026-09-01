@@ -75,5 +75,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUsernameAndStatus(
         @Param("username") String username, 
         @Param("status") OrderStatus status);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.PENDING_PAYMENT AND o.createdAt < :cutoff")
+    long countStalePendingOrders(@Param("cutoff") LocalDateTime cutoff);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :since")
+    long countOrdersSince(@Param("since") LocalDateTime since);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.CANCELLED AND o.createdAt >= :since")
+    long countCancelledOrdersSince(@Param("since") LocalDateTime since);
 }
 

@@ -50,9 +50,12 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/otp/**", "/api/**", "/webhook/**", "/payment/webhook/**")
+                .ignoringRequestMatchers("/otp/**", "/api/**", "/webhook/**", "/payment/webhook/**", "/v3/api-docs/**", "/swagger-ui/**")
             )
             .authorizeHttpRequests(auth -> auth
+                // ─── SWAGGER OPENAPI (Public) ───
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
                 // ─── ADMIN ENTRY (Cho phép ADMIN, SALE, WAREHOUSE truy cập /admin) ───
                 .requestMatchers("/admin", "/admin/").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")
                 .requestMatchers("/admin/dashboard/**").hasRole("ADMIN")
@@ -66,8 +69,9 @@ public class SecurityConfig {
                 .requestMatchers("/admin/vouchers/**").hasAnyRole("ADMIN", "SALE")
                 .requestMatchers("/admin/reviews/**").hasAnyRole("ADMIN", "SALE")
 
-                // ─── ADMIN + WAREHOUSE (Sản phẩm, Thương hiệu, Kho) ───
+                // ─── ADMIN + WAREHOUSE (Sản phẩm, Danh mục, Thương hiệu, Kho) ───
                 .requestMatchers("/admin/products/**").hasAnyRole("ADMIN", "WAREHOUSE")
+                .requestMatchers("/admin/categories/**").hasAnyRole("ADMIN", "WAREHOUSE")
                 .requestMatchers("/admin/brands/**").hasAnyRole("ADMIN", "WAREHOUSE")
                 .requestMatchers("/admin/stock/**").hasAnyRole("ADMIN", "WAREHOUSE")
 

@@ -33,6 +33,8 @@ public class AdminDashboardController {
     private final OrderService orderService;
     private final ProductService productService;
     private final UserService userService;
+    private final com.laptopstore.laptopstore.Repository.OrderRepository orderRepository;
+    private final com.laptopstore.laptopstore.Repository.ProductRepository productRepository;
 
     // ===================== DASHBOARD =====================
     @GetMapping
@@ -86,7 +88,7 @@ public class AdminDashboardController {
         // 🔵 2. Tổng số người dùng & tồn kho
         long userCount = userService.countUsers();
         long stockCount = productService.sumTotalStock();
-        long lowStockCount = productService.countLowStockProducts(3);
+        long lowStockCount = productRepository.countLowStockProducts(5);
 
         // 🔵 3. Doanh thu hôm nay & Số đơn mới hôm nay (giữ lại compatibility)
         BigDecimal todayRevenue = orderService.getRevenueByDate(now);
@@ -143,6 +145,24 @@ public class AdminDashboardController {
         model.addAttribute("totalCogs", totalCogs);
         model.addAttribute("totalDiscount", totalDiscount);
         model.addAttribute("grossProfitMargin", grossProfitMargin);
+
+        // 🔴 CẢNH BÁO DASHBOARD (ALERTS)
+        // Cảnh báo SP sắp hết (threshold = 5)
+        model.addAttribute("lowStockCount", lowStockCount);
+        model.addAttribute("hasLowStockAlert", lowStockCount > 0);
+
+        // Đơn QR stale (quá 30 phút chưa thanh toán)
+        java.time.LocalDateTime cutoff = java.time.LocalDateTime.now().minusMinutes(30);
+        long stalePending = orderRepository.countStalePendingOrders(cutoff);
+        model.addAttribute("stalePendingCount", stalePending);
+
+        // Tỉ lệ hủy 7 ngày
+        java.time.LocalDateTime since7Days = java.time.LocalDateTime.now().minusDays(7);
+        long total7Days = orderRepository.countOrdersSince(since7Days);
+        long cancelled7Days = orderRepository.countCancelledOrdersSince(since7Days);
+        double cancelRate = total7Days > 0 ? (double) cancelled7Days / total7Days * 100 : 0;
+        model.addAttribute("cancelRate", Math.round(cancelRate));
+        model.addAttribute("hasCancelAlert", cancelRate > 20);
 
         // Active menu
         model.addAttribute("active", "dashboard");

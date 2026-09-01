@@ -123,15 +123,50 @@
         </form>
     </div>
 
-    <!-- LOW STOCK WARNING BANNER -->
-    <div th:if="${lowStockCount > 0}" class="alert alert-warning alert-dismissible fade show d-flex align-items-center justify-content-between mb-4 shadow-sm" role="alert">
-        <div>
-            <i class="bi bi-exclamation-triangle-fill fs-5 me-2 text-warning"></i>
-            <strong>Cảnh báo tồn kho:</strong> Có <span class="badge bg-danger fs-6" th:text="${lowStockCount}">0</span> sản phẩm sắp hết hàng (tồn kho ≤ 3 máy).
+    <!-- Alert Section -->
+    <div th:if="${hasLowStockAlert or (stalePendingCount != null and stalePendingCount > 0) or hasCancelAlert}" 
+         class="row mb-3">
+      
+      <!-- Low stock alert -->
+      <div th:if="${hasLowStockAlert}" class="col-12 mb-2">
+        <div class="alert alert-warning d-flex align-items-center justify-content-between mb-0">
+          <span>
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong th:text="${lowStockCount}">0</strong> sản phẩm sắp hết hàng (tồn kho ≤ 5)
+          </span>
+          <a href="/admin/products?filter=low-stock" class="btn btn-warning btn-sm">
+            Xem ngay
+          </a>
         </div>
-        <a th:href="@{/admin/products(lowStockOnly=true)}" class="btn btn-dark btn-sm fw-semibold">
-            Xem sản phẩm sắp hết hàng →
-        </a>
+      </div>
+
+      <!-- Stale pending orders alert -->
+      <div th:if="${stalePendingCount != null and stalePendingCount > 0}" class="col-12 mb-2">
+        <div class="alert alert-warning d-flex align-items-center justify-content-between mb-0">
+          <span>
+            <i class="bi bi-clock-history me-2"></i>
+            Có <strong th:text="${stalePendingCount}">0</strong> đơn hàng chờ thanh toán quá 30 phút chưa xử lý
+          </span>
+          <a href="/admin/orders?status=PENDING_PAYMENT" class="btn btn-warning btn-sm">
+            Xem đơn chờ thanh toán
+          </a>
+        </div>
+      </div>
+      
+      <!-- Cancel rate alert -->
+      <div th:if="${hasCancelAlert}" class="col-12 mb-2">
+        <div class="alert alert-danger d-flex align-items-center justify-content-between mb-0">
+          <span>
+            <i class="bi bi-x-circle me-2"></i>
+            Tỉ lệ hủy đơn 7 ngày qua: <strong th:text="${cancelRate}">0</strong>%
+            (ngưỡng cảnh báo: 20%)
+          </span>
+          <a href="/admin/orders?status=CANCELLED" class="btn btn-danger btn-sm">
+            Xem đơn hủy
+          </a>
+        </div>
+      </div>
+      
     </div>
 
     <!-- 6 METRIC CARDS ROW (CLICKABLE LINKS) -->
