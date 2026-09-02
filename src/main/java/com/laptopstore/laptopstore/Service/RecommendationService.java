@@ -1,159 +1,103 @@
 package com.laptopstore.laptopstore.Service;
 
+import com.laptopstore.laptopstore.Repository.AnalyticsEventRepository;
 import com.laptopstore.laptopstore.Repository.ProductRepository;
+import com.laptopstore.laptopstore.entity.AnalyticsEvent;
 import com.laptopstore.laptopstore.entity.Product;
-import com.laptopstore.laptopstore.entity.ProductViewHistory;
-import com.laptopstore.laptopstore.entity.User;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.laptopstore.laptopstore.enums.EventType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 public class RecommendationService {
 
-    @Autowired
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
+    private final AnalyticsEventRepository analyticsEventRepository;
 
-    @Autowired
-    private ProductViewHistoryService productViewHistoryService;
+    public RecommendationService(ProductRepository productRepository, AnalyticsEventRepository analyticsEventRepository) {
+        this.productRepository = productRepository;
+        this.analyticsEventRepository = analyticsEventRepository;
+    }
 
-    @Transactional(readOnly = true)
-    public List<Product> getRecommendationsForUser(User user, int limit) {
-        if (user == null) {
-            return Collections.emptyList();
-        }
+    /** Compatibility method cho HomeController & ProductController */
+    public List<Product> getRecommendationsForUser(com.laptopstore.laptopstore.entity.User user, int limit) {
+        Long userId = user != null ? user.getId() : null;
+        return getPersonalizedRecommendations(userId, null, limit);
+    }
 
-        // 1. Lấy top 5 sản phẩm xem nhiều nhất của người dùng
-        List<ProductViewHistory> viewHistory = productViewHistoryService.getTopViewedProducts(user.getId(), 5);
-        if (viewHistory.isEmpty()) {
-            return Collections.emptyList();
-        }
+    /** Gợi ý sản phẩm cá nhân hóa dựa trên lịch sử xem/thêm giỏ hàng của user/session. */
+    public List<Product> getPersonalizedRecommendations(Long userId, String sessionId, int limit) {
+        Set<Long> viewedProductIds = new HashSet<>();
 
-        // 2. Thu thập các thông tin đặc trưng của sản phẩm đã xem
-        List<Long> excludeIds = new ArrayList<>();
-        List<Long> brandIds = new ArrayList<>();
-        List<BigDecimal> prices = new ArrayList<>();
-        Map<String, Integer> cpuKeywordsCount = new HashMap<>();
-
-        for (ProductViewHistory history : viewHistory) {
-            Product p = history.getProduct();
-            if (p == null || p.isDeleted()) {
-                continue;
-            }
-            excludeIds.add(p.getId());
-            if (p.getBrand() != null) {
-                brandIds.add(p.getBrand().getId());
-            }
-            if (p.getPrice() != null) {
-                prices.add(p.getPrice());
-            }
-            String cpuKeyword = extractCpuKeyword(p.getCpu());
-            if (cpuKeyword != null) {
-                cpuKeywordsCount.put(cpuKeyword, cpuKeywordsCount.getOrDefault(cpuKeyword, 0) + 1);
+        if (userId != null) {
+            List<AnalyticsEvent> userEvents = analyticsEventRepository.findByUserId(userId);
+            for (AnalyticsEvent e : userEvents) {
+                if (e.getProductId() != null) viewedProductIds.add(e.getProductId());
             }
         }
 
-        // Nếu danh sách exclude trống (đề phòng), thêm giá trị dummy để tránh lỗi SQL NOT IN
-        if (excludeIds.isEmpty()) {
-            excludeIds.add(-1L);
-        }
-        if (brandIds.isEmpty()) {
-            brandIds.add(-1L);
-        }
-
-        // Tính toán khoảng giá dựa trên giá trung bình của các sản phẩm đã xem (±35%)
-        BigDecimal minPrice = BigDecimal.ZERO;
-        BigDecimal maxPrice = BigDecimal.valueOf(999999999);
-        if (!prices.isEmpty()) {
-            BigDecimal sum = prices.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal avgPrice = sum.divide(BigDecimal.valueOf(prices.size()), java.math.RoundingMode.HALF_UP);
-            minPrice = avgPrice.multiply(BigDecimal.valueOf(0.65));
-            maxPrice = avgPrice.multiply(BigDecimal.valueOf(1.35));
+        if (sessionId != null) {
+            List<AnalyticsEvent> sessionEvents = analyticsEventRepository.findBySessionId(sessionId);
+            for (AnalyticsEvent e : sessionEvents) {
+                if (e.getProductId() != null) viewedProductIds.add(e.getProductId());
+            }
         }
 
-        // Tìm từ khóa CPU phổ biến nhất
-        String targetCpuKeyword = cpuKeywordsCount.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse(null);
-
-        // 3. Truy vấn các sản phẩm tương tự từ Database
-        List<Product> candidates = productRepository.findSimilarProducts(
-                excludeIds, brandIds, minPrice, maxPrice, targetCpuKeyword);
-
-        // 4. Tính toán độ tương quan (similarity score) cho từng ứng viên
-        // Tạo một map để lưu điểm số
-        Map<Product, Integer> scoredCandidates = new HashMap<>();
-        for (Product candidate : candidates) {
-            int score = calculateSimilarityScore(candidate, brandIds, prices, targetCpuKeyword);
-            scoredCandidates.put(candidate, score);
+        if (viewedProductIds.isEmpty()) {
+            return getFallbackTopProducts(limit);
         }
 
-        // 5. Sắp xếp theo điểm số giảm dần và giới hạn số lượng trả về
-        return scoredCandidates.entrySet().stream()
-                .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue())) // Điểm cao xếp trước
-                .map(Map.Entry::getKey)
+        // Lấy thông tin các sản phẩm đã xem để lọc theo Brand/Category tương tự
+        List<Product> viewedProducts = productRepository.findAllById(viewedProductIds);
+        Set<Long> categoryIds = viewedProducts.stream().filter(p -> p.getCategory() != null).map(p -> p.getCategory().getId()).collect(Collectors.toSet());
+        Set<Long> brandIds = viewedProducts.stream().filter(p -> p.getBrand() != null).map(p -> p.getBrand().getId()).collect(Collectors.toSet());
+
+        List<Product> candidates = productRepository.findAll().stream()
+                .filter(p -> !viewedProductIds.contains(p.getId())) // Loại bỏ SP đã xem
+                .filter(p -> (p.getCategory() != null && categoryIds.contains(p.getCategory().getId()))
+                          || (p.getBrand() != null && brandIds.contains(p.getBrand().getId())))
+                .sorted(Comparator.comparing(Product::getSoldQuantity, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        if (candidates.size() < limit) {
+            List<Product> fallbacks = getFallbackTopProducts(limit - candidates.size());
+            for (Product f : fallbacks) {
+                if (!viewedProductIds.contains(f.getId()) && candidates.stream().noneMatch(c -> c.getId().equals(f.getId()))) {
+                    candidates.add(f);
+                }
+            }
+        }
+
+        return candidates;
+    }
+
+    /** Gợi ý sản phẩm tương tự với productId đang xem. */
+    public List<Product> getSimilarProducts(Long productId, int limit) {
+        Optional<Product> opt = productRepository.findById(productId);
+        if (opt.isEmpty()) return getFallbackTopProducts(limit);
+
+        Product current = opt.get();
+        Long categoryId = current.getCategory() != null ? current.getCategory().getId() : null;
+        Long brandId = current.getBrand() != null ? current.getBrand().getId() : null;
+
+        return productRepository.findAll().stream()
+                .filter(p -> !p.getId().equals(productId))
+                .filter(p -> (categoryId != null && p.getCategory() != null && categoryId.equals(p.getCategory().getId()))
+                          || (brandId != null && p.getBrand() != null && brandId.equals(p.getBrand().getId())))
+                .sorted(Comparator.comparing(Product::getSoldQuantity, Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(limit)
                 .collect(Collectors.toList());
     }
 
-    private int calculateSimilarityScore(Product candidate, List<Long> brandIds, List<BigDecimal> watchedPrices, String targetCpuKeyword) {
-        int score = 0;
-
-        // 1. Cùng brand: +3 điểm
-        if (candidate.getBrand() != null && brandIds.contains(candidate.getBrand().getId())) {
-            score += 3;
-        }
-
-        // 2. Tầm giá tương đương: kiểm tra xem có gần với giá của sản phẩm nào đã xem không (trong khoảng ±20%)
-        if (candidate.getPrice() != null && !watchedPrices.isEmpty()) {
-            boolean inPriceRange = false;
-            for (BigDecimal watchedPrice : watchedPrices) {
-                BigDecimal diff = candidate.getPrice().subtract(watchedPrice).abs();
-                BigDecimal threshold = watchedPrice.multiply(BigDecimal.valueOf(0.20));
-                if (diff.compareTo(threshold) <= 0) {
-                    inPriceRange = true;
-                    break;
-                }
-            }
-            if (inPriceRange) {
-                score += 2;
-            }
-        }
-
-        // 3. Cùng dòng CPU: +2 điểm
-        String candidateCpuKeyword = extractCpuKeyword(candidate.getCpu());
-        if (targetCpuKeyword != null && targetCpuKeyword.equalsIgnoreCase(candidateCpuKeyword)) {
-            score += 2;
-        }
-
-        // 4. Sản phẩm nổi bật (HOT badge): +1 điểm thưởng
-        if (candidate.getBadge() != null && candidate.getBadge().equalsIgnoreCase("HOT")) {
-            score += 1;
-        }
-
-        return score;
-    }
-
-    private String extractCpuKeyword(String cpu) {
-        if (cpu == null) return null;
-        String lower = cpu.toLowerCase();
-        if (lower.contains("i3")) return "i3";
-        if (lower.contains("i5")) return "i5";
-        if (lower.contains("i7")) return "i7";
-        if (lower.contains("i9")) return "i9";
-        if (lower.contains("ryzen 3") || lower.contains("r3")) return "ryzen 3";
-        if (lower.contains("ryzen 5") || lower.contains("r5")) return "ryzen 5";
-        if (lower.contains("ryzen 7") || lower.contains("r7")) return "ryzen 7";
-        if (lower.contains("ryzen 9") || lower.contains("r9")) return "ryzen 9";
-        if (lower.contains("apple m1") || lower.contains("m1")) return "m1";
-        if (lower.contains("apple m2") || lower.contains("m2")) return "m2";
-        if (lower.contains("apple m3") || lower.contains("m3")) return "m3";
-        if (lower.contains("apple silicon")) return "apple silicon";
-        return null;
+    private List<Product> getFallbackTopProducts(int limit) {
+        return productRepository.findAll().stream()
+                .sorted(Comparator.comparing(Product::getSoldQuantity, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 }

@@ -32,10 +32,12 @@ public class OrderService {
     @Autowired private ProductRepository productRepository;
     @Autowired private OrderRepository orderRepository;
     @Autowired private VoucherRepository voucherRepository;
+    @Autowired private VoucherUsageRepository voucherUsageRepository;
     @Autowired private PaymentRepository paymentRepository;
     @Autowired private ProductVariantRepository productVariantRepository;
     @Autowired private StockLogService stockLogService;
     @Autowired private OrderStatusHistoryRepository orderStatusHistoryRepository;
+
 
     @Value("${order.return-window-days:7}")
     private int returnWindowDays = 7;
@@ -231,6 +233,9 @@ public class OrderService {
         Order saved = orderRepository.save(order);
         paymentRepository.save(payment);
 
+        // 🔹 Ghi VoucherUsage nếu đơn có dùng voucher
+        saveVoucherUsageIfApplied(saved);
+
         OrderStatusHistory history = new OrderStatusHistory();
         history.setOrder(saved);
         history.setStatus(saved.getOrderStatus());
@@ -344,6 +349,9 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         paymentRepository.save(payment);
 
+        // 🔹 Ghi VoucherUsage nếu đơn có dùng voucher
+        saveVoucherUsageIfApplied(savedOrder);
+
         OrderStatusHistory history = new OrderStatusHistory();
         history.setOrder(savedOrder);
         history.setStatus(savedOrder.getOrderStatus());
@@ -410,6 +418,38 @@ public class OrderService {
         }
         return discount;
     }
+
+    /**
+     * Ghi VoucherUsage record sau khi order đã được persist.
+     * Phải gọi SAU orderRepository.save() để order.id không null.
+     *
+     * @param order  Đơn hàng đã được persist (có id)
+     */
+    public void saveVoucherUsageIfApplied(Order order) {
+        if (order == null || order.getVoucher() == null || order.getDiscount() == null
+                || order.getDiscount().compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+        // Tránh ghi trùng nếu webhook gọi lại
+        if (voucherUsageRepository.findByOrder_Id(order.getId()).isPresent()) {
+            return;
+        }
+        try {
+            VoucherUsage usage = new VoucherUsage(
+                    order.getVoucher(),
+                    order.getUser(),
+                    order,
+                    order.getDiscount()
+            );
+            voucherUsageRepository.save(usage);
+        } catch (Exception e) {
+            // Log nhưng không fail order flow
+            org.slf4j.LoggerFactory.getLogger(OrderService.class)
+                    .warn("[VoucherUsage] Không ghi được VoucherUsage cho order {}: {}",
+                            order.getOrderCode(), e.getMessage());
+        }
+    }
+
 
     @Transactional
     public void cancelOrder(Long orderId) {

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'Phân Khúc Khách Hàng RFM - LaptopStore Admin'">Customer RFM Segmentation</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #d70018;
+            --bg: #f5f7fb;
+            --border: #e5e7eb;
+        }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; color: #1f2937; }
+        
+        .navbar {
+            position: fixed; left: 240px; right: 0; top: 0; z-index: 800;
+            background: #fff; border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06); height: 60px; padding: 0 24px;
+        }
+        .content {
+            margin-left: 240px; padding: 80px 24px 40px; min-height: 100vh;
+        }
+        .card-box {
+            background: #fff; border-radius: 14px; padding: 22px;
+            border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 24px;
+        }
+        .segment-badge { font-weight: 600; padding: 6px 12px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('customers_rfm')}"></div>
+
+<!-- Top Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm">
+    <div class="container-fluid d-flex justify-content-between align-items-center p-0">
+        <span class="fw-bold text-dark fs-5">
+            👥 Phân Khúc Khách Hàng RFM & Hành Động
+        </span>
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/}" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-globe"></i> <span>Xem Website</span>
+            </a>
+            <span class="text-secondary fw-semibold">👋 Admin</span>
+            <form th:action="@{/logout}" method="post">
+                <button class="btn btn-outline-danger btn-sm" type="submit">
+                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- Content -->
+<div class="content">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Phân Khúc Khách Hàng RFM & Hành Động Tiếp Thị</h3>
+            <p class="text-muted mb-0">Phân loại khách hàng theo Recency (Mới mua gần đây), Frequency (Tần suất mua) & Monetary (Tổng chi tiêu)</p>
+        </div>
+        <div>
+            <a href="/admin/analytics/overview" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Trở về Overview</a>
+        </div>
+    </div>
+
+    <!-- Segment Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4 col-lg-2.4" style="width: 20%;" th:each="sum : ${segmentSummaries}">
+            <div class="card-box text-center h-100">
+                <div class="text-muted small fw-medium" th:text="${sum.segmentName}">Champions</div>
+                <div class="fs-4 fw-bold text-primary mt-1" th:text="${sum.customerCount} + ' khách'">0</div>
+                <div class="small text-muted mt-1" th:text="${sum.percentageOfCustomers} + '% tổng số'">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RFM Detailed Customer Table -->
+    <div class="card-box">
+        <h5 class="fw-bold mb-3"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Danh Sách Phân Khúc & Khuyến Nghị Hành Động</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle small mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Khách Hàng</th>
+                        <th>Email</th>
+                        <th>Đơn Gần Nhất</th>
+                        <th>Số Đơn (F)</th>
+                        <th>Tổng Chi (M)</th>
+                        <th>Phân Khúc RFM</th>
+                        <th>Khuyến Nghị Hành Động Marketing</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:if="${#lists.isEmpty(customerRfmList)}">
+                        <td colspan="8" class="text-center py-4 text-muted">Chưa có dữ liệu khách hàng</td>
+                    </tr>
+                    <tr th:each="c : ${customerRfmList}">
+                        <td>#<span th:text="${c.userId}"></span></td>
+                        <td class="fw-bold" th:text="${c.fullName}">Khách hàng</td>
+                        <td th:text="${c.email}">Email</td>
+                        <td th:text="${c.lastOrderDate != null ? #temporals.format(c.lastOrderDate, 'dd/MM/yyyy') : 'Chưa mua'}">01/01/2026</td>
+                        <td class="fw-bold" th:text="${c.frequencyOrders}">0</td>
+                        <td class="fw-bold text-primary" th:text="${#numbers.formatDecimal(c.monetaryTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'">0 ₫</td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" th:text="${c.rfmSegment}">Champions</span>
+                        </td>
+                        <td class="text-muted"><i class="bi bi-lightbulb-fill text-warning me-1"></i><span th:text="${c.recommendedAction}">Hành động</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div> <!-- End .content -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

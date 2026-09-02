@@ -74,6 +74,20 @@
 <!-- CONTENT -->
 <div class="content">
 
+    <!-- QUICK ANALYTICS NAVIGATION BAR -->
+    <div class="card-box mb-3 py-3 bg-white border rounded-3 shadow-sm">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-2">
+            <span class="fw-bold text-dark"><i class="bi bi-rocket-takeoff-fill text-primary me-2"></i>Truy Cập Nhanh Module Nâng Cấp:</span>
+            <div class="d-flex flex-wrap gap-2">
+                <a th:href="@{/admin/analytics/overview}" class="btn btn-sm btn-primary"><i class="bi bi-graph-up-arrow me-1"></i> BI Overview V2</a>
+                <a th:href="@{/admin/analytics/inventory}" class="btn btn-sm btn-warning text-dark"><i class="bi bi-box-seam me-1"></i> Tồn Kho & Dead Stock</a>
+                <a th:href="@{/admin/analytics/vouchers}" class="btn btn-sm btn-success"><i class="bi bi-bar-chart-line me-1"></i> Phân Tích Voucher</a>
+                <a th:href="@{/admin/returns}" class="btn btn-sm btn-danger"><i class="bi bi-arrow-return-left me-1"></i> Quản Lý Đổi Trả</a>
+                <a th:href="@{/admin/customers/rfm}" class="btn btn-sm btn-info text-white"><i class="bi bi-people-fill me-1"></i> Phân Khúc RFM</a>
+            </div>
+        </div>
+    </div>
+
     <!-- HEADER & DATE FILTER BAR -->
     <div class="chart-box mb-4">
         <form th:action="@{/admin}" method="get" class="row g-3 align-items-end">

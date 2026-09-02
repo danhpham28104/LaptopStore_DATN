@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} ?: 'Phân Tích Tồn Kho - LaptopStore Admin'">Inventory Analytics</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #d70018;
+            --bg: #f5f7fb;
+            --border: #e5e7eb;
+        }
+        body { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; color: #1f2937; }
+        
+        .navbar {
+            position: fixed; left: 240px; right: 0; top: 0; z-index: 800;
+            background: #fff; border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 8px rgba(0,0,0,0.06); height: 60px; padding: 0 24px;
+        }
+        .content {
+            margin-left: 240px; padding: 80px 24px 40px; min-height: 100vh;
+        }
+        .card-box {
+            background: #fff; border-radius: 14px; padding: 22px;
+            border: 1px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.03); margin-bottom: 24px;
+        }
+        .badge-warning-custom { background: #fef3c7; color: #d97706; }
+        .badge-danger-custom { background: #fee2e2; color: #dc2626; }
+        .badge-success-custom { background: #d1fae5; color: #059669; }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div th:replace="~{fragments/admin_sidebar :: adminSidebar('analytics_inventory')}"></div>
+
+<!-- Top Navbar -->
+<nav class="navbar navbar-light bg-white shadow-sm">
+    <div class="container-fluid d-flex justify-content-between align-items-center p-0">
+        <span class="fw-bold text-dark fs-5">
+            📦 Phân Tích & Quản Lý Tồn Kho
+        </span>
+        <div class="d-flex align-items-center gap-3">
+            <a th:href="@{/}" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-globe"></i> <span>Xem Website</span>
+            </a>
+            <span class="text-secondary fw-semibold">👋 Admin</span>
+            <form th:action="@{/logout}" method="post">
+                <button class="btn btn-outline-danger btn-sm" type="submit">
+                    <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<!-- Content -->
+<div class="content">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-box-seam text-warning me-2"></i>Phân Tích Tồn Kho & Chẩn Đoán Đọng Vốn</h3>
+            <p class="text-muted mb-0">Dự báo nguy cơ hết hàng, tính số ngày bán tồn kho (Days of Inventory) và chẩn đoán hàng tồn đọng (Dead Stock)</p>
+        </div>
+        <div>
+            <a href="/admin/analytics/overview" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i> Trở về Overview</a>
+        </div>
+    </div>
+
+    <!-- Summary Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card-box text-center">
+                <div class="text-muted small fw-medium">Nguy Cơ Hết Hàng (< 7 ngày tồn)</div>
+                <div class="fs-3 fw-bold text-danger mt-1" id="countStockoutRisk">0</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-box text-center">
+                <div class="text-muted small fw-medium">Hàng Tồn Đọng (Dead Stock)</div>
+                <div class="fs-3 fw-bold text-warning mt-1" id="countDeadStock">0</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-box text-center">
+                <div class="text-muted small fw-medium">Tổng Vốn Kẹt Trong Tồn Đọng</div>
+                <div class="fs-3 fw-bold text-primary mt-1" id="totalTiedCapital">0 ₫</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="inventoryTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active fw-bold" id="risk-tab" data-bs-toggle="tab" data-bs-target="#risk-panel">
+                <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> Cảnh Báo Hết Hàng & Khuyến Nghị Nhập Hàng
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold" id="dead-tab" data-bs-toggle="tab" data-bs-target="#dead-panel">
+                <i class="bi bi-snow2 text-warning me-1"></i> Chẩn Đoán Hàng Tồn Đọng (Dead Stock)
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-panel">
+                <i class="bi bi-list-columns-reverse text-primary me-1"></i> Chi Tiết Toàn Bộ Kho Sản Phẩm
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="inventoryTabContent">
+        <!-- Panel 1: Stockout Risk -->
+        <div class="tab-pane fade show active" id="risk-panel">
+            <div class="card-box">
+                <h5 class="fw-bold mb-3"><i class="bi bi-lightning-charge-fill text-danger me-2"></i>Sản Phẩm Cần Nhập Hàng Gấp</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã SP</th>
+                                <th>Tên Sản Phẩm</th>
+                                <th>Tồn Kho Hiện Tại</th>
+                                <th>Bán Trung Bình / Ngày</th>
+                                <th>Dự Kiến Hết Hàng Sau</th>
+                                <th>Khuyến Nghị Hệ Thống</th>
+                            </tr>
+                        </thead>
+                        <tbody id="riskTableBody">
+                            <tr><td colspan="6" class="text-center py-4 text-muted">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Dead Stock -->
+        <div class="tab-pane fade" id="dead-panel">
+            <div class="card-box">
+                <h5 class="fw-bold mb-3"><i class="bi bi-archive-fill text-warning me-2"></i>Sản Phẩm Bán Chậm / Tồn Đọng 90 Ngày Gần Đây</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã SP</th>
+                                <th>Tên Sản Phẩm</th>
+                                <th>Tồn Kho</th>
+                                <th>Đã Bán 90 Ngày</th>
+                                <th>Vốn Đang Đọng</th>
+                            </tr>
+                        </thead>
+                        <tbody id="deadTableBody">
+                            <tr><td colspan="5" class="text-center py-4 text-muted">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 3: All Products Inventory -->
+        <div class="tab-pane fade" id="all-panel">
+            <div class="card-box">
+                <h5 class="fw-bold mb-3"><i class="bi bi-box me-2 text-primary"></i>Phân Tích Tồn Kho Chi Tiết</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle small mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sản Phẩm</th>
+                                <th>Thương Hiệu</th>
+                                <th>Tồn Kho</th>
+                                <th>Giữ Kho</th>
+                                <th>Bán 7 Ngày</th>
+                                <th>Bán 30 Ngày</th>
+                                <th>Bán 90 Ngày</th>
+                                <th>Số Ngày Tồn</th>
+                                <th>Trạng Thái Kho</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allInventoryTableBody">
+                            <tr><td colspan="9" class="text-center py-4 text-muted">Đang tải...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        loadInventoryData();
+    });
+
+    function loadInventoryData() {
+        // 1. Stockout Risk
+        fetch('/admin/api/analytics/inventory/low-stock')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('countStockoutRisk').innerText = data.length;
+                const tbody = document.getElementById('riskTableBody');
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-success"><i class="bi bi-check-circle me-1"></i>Không có sản phẩm nào ở mức nguy cơ hết hàng!</td></tr>';
+                    return;
+                }
+                data.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${item.productId}</td>
+                            <td class="fw-bold">${item.productName}</td>
+                            <td><span class="badge bg-danger fs-6">${item.currentStock}</span></td>
+                            <td>${item.avgDailySales} máy/ngày</td>
+                            <td class="text-danger fw-bold">${item.estimatedDaysRemaining} ngày</td>
+                            <td class="text-muted"><i class="bi bi-info-circle me-1 text-primary"></i>${item.recommendation}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+        // 2. Dead Stock
+        fetch('/admin/api/analytics/inventory/dead-stock')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('countDeadStock').innerText = data.length;
+                let totalCapital = 0;
+                const tbody = document.getElementById('deadTableBody');
+                tbody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-success"><i class="bi bi-check-circle me-1"></i>Không phát hiện sản phẩm đọng vốn!</td></tr>';
+                    document.getElementById('totalTiedCapital').innerText = '0 ₫';
+                    return;
+                }
+                data.forEach(item => {
+                    totalCapital += item.tiedUpCapital || 0;
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${item.productId}</td>
+                            <td class="fw-bold">${item.productName}</td>
+                            <td><span class="badge bg-warning text-dark fs-6">${item.currentStock}</span></td>
+                            <td>${item.soldLast90Days} máy</td>
+                            <td class="fw-bold text-danger">${formatVND(item.tiedUpCapital)}</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('totalTiedCapital').innerText = formatVND(totalCapital);
+            });
+
+        // 3. All Inventory
+        fetch('/admin/api/analytics/inventory')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('allInventoryTableBody');
+                tbody.innerHTML = '';
+                data.forEach(item => {
+                    let badgeClass = 'bg-success';
+                    if (item.statusLabel.includes('Nguy cơ')) badgeClass = 'bg-danger';
+                    else if (item.statusLabel.includes('tồn đọng')) badgeClass = 'bg-warning text-dark';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="fw-medium">${item.productName}</td>
+                            <td>${item.brandName}</td>
+                            <td class="fw-bold">${item.currentStock}</td>
+                            <td class="text-muted">${item.reservedStock}</td>
+                            <td>${item.soldLast7Days}</td>
+                            <td>${item.soldLast30Days}</td>
+                            <td>${item.soldLast90Days}</td>
+                            <td class="fw-bold">${item.daysOfInventory > 300 ? '>300' : item.daysOfInventory} ngày</td>
+                            <td><span class="badge ${badgeClass}">${item.statusLabel}</span></td>
+                        </tr>
+                    `;
+                });
+            });
+    }
+
+    function formatVND(val) {
+        if (!val) return '0 ₫';
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+    }
+</script>
+
+</div> <!-- End .content -->
+</body>
+</html>

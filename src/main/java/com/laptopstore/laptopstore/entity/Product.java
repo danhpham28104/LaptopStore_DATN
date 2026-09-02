@@ -9,6 +9,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -157,11 +158,11 @@ public class Product {
         if (salePercent == null || salePercent <= 0) {
             return price;
         }
+        return price.subtract(price.multiply(BigDecimal.valueOf(salePercent)).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
+    }
 
-        BigDecimal discount = price.multiply(BigDecimal.valueOf(salePercent))
-                .divide(BigDecimal.valueOf(100));
-
-        return price.subtract(discount);
+    public Integer getSoldQuantity() {
+        return stock != null ? stock : 0;
     }
 
 

@@ -44,6 +44,10 @@ public class AiChatHistory {
     @Column(name = "response_json", columnDefinition = "LONGTEXT")
     private String responseJson;
 
+    /** Độ tin cậy của AI response (0.0 đến 1.0) */
+    @Column(name = "confidence_score")
+    private Double confidenceScore;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -70,6 +74,9 @@ public class AiChatHistory {
 
     public String getResponseJson() { return responseJson; }
     public void setResponseJson(String responseJson) { this.responseJson = responseJson; }
+
+    public Double getConfidenceScore() { return confidenceScore; }
+    public void setConfidenceScore(Double confidenceScore) { this.confidenceScore = confidenceScore; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

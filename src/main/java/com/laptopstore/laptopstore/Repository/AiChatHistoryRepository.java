@@ -43,4 +43,12 @@ public interface AiChatHistoryRepository extends JpaRepository<AiChatHistory, Lo
 
     /** Lấy danh sách theo role mới nhất trước */
     List<AiChatHistory> findByRoleOrderByCreatedAtDesc(String role);
+
+    /** Tính confidence score trung bình của các câu trả lời AI */
+    @Query("SELECT AVG(h.confidenceScore) FROM AiChatHistory h WHERE h.role = 'assistant' AND h.confidenceScore IS NOT NULL")
+    Double findAvgConfidenceScore();
+
+    /** Đếm số câu hỏi có độ tin cậy thấp (< threshold, ví dụ < 0.7) */
+    @Query("SELECT COUNT(h) FROM AiChatHistory h WHERE h.role = 'assistant' AND h.confidenceScore < :threshold")
+    long countLowConfidenceQueries(@Param("threshold") double threshold);
 }

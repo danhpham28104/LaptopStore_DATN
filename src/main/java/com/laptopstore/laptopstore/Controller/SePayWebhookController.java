@@ -39,6 +39,9 @@ public class SePayWebhookController {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService;
+
     @Value("${payment.sepay.secret-key:}")
     private String secretKey;
 
@@ -115,14 +118,18 @@ public class SePayWebhookController {
         }
 
         // 🔹 3. Cập nhật trạng thái đơn hàng & xác nhận kho chuẩn xác
-        if (order.getOrderStatus() == OrderStatus.PENDING_PAYMENT) {
+        if (order.getOrderStatus().isPendingPayment()) {
             orderService.confirmQrPayment(order.getId(), "SePay Webhook");
             order.setOrderStatus(OrderStatus.CONFIRMED);
             if (order.getPayment() != null) {
-                order.getPayment().setStatus(com.laptopstore.laptopstore.enums.PaymentStatus.SUCCESS);
+                order.getPayment().setStatus(com.laptopstore.laptopstore.enums.PaymentStatus.PAID);
                 order.getPayment().setTransactionId(transactionId != null ? transactionId : "SEPAY_" + System.currentTimeMillis());
             }
             orderService.saveOrder(order);
+
+            // 🔹 Track PAYMENT_SUCCESS
+            analyticsEventService.trackPaymentSuccess(order.getId());
+
             log.info("✅ Đã xác nhận thanh toán tự động qua SePay cho đơn hàng: {}", orderCode);
         }
 

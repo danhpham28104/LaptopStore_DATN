@@ -33,6 +33,7 @@ public class AdminDashboardController {
     private final OrderService orderService;
     private final ProductService productService;
     private final UserService userService;
+    private final com.laptopstore.laptopstore.Service.AnalyticsService analyticsService;
     private final com.laptopstore.laptopstore.Repository.OrderRepository orderRepository;
     private final com.laptopstore.laptopstore.Repository.ProductRepository productRepository;
 
@@ -76,9 +77,12 @@ public class AdminDashboardController {
         // 🔵 1. Thống kê theo khoảng ngày
         BigDecimal rangeRevenue = orderService.getRevenueByDateRange(startDate, endDate);
         long totalOrders = orderService.countOrdersByDateRange(startDate, endDate);
-        long successOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(OrderStatus.CONFIRMED, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED));
-        long pendingOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(OrderStatus.PENDING_PAYMENT));
-        long cancelledOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(OrderStatus.CANCELLED, OrderStatus.REFUNDED));
+        long successOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(
+                OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED));
+        long pendingOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(
+                OrderStatus.PENDING, OrderStatus.PENDING_PAYMENT));
+        long cancelledOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(
+                OrderStatus.CANCELLED, OrderStatus.RETURNED, OrderStatus.REFUNDED));
 
         // AOV (Average Order Value)
         BigDecimal aov = (successOrders > 0)

@@ -46,11 +46,12 @@ public class AiChatHistoryService {
     /**
      * Lưu phản hồi của assistant vào lịch sử.
      *
-     * @param answer      Câu trả lời text (hiển thị với user)
-     * @param responseJson JSON đầy đủ của response từ RAG (để restore UI sau)
+     * @param answer       Câu trả lời text (hiển thị với user)
+     * @param responseJson  JSON đầy đủ của response từ RAG (để restore UI sau)
+     * @param confidenceScore Độ tin cậy từ RAG
      */
     public void saveAssistantMessage(String conversationKey, String clientIp, Long userId,
-                                     String answer, String responseJson) {
+                                     String answer, String responseJson, Double confidenceScore) {
         try {
             AiChatHistory entry = new AiChatHistory();
             entry.setConversationKey(conversationKey);
@@ -59,10 +60,16 @@ public class AiChatHistoryService {
             entry.setRole("assistant");
             entry.setMessage(answer != null ? answer : "");
             entry.setResponseJson(responseJson);
+            entry.setConfidenceScore(confidenceScore);
             repository.save(entry);
         } catch (Exception e) {
             log.error("[AiChatHistory] Lỗi khi lưu response assistant (key={}): {}", conversationKey, e.getMessage());
         }
+    }
+
+    public void saveAssistantMessage(String conversationKey, String clientIp, Long userId,
+                                     String answer, String responseJson) {
+        saveAssistantMessage(conversationKey, clientIp, userId, answer, responseJson, null);
     }
 
     /**

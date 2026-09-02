@@ -32,6 +32,7 @@ public class CartController {
     @Autowired private ProductService productService;
     @Autowired private UserRepository userRepository;
     @Autowired private ProductVariantService productVariantService;
+    @Autowired private com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService;
 
     /**  Hiển thị giỏ hàng của user (phải đăng nhập) */
     @GetMapping
@@ -70,6 +71,7 @@ public class CartController {
                             @RequestParam(required = false) Long variantId,
                             @RequestParam(defaultValue = "1") int quantity,
                             Principal principal,
+                            HttpServletRequest request,
                             RedirectAttributes redirectAttributes) {
 
         if (principal == null) return "redirect:/login";
@@ -115,6 +117,15 @@ public class CartController {
         }
 
         cartService.addToCart(cart, product, variant, quantity);
+
+        // 🔹 Track ADD_TO_CART event
+        analyticsEventService.trackAddToCart(
+                com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(request),
+                user.getId(),
+                productId,
+                variantId,
+                com.laptopstore.laptopstore.Service.AnalyticsEventService.extractClientIp(request)
+        );
 
         return "redirect:/cart";
     }
@@ -162,16 +173,26 @@ public class CartController {
 
     /**  Xóa 1 sản phẩm khỏi giỏ */
     @PostMapping("/remove")
-    public String removeItem(@RequestParam Long itemId) {
+    public String removeItem(@RequestParam Long itemId, HttpServletRequest request) {
         cartItemRepository.findById(itemId).ifPresent(item -> {
             Cart cart = item.getCart();
             cart.getItems().remove(item);
             cartItemRepository.delete(item);
             cart.recalcTotals();
             cartRepository.save(cart);
+
+            // 🔹 Track REMOVE_FROM_CART event
+            Long userId = cart.getUser() != null ? cart.getUser().getId() : null;
+            Long productId = item.getProduct() != null ? item.getProduct().getId() : null;
+            Long variantId = item.getVariant() != null ? item.getVariant().getId() : null;
+            analyticsEventService.trackRemoveFromCart(
+                    com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(request),
+                    userId, productId, variantId
+            );
         });
         return "redirect:/cart";
     }
+
 
     /**  Xóa toàn bộ giỏ hàng */
     @PostMapping("/clear")

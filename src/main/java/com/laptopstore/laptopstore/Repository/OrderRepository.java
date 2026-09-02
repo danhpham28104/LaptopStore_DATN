@@ -84,5 +84,16 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.CANCELLED AND o.createdAt >= :since")
     long countCancelledOrdersSince(@Param("since") LocalDateTime since);
+
+    /** Phân bổ đơn hàng theo trạng thái trong khoảng ngày */
+    @Query("""
+        SELECT o.orderStatus, COUNT(o)
+        FROM Order o
+        WHERE o.createdAt >= :start AND o.createdAt <= :end
+        GROUP BY o.orderStatus
+    """)
+    List<Object[]> countOrdersGroupedByStatus(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 }
 

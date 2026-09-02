@@ -132,9 +132,12 @@
 
     <!-- 🟢 TỔNG QUAN (ADMIN Only) -->
     <div sec:authorize="hasRole('ADMIN')">
-      <div class="admin-sidebar-section">TỔNG QUAN</div>
+      <div class="admin-sidebar-section">TỔNG QUAN BI & ANALYTICS</div>
       <a th:href="@{/admin}" th:classappend="${activePage == 'dashboard'} ? 'active'">
         <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+      </a>
+      <a th:href="@{/admin/analytics/overview}" th:classappend="${activePage == 'analytics_overview'} ? 'active'">
+        <i class="bi bi-graph-up-arrow"></i><span>Báo Cáo BI Overview</span>
       </a>
     </div>
 
@@ -150,19 +153,28 @@
       <a th:href="@{/admin/brands}" th:classappend="${activePage == 'brands'} ? 'active'">
         <i class="bi bi-tags"></i><span>Thương hiệu</span>
       </a>
+      <a th:href="@{/admin/analytics/inventory}" th:classappend="${activePage == 'analytics_inventory'} ? 'active'">
+        <i class="bi bi-box-seam text-warning"></i><span>Phân tích & Tồn kho</span>
+      </a>
       <a th:href="@{/admin/stock}" th:classappend="${activePage == 'stock'} ? 'active'">
         <i class="bi bi-archive"></i><span>Lịch sử Kho</span>
       </a>
     </div>
 
-    <!-- 🟢 BÁN HÀNG (ADMIN & SALE) -->
+    <!-- 🟢 BÁN HÀNG & ĐỔI TRẢ (ADMIN & SALE) -->
     <div sec:authorize="hasAnyRole('ADMIN', 'SALE')">
-      <div class="admin-sidebar-section">BÁN HÀNG</div>
+      <div class="admin-sidebar-section">BÁN HÀNG & ĐỔI TRẢ</div>
       <a th:href="@{/admin/orders}" th:classappend="${activePage == 'orders'} ? 'active'">
         <i class="bi bi-receipt"></i><span>Đơn hàng</span>
       </a>
+      <a th:href="@{/admin/returns}" th:classappend="${activePage == 'returns'} ? 'active'">
+        <i class="bi bi-arrow-return-left text-danger"></i><span>Quản lý Đổi Trả</span>
+      </a>
       <a th:href="@{/admin/vouchers}" th:classappend="${activePage == 'vouchers'} ? 'active'">
-        <i class="bi bi-ticket-perforated"></i><span>Voucher</span>
+        <i class="bi bi-ticket-perforated"></i><span>Quản lý Voucher</span>
+      </a>
+      <a th:href="@{/admin/analytics/vouchers}" th:classappend="${activePage == 'analytics_vouchers'} ? 'active'">
+        <i class="bi bi-bar-chart-line"></i><span>Phân tích Voucher</span>
       </a>
       <a th:href="@{/admin/reviews}" th:classappend="${activePage == 'reviews'} ? 'active'">
         <i class="bi bi-star"></i><span>Đánh giá SP</span>
@@ -171,9 +183,12 @@
 
     <!-- 🟢 QUẢN TRỊ & PHÂN TÍCH (ADMIN Only) -->
     <div sec:authorize="hasRole('ADMIN')">
-      <div class="admin-sidebar-section">QUẢN TRỊ & PHÂN TÍCH</div>
+      <div class="admin-sidebar-section">QUẢN TRỊ & PHÂN KHÚC</div>
       <a th:href="@{/admin/users}" th:classappend="${activePage == 'users'} ? 'active'">
         <i class="bi bi-people"></i><span>Người dùng & Quyền</span>
+      </a>
+      <a th:href="@{/admin/customers/rfm}" th:classappend="${activePage == 'customers_rfm'} ? 'active'">
+        <i class="bi bi-people-fill text-info"></i><span>Phân khúc RFM</span>
       </a>
       <a th:href="@{/admin/analytics/products}" th:classappend="${activePage == 'analytics_products'} ? 'active'">
         <i class="bi bi-eye"></i><span>Phân tích Xem SP</span>

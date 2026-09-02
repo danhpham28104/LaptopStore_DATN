@@ -23,6 +23,7 @@ public class CheckoutController {
     @Autowired private UserRepository userRepository;
     @Autowired private AddressService addressService;
     @Autowired private PaymentService paymentService;
+    @Autowired private com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService;
 
     /**  Trang checkout chính — thanh toán toàn giỏ hàng */
     @GetMapping
@@ -47,6 +48,13 @@ public class CheckoutController {
         model.addAttribute("user", user);
         model.addAttribute("cart", cart);
         model.addAttribute("pageTitle", "Thanh toán – LaptopStore");
+
+        // 🔹 Track BEGIN_CHECKOUT
+        analyticsEventService.trackBeginCheckout(
+                com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(request),
+                user.getId(),
+                com.laptopstore.laptopstore.Service.AnalyticsEventService.extractClientIp(request)
+        );
 
         return "checkout";
     }
@@ -103,7 +111,6 @@ public class CheckoutController {
         return "checkout_buynow";
     }
 
-    /** Xử lý đặt hàng (giỏ hàng hoặc mua ngay) */
     @PostMapping("/place")
     public String placeOrder(@RequestParam(required = false) Long variantId,
                              @RequestParam Long addressId,
@@ -111,7 +118,8 @@ public class CheckoutController {
                              @RequestParam(required = false) String voucherCode,
                              @RequestParam(required = false) Long productId,
                              @RequestParam(required = false, defaultValue = "1") int quantity,
-                             Principal principal) {
+                             Principal principal,
+                             HttpServletRequest request) {
 
         if (principal == null) return "redirect:/login";
 
@@ -153,6 +161,16 @@ public class CheckoutController {
         else {
             order = orderService.createOrderFromCart(user,
                     receiverName, fullAddress, receiverPhone, paymentMethod, voucherCode);
+        }
+
+        // 🔹 Track ORDER_CREATED event
+        String sessionId = com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(request);
+        analyticsEventService.trackOrderCreated(sessionId, user.getId(), order.getId(),
+                com.laptopstore.laptopstore.Service.AnalyticsEventService.extractClientIp(request));
+
+        if (voucherCode != null && !voucherCode.isBlank()) {
+            boolean applied = order.getVoucher() != null;
+            analyticsEventService.trackApplyVoucher(sessionId, user.getId(), voucherCode, applied);
         }
 
         // 🔹 ĐÃ TẠO ORDER, NHƯNG CHƯA HOÀN THÀNH

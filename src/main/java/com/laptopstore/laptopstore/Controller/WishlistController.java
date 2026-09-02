@@ -4,6 +4,7 @@ import com.laptopstore.laptopstore.Service.UserService;
 import com.laptopstore.laptopstore.Service.WishlistService;
 import com.laptopstore.laptopstore.entity.User;
 import com.laptopstore.laptopstore.entity.Wishlist;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -25,6 +26,9 @@ public class WishlistController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService;
+
     @GetMapping("/wishlist")
     public String viewWishlist(Model model, Principal principal) {
         if (principal == null) {
@@ -43,7 +47,7 @@ public class WishlistController {
 
     @PostMapping("/api/wishlist/toggle")
     @ResponseBody
-    public ResponseEntity<?> toggleWishlistApi(@RequestParam Long productId, Principal principal) {
+    public ResponseEntity<?> toggleWishlistApi(@RequestParam Long productId, Principal principal, HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
 
         if (principal == null) {
@@ -56,6 +60,14 @@ public class WishlistController {
             User user = userService.findByUsername(principal.getName()).orElse(null);
             boolean isWishlisted = wishlistService.toggleWishlist(user, productId);
             Long count = wishlistService.getWishlistCount(user);
+
+            // 🔹 Track Wishlist event
+            if (user != null) {
+                analyticsEventService.trackWishlist(
+                        com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(request),
+                        user.getId(), productId, isWishlisted
+                );
+            }
 
             response.put("success", true);
             response.put("wishlisted", isWishlisted);
@@ -70,14 +82,22 @@ public class WishlistController {
     }
 
     @PostMapping("/wishlist/remove")
-    public String removeFromWishlist(@RequestParam Long productId, Principal principal, RedirectAttributes redirectAttributes) {
+    public String removeFromWishlist(@RequestParam Long productId, Principal principal, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         if (principal != null) {
             User user = userService.findByUsername(principal.getName()).orElse(null);
             if (user != null) {
                 wishlistService.removeFromWishlist(user, productId);
+
+                // 🔹 Track REMOVE_FROM_WISHLIST
+                analyticsEventService.trackWishlist(
+                        com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(request),
+                        user.getId(), productId, false
+                );
+
                 redirectAttributes.addFlashAttribute("success", "Đã xóa sản phẩm khỏi danh sách yêu thích");
             }
         }
         return "redirect:/wishlist";
     }
 }
+

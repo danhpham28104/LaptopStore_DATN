@@ -37,17 +37,20 @@ public class CartApiController {
     private final ProductVariantService productVariantService;
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
+    private final com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService;
 
     public CartApiController(CartService cartService,
                               ProductService productService,
                               ProductVariantService productVariantService,
                               UserRepository userRepository,
-                              CartRepository cartRepository) {
+                              CartRepository cartRepository,
+                              com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService) {
         this.cartService = cartService;
         this.productService = productService;
         this.productVariantService = productVariantService;
         this.userRepository = userRepository;
         this.cartRepository = cartRepository;
+        this.analyticsEventService = analyticsEventService;
     }
 
     /**
@@ -59,7 +62,9 @@ public class CartApiController {
      */
     @PostMapping("/add")
     public ResponseEntity<Map<String, Object>> addToCart(@RequestBody Map<String, Object> body,
-                                                          Principal principal) {
+                                                          Principal principal,
+                                                          jakarta.servlet.http.HttpServletRequest request) {
+
         // Kiểm tra đăng nhập
         if (principal == null) {
             log.debug("[CartApi] Người dùng chưa đăng nhập, yêu cầu login.");
@@ -151,6 +156,16 @@ public class CartApiController {
             }
 
             cartService.addToCart(cart, product, variant, quantity);
+
+            // 🔹 Track ADD_TO_CART event
+            Long selectedVariantId = variant != null ? variant.getId() : null;
+            analyticsEventService.trackAddToCart(
+                    com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(request),
+                    user.getId(),
+                    productId,
+                    selectedVariantId,
+                    com.laptopstore.laptopstore.Service.AnalyticsEventService.extractClientIp(request)
+            );
 
             // Đếm tổng số item trong giỏ
             int cartCount = cartService.getCartItemCount(username);

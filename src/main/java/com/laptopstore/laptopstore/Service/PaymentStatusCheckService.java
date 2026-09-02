@@ -117,7 +117,7 @@ public class PaymentStatusCheckService {
      */
     @Transactional
     private void checkPaymentStatusForOrder(Payment payment) {
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+        if (payment.getStatus() != null && payment.getStatus().isPaid()) {
             // Đã thanh toán rồi, không cần check
             return;
         }
@@ -134,7 +134,7 @@ public class PaymentStatusCheckService {
 
         // Nếu payment đã được xác nhận thành công từ provider
         if (isPaymentConfirmed(payment)) {
-            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setStatus(PaymentStatus.PAID);
             order.setOrderStatus(OrderStatus.CONFIRMED);
 
             paymentRepository.save(payment);

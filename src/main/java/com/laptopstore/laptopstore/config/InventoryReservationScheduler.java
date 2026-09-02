@@ -37,15 +37,24 @@ public class InventoryReservationScheduler {
     public void releaseExpiredReservations() {
         LocalDateTime now = LocalDateTime.now();
 
-        // Lấy tất cả đơn PENDING_PAYMENT có paymentDeadline < now
+        // Lấy tất cả đơn PENDING hoặc PENDING_PAYMENT có paymentDeadline < now
         List<Order> expiredOrders = orderRepository
             .findByOrderStatusAndPaymentDeadlineBefore(OrderStatus.PENDING_PAYMENT, now);
+        List<Order> expiredPending = orderRepository
+            .findByOrderStatusAndPaymentDeadlineBefore(OrderStatus.PENDING, now);
+        
+        java.util.List<Order> allExpired = new java.util.ArrayList<>(expiredOrders);
+        for (Order o : expiredPending) {
+            if (!allExpired.contains(o)) {
+                allExpired.add(o);
+            }
+        }
 
-        if (expiredOrders.isEmpty()) return;
+        if (allExpired.isEmpty()) return;
 
-        log.info("[InventoryScheduler] Tìm thấy {} đơn QR quá hạn – đang hủy...", expiredOrders.size());
+        log.info("[InventoryScheduler] Tìm thấy {} đơn QR quá hạn – đang hủy...", allExpired.size());
 
-        for (Order order : expiredOrders) {
+        for (Order order : allExpired) {
             try {
                 orderService.cancelOrder(order.getId());
                 log.info("[InventoryScheduler] Đã hủy đơn {} và nhả kho.", order.getOrderCode());

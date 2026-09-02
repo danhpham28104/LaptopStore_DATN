@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -33,7 +34,39 @@ public class AdminAnalyticsController {
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final AiChatHistoryRepository aiChatHistoryRepository;
+    private final com.laptopstore.laptopstore.Service.AnalyticsService analyticsService;
+    private final com.laptopstore.laptopstore.Service.AiAnalyticsService aiAnalyticsService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * Trang Analytics Overview tổng quan (V2 Dashboard Analytics)
+     */
+    @GetMapping("/overview")
+    public String overview(Model model) {
+        model.addAttribute("active", "analytics_overview");
+        model.addAttribute("pageTitle", "Báo Cáo Phân Tích & BI - LaptopStore Admin");
+        return "admin/analytics/overview";
+    }
+
+    /**
+     * Trang Phân Tích Tồn Kho & Chẩn Đoán Đọng Vốn (Inventory Analytics)
+     */
+    @GetMapping("/inventory")
+    public String inventoryAnalytics(Model model) {
+        model.addAttribute("active", "analytics_inventory");
+        model.addAttribute("pageTitle", "Phân Tích Tồn Kho & Chẩn Đoán Kho - LaptopStore Admin");
+        return "admin/analytics/inventory";
+    }
+
+    /**
+     * Trang Phân Tích Hiệu Quả Khuyến Mãi (Voucher Analytics)
+     */
+    @GetMapping("/vouchers")
+    public String voucherAnalytics(Model model) {
+        model.addAttribute("active", "analytics_vouchers");
+        model.addAttribute("pageTitle", "Phân Tích Hiệu Quả Voucher - LaptopStore Admin");
+        return "admin/analytics/vouchers";
+    }
 
     /**
      * 1. Trang Phân Tích Lượt Xem & Nhu Cầu Sản Phẩm
@@ -181,6 +214,10 @@ public class AdminAnalyticsController {
     public String aiChatAnalytics(Model model) {
         long totalUserQuestions = aiChatHistoryRepository.countByRole("user");
         long totalAssistantResponses = aiChatHistoryRepository.countByRole("assistant");
+
+        var aiDto = aiAnalyticsService.getAiAnalytics(LocalDate.now().minusDays(30), LocalDate.now());
+        model.addAttribute("aiAssistedOrdersCount", aiDto.getAiAssistedOrdersCount());
+        model.addAttribute("aiAssistedRevenue", aiDto.getAiAssistedRevenue());
 
         List<AiChatHistory> userMessages = aiChatHistoryRepository.findByRoleOrderByCreatedAtDesc("user");
         List<AiChatHistory> assistantMessages = aiChatHistoryRepository.findByRoleOrderByCreatedAtDesc("assistant");

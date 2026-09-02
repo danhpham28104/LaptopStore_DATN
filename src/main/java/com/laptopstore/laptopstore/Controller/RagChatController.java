@@ -41,15 +41,18 @@ public class RagChatController {
     private final AiChatHistoryService aiChatHistoryService;
     private final UserService userService;
     private final ObjectMapper objectMapper;
+    private final com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService;
 
     public RagChatController(RagIntegrationService ragIntegrationService,
                               AiChatHistoryService aiChatHistoryService,
                               UserService userService,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              com.laptopstore.laptopstore.Service.AnalyticsEventService analyticsEventService) {
         this.ragIntegrationService = ragIntegrationService;
         this.aiChatHistoryService = aiChatHistoryService;
         this.userService = userService;
         this.objectMapper = objectMapper;
+        this.analyticsEventService = analyticsEventService;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -100,6 +103,10 @@ public class RagChatController {
 
         log.info("[RAG] Chat | key={} | message={}", conversationKey, request.getMessage());
 
+        // 🔹 Track AI_CHAT event
+        String httpSessionId = com.laptopstore.laptopstore.Service.AnalyticsEventService.extractSessionId(httpRequest);
+        analyticsEventService.trackAiChat(httpSessionId != null ? httpSessionId : conversationKey, userId, clientIp);
+
         // Lưu câu hỏi user vào DB (không block nếu lỗi)
         aiChatHistoryService.saveUserMessage(conversationKey, clientIp, userId, request.getMessage());
 
@@ -113,10 +120,27 @@ public class RagChatController {
         } catch (Exception e) {
             log.warn("[RAG] Không thể serialize response thành JSON: {}", e.getMessage());
         }
+        Double confidence = response != null ? response.getConfidenceScore() : null;
         aiChatHistoryService.saveAssistantMessage(
                 conversationKey, clientIp, userId,
-                response.getAnswer(), responseJson
+                response != null ? response.getAnswer() : "", responseJson, confidence
         );
+
+        // 🔹 Track AI_PRODUCT_RECOMMENDED nếu RAG trả về gợi ý sản phẩm
+        if (response != null && response.getRecommendedProducts() != null && !response.getRecommendedProducts().isEmpty()) {
+            try {
+                List<Long> prodIds = response.getRecommendedProducts().stream()
+                        .map(p -> p.getId())
+                        .filter(id -> id != null)
+                        .collect(Collectors.toList());
+                if (!prodIds.isEmpty()) {
+                    String idsJson = objectMapper.writeValueAsString(prodIds);
+                    analyticsEventService.trackAiProductRecommended(
+                            httpSessionId != null ? httpSessionId : conversationKey,
+                            userId, idsJson);
+                }
+            } catch (Exception ignored) {}
+        }
 
         return ResponseEntity.ok(response);
     }
