@@ -8,6 +8,7 @@ import com.laptopstore.laptopstore.entity.ProductVariant;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ import java.util.Map;
 @Controller
 @RequestMapping("/admin/export")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'SALE', 'WAREHOUSE')")
 public class AdminExportController {
 
     private final OrderService orderService;
@@ -35,6 +37,7 @@ public class AdminExportController {
      * 1. Export CSV Danh sách đơn hàng theo khoảng ngày
      */
     @GetMapping("/orders")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALE')")
     public void exportOrdersCsv(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
@@ -82,6 +85,7 @@ public class AdminExportController {
      * 2. Export CSV Báo cáo doanh thu theo từng ngày
      */
     @GetMapping("/revenue")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALE')")
     public void exportRevenueCsv(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
@@ -120,6 +124,7 @@ public class AdminExportController {
      * 3. Export CSV Danh sách sản phẩm và tồn kho
      */
     @GetMapping("/products")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE')")
     public void exportProductsCsv(HttpServletResponse response) throws IOException {
         List<Product> products = productService.getAllProducts();
 

@@ -16,7 +16,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/admin/api/analytics")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SALE', 'WAREHOUSE')")
 public class AdminAnalyticsApiController {
 
     private final AnalyticsService analyticsService;
@@ -135,24 +135,28 @@ public class AdminAnalyticsApiController {
 
     /** GET /admin/api/analytics/inventory */
     @GetMapping("/inventory")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE')")
     public ResponseEntity<List<InventoryAnalyticsDto>> getInventoryAnalytics() {
         return ResponseEntity.ok(inventoryAnalyticsService.getAllInventoryMetrics());
     }
 
     /** GET /admin/api/analytics/inventory/low-stock */
     @GetMapping("/inventory/low-stock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE')")
     public ResponseEntity<List<LowStockIntelligenceDto>> getLowStockIntelligence() {
         return ResponseEntity.ok(inventoryAnalyticsService.getLowStockIntelligence());
     }
 
     /** GET /admin/api/analytics/inventory/dead-stock */
     @GetMapping("/inventory/dead-stock")
+    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE')")
     public ResponseEntity<List<DeadStockDto>> getDeadStock() {
         return ResponseEntity.ok(inventoryAnalyticsService.getDeadStock());
     }
 
     /** GET /admin/api/analytics/vouchers?from=...&to=... */
     @GetMapping("/vouchers")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SALE')")
     public ResponseEntity<List<VoucherAnalyticsDto>> getVoucherAnalytics(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {

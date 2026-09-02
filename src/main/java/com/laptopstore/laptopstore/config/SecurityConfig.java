@@ -60,12 +60,22 @@ public class SecurityConfig {
                 .requestMatchers("/admin", "/admin/").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")
                 .requestMatchers("/admin/dashboard/**").hasRole("ADMIN")
                 .requestMatchers("/admin/users/**").hasRole("ADMIN")
-                .requestMatchers("/admin/export/**").hasRole("ADMIN")
-                .requestMatchers("/admin/analytics/**").hasRole("ADMIN")
+                .requestMatchers("/admin/customers/**").hasRole("ADMIN")
                 .requestMatchers("/users", "/users/**").hasRole("ADMIN")
 
-                // ─── ADMIN + SALE (Đơn hàng, Voucher, Review) ───
+                // ─── ANALYTICS ───
+                .requestMatchers("/admin/analytics/inventory", "/admin/api/analytics/inventory/**").hasAnyRole("ADMIN", "WAREHOUSE")
+                .requestMatchers("/admin/analytics/vouchers", "/admin/api/analytics/vouchers/**").hasAnyRole("ADMIN", "SALE")
+                .requestMatchers("/admin/analytics/**", "/admin/api/analytics/**").hasRole("ADMIN")
+
+                // ─── EXPORT CSV ───
+                .requestMatchers("/admin/export/products").hasAnyRole("ADMIN", "WAREHOUSE")
+                .requestMatchers("/admin/export/orders", "/admin/export/revenue").hasAnyRole("ADMIN", "SALE")
+                .requestMatchers("/admin/export/**").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")
+
+                // ─── ADMIN + SALE (Đơn hàng, Đổi trả, Voucher, Review) ───
                 .requestMatchers("/admin/orders/**").hasAnyRole("ADMIN", "SALE")
+                .requestMatchers("/admin/returns/**").hasAnyRole("ADMIN", "SALE")
                 .requestMatchers("/admin/vouchers/**").hasAnyRole("ADMIN", "SALE")
                 .requestMatchers("/admin/reviews/**").hasAnyRole("ADMIN", "SALE")
 
@@ -73,7 +83,7 @@ public class SecurityConfig {
                 .requestMatchers("/admin/products/**").hasAnyRole("ADMIN", "WAREHOUSE")
                 .requestMatchers("/admin/categories/**").hasAnyRole("ADMIN", "WAREHOUSE")
                 .requestMatchers("/admin/brands/**").hasAnyRole("ADMIN", "WAREHOUSE")
-                .requestMatchers("/admin/stock/**").hasAnyRole("ADMIN", "WAREHOUSE")
+                .requestMatchers("/admin/stock", "/admin/stock/**").hasAnyRole("ADMIN", "WAREHOUSE")
 
                 // ─── BẤT KỲ ROLE ADMIN nào → có thể vào /admin/** còn lại ───
                 .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SALE", "WAREHOUSE")

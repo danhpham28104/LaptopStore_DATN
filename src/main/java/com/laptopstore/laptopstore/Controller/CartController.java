@@ -47,8 +47,7 @@ public class CartController {
         String username = principal.getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
-        Cart cart = cartService.getCartByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng của user"));
+        Cart cart = cartService.getOrCreateCart(user);
 
         cart.setItems(cartItemRepository.findByCart_Id(cart.getId()));
 
@@ -196,8 +195,17 @@ public class CartController {
 
     /**  Xóa toàn bộ giỏ hàng */
     @PostMapping("/clear")
-    public String clearCart(@RequestParam Long cartId) {
-        cartService.clearCart(cartId);
+    public String clearCart(@RequestParam(required = false) Long cartId, Principal principal) {
+        if (principal != null) {
+            String username = principal.getName();
+            userRepository.findByUsername(username).ifPresent(user -> {
+                cartService.getCartByUserId(user.getId()).ifPresent(cart -> {
+                    cartService.clearCart(cart.getId());
+                });
+            });
+        } else if (cartId != null) {
+            cartService.clearCart(cartId);
+        }
         return "redirect:/cart";
     }
 }

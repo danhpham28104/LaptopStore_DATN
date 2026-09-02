@@ -37,8 +37,7 @@ public class CheckoutController {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
 
-        Cart cart = cartService.getCartByUserId(user.getId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy giỏ hàng"));
+        Cart cart = cartService.getOrCreateCart(user);
 
         Address defaultAddress = addressService.getDefaultAddress(user.getId());
 
