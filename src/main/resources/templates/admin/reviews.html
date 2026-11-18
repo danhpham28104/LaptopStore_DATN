@@ -66,6 +66,7 @@
     <div class="chart-box">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="fw-bold m-0"><i class="bi bi-chat-left-text text-primary me-2"></i>Danh sách nhận xét từ khách hàng</h6>
+        <span class="badge bg-light text-primary border" th:text="'Tổng: ' + ${reviews != null ? #lists.size(reviews) : 0} + ' đánh giá hiện hành'">Tổng: 0 đánh giá</span>
       </div>
 
       <div class="table-responsive">
@@ -75,9 +76,10 @@
               <th>ID</th>
               <th>Sản phẩm</th>
               <th>Người đánh giá</th>
+              <th>Đơn hàng</th>
               <th>Số sao</th>
               <th>Nội dung nhận xét</th>
-              <th>Ngày tạo</th>
+              <th>Thời gian</th>
               <th>Trạng thái</th>
               <th class="text-center">Thao tác</th>
             </tr>
@@ -93,6 +95,13 @@
                 <small class="text-muted" th:text="${r.user != null ? r.user.email : ''}"></small>
               </td>
               <td>
+                <span th:if="${r.orderItem != null and r.orderItem.order != null}"
+                      class="badge bg-light text-dark border"
+                      th:text="${r.orderItem.order.orderCode != null ? r.orderItem.order.orderCode : '#' + r.orderItem.order.id}">#</span>
+                <span th:if="${r.orderItem != null}" class="d-block small text-muted" th:text="'Item #' + ${r.orderItem.id}"></span>
+                <span th:if="${r.orderItem == null}" class="text-muted small">—</span>
+              </td>
+              <td>
                 <span class="star-rating">
                   <i class="bi bi-star-fill" th:each="i : ${#numbers.sequence(1, r.rating)}"></i>
                 </span>
@@ -101,14 +110,18 @@
               <td style="max-width: 320px; white-space: normal;">
                 <p class="mb-0 text-break" th:text="${r.comment}">Nội dung nhận xét...</p>
               </td>
-              <td th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">26/08/2026</td>
+              <td>
+                <div th:text="${#temporals.format(r.createdAt, 'dd/MM/yyyy HH:mm')}">26/08/2026</div>
+                <small th:if="${r.updatedAt != null}" class="text-muted d-block"
+                       th:text="'Cập nhật: ' + ${#temporals.format(r.updatedAt, 'dd/MM/yyyy HH:mm')}"></small>
+              </td>
               <td>
                 <span class="badge" th:classappend="${r.status.badgeClass}" th:text="${r.status.displayName}">Approved</span>
               </td>
               <td>
                 <div class="d-flex justify-content-center gap-1">
                   <!-- Approve Button -->
-                  <form th:if="${r.status != T(com.techstore.techstore.enums.ReviewStatus).APPROVED}"
+                  <form th:if="${r.status != T(com.laptopstore.laptopstore.enums.ReviewStatus).APPROVED}"
                         th:action="@{'/admin/reviews/' + ${r.id} + '/status'}" method="post">
                     <input type="hidden" name="status" value="APPROVED"/>
                     <button type="submit" class="btn btn-sm btn-success" title="Duyệt đánh giá">
@@ -117,7 +130,7 @@
                   </form>
 
                   <!-- Reject Button -->
-                  <form th:if="${r.status != T(com.techstore.techstore.enums.ReviewStatus).REJECTED}"
+                  <form th:if="${r.status != T(com.laptopstore.laptopstore.enums.ReviewStatus).REJECTED}"
                         th:action="@{'/admin/reviews/' + ${r.id} + '/status'}" method="post">
                     <input type="hidden" name="status" value="REJECTED"/>
                     <button type="submit" class="btn btn-sm btn-warning text-dark" title="Ẩn/Từ chối">
@@ -137,7 +150,7 @@
             </tr>
 
             <tr th:if="${reviews == null or reviews.isEmpty()}">
-              <td colspan="8" class="text-center text-muted py-4">Chưa có đánh giá nào từ khách hàng</td>
+              <td colspan="9" class="text-center text-muted py-4">Chưa có đánh giá nào từ khách hàng</td>
             </tr>
           </tbody>
         </table>

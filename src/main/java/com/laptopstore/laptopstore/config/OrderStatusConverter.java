@@ -7,10 +7,10 @@ import jakarta.persistence.Converter;
 /**
  * JPA AttributeConverter cho OrderStatus.
  *
- * <p>Khi đọc từ DB: gọi {@link OrderStatus#fromString(String)} — hỗ trợ cả giá trị cũ
- * (PENDING_PAYMENT, PACKING, REFUNDED) lẫn giá trị mới (PENDING, PROCESSING, RETURNED).
+ * <p>Khi đọc từ DB: gọi {@link OrderStatus#fromString(String)} — hỗ trợ tự động chuyển đổi
+ * cả giá trị cũ lẫn 11 giá trị chuẩn mới.
  *
- * <p>Khi ghi vào DB: lưu {@link Enum#name()} của enum value (không thay đổi).
+ * <p>Khi ghi vào DB: lưu {@link Enum#name()} của enum chuẩn mới.
  */
 @Converter(autoApply = true)
 public class OrderStatusConverter implements AttributeConverter<OrderStatus, String> {
@@ -18,7 +18,7 @@ public class OrderStatusConverter implements AttributeConverter<OrderStatus, Str
     @Override
     public String convertToDatabaseColumn(OrderStatus attribute) {
         if (attribute == null) {
-            return OrderStatus.PENDING.name();
+            return OrderStatus.CHO_XAC_NHAN.name();
         }
         return attribute.name();
     }
@@ -26,9 +26,8 @@ public class OrderStatusConverter implements AttributeConverter<OrderStatus, Str
     @Override
     public OrderStatus convertToEntityAttribute(String dbData) {
         if (dbData == null || dbData.isBlank()) {
-            return OrderStatus.PENDING;
+            return OrderStatus.CHO_XAC_NHAN;
         }
-        // fromString() xử lý cả giá trị cũ lẫn mới
         return OrderStatus.fromString(dbData);
     }
 }

@@ -50,17 +50,22 @@ public class OrderController {
         OrderStatus filterStatus = null;
         if (status != null && !status.isBlank()) {
             try {
-                filterStatus = OrderStatus.valueOf(status);
+                filterStatus = OrderStatus.fromStringStrict(status);
             } catch (Exception ignored) {}
         }
 
         List<Order> orders;
         if (filterStatus == null) {
             orders = orderRepository.findByUser_UsernameOrderByCreatedAtDesc(principal.getName());
-        } else if (filterStatus == OrderStatus.PENDING_PAYMENT) {
+        } else if (filterStatus == OrderStatus.CHO_XAC_NHAN) {
             orders = orderRepository.findByUser_UsernameAndOrderStatusInOrderByCreatedAtDesc(
                     principal.getName(),
-                    List.of(OrderStatus.PENDING_PAYMENT, OrderStatus.CONFIRMED, OrderStatus.PACKING)
+                    List.of(OrderStatus.CHO_XAC_NHAN, OrderStatus.DA_XAC_NHAN, OrderStatus.CHUAN_BI_HANG)
+            );
+        } else if (filterStatus == OrderStatus.DA_HUY) {
+            orders = orderRepository.findByUser_UsernameAndOrderStatusInOrderByCreatedAtDesc(
+                    principal.getName(),
+                    OrderStatus.CANCELLED_STATUSES
             );
         } else {
             orders = orderRepository.findByUser_UsernameAndOrderStatusOrderByCreatedAtDesc(

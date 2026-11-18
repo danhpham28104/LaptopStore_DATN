@@ -21,10 +21,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class VoucherAnalyticsService {
 
-    private static final List<OrderStatus> SUCCESS_STATUSES = List.of(
-            OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.PACKING,
-            OrderStatus.SHIPPING, OrderStatus.DELIVERED
-    );
+    private static final List<OrderStatus> SUCCESS_STATUSES = OrderStatus.SUCCESS_STATUSES;
 
     private final VoucherRepository voucherRepository;
     private final VoucherUsageRepository voucherUsageRepository;

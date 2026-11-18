@@ -87,6 +87,25 @@
     <span th:text="${successMessage}"></span>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
+  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <span th:text="${errorMessage}"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+
+  <!-- Khóa dữ liệu sau khi Hoàn thành / Kết thúc -->
+  <div th:if="${order.lockedForEdit}" class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-lock-fill me-2 fs-5"></i>
+    <div>
+      <strong>Dữ liệu đơn hàng đã khóa:</strong>
+      <span th:if="${order.orderStatus.name() == 'HOAN_THANH'}">
+        Đơn hàng đã ở trạng thái <strong>Hoàn thành</strong>. Không cho phép chỉnh sửa thông tin đơn, sản phẩm hay số lượng; chỉ được phép xử lý quy trình hoàn trả nếu phát sinh.
+      </span>
+      <span th:unless="${order.orderStatus.name() == 'HOAN_THANH'}"
+            th:text="'Đơn hàng đang ở trạng thái ' + ${order.orderStatus.displayName} + ' nên không thể chỉnh sửa thông tin, sản phẩm hay số lượng.'">
+      </span>
+    </div>
+  </div>
 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="fw-bold m-0">Đơn hàng <span class="text-danger" th:text="${order.orderCode ?: '#' + order.id}"></span></h4>
@@ -102,36 +121,52 @@
 
   <!-- ⏱️ Order Status Timeline Stepper -->
   <div class="chart-box mb-4">
-    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-      <h6 class="fw-bold mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Thanh tiến trình đơn hàng (Order Timeline)</h6>
-      
-      <!-- Quick Update Status -->
-      <form th:action="@{'/admin/orders/update-status/' + ${order.id}}" method="post" class="d-flex align-items-center gap-2">
-        <select name="status" class="form-select form-select-sm fw-bold w-auto border-secondary">
-          <option th:each="st : ${T(com.laptopstore.laptopstore.enums.OrderStatus).values()}"
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2 flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <h6 class="fw-bold mb-0"><i class="bi bi-clock-history text-danger me-2"></i>Thanh tiến trình đơn hàng (Order Timeline)</h6>
+        <span class="badge" th:classappend="${order.orderStatus.badgeClass}" th:text="${order.orderStatus.displayName}"></span>
+        <span th:if="${order.inventoryDeducted}" class="badge bg-light text-success border border-success">
+          <i class="bi bi-box-seam me-1"></i>Đã giữ/trừ tồn kho
+        </span>
+      </div>
+
+      <!-- Quick Update Status: chỉ hiển thị trạng thái có thể chuyển tiếp -->
+      <form th:if="${!#lists.isEmpty(order.orderStatus.allowedNextStatuses)}"
+            th:action="@{'/admin/orders/update-status/' + ${order.id}}"
+            method="post"
+            onsubmit="return confirmDetailStatusChange(this)"
+            class="d-flex align-items-center gap-2">
+        <input type="hidden" name="redirectTo" value="detail" />
+        <select name="status" class="form-select form-select-sm fw-bold w-auto border-secondary" required>
+          <option value="" disabled selected>-- Chuyển sang trạng thái --</option>
+          <option th:each="st : ${order.orderStatus.allowedNextStatuses}"
                   th:value="${st.name()}"
-                  th:selected="${order.orderStatus == st}"
-                  th:text="${st.displayName + ' (' + st.name() + ')'}">
+                  th:text="${st.displayName}">
           </option>
         </select>
         <button type="submit" class="btn btn-sm btn-danger text-nowrap fw-bold">
           <i class="bi bi-save"></i> Cập nhật
         </button>
       </form>
+      <span th:if="${#lists.isEmpty(order.orderStatus.allowedNextStatuses)}" class="badge bg-secondary">
+        <i class="bi bi-lock me-1"></i>Trạng thái kết thúc
+      </span>
     </div>
 
-    <div th:if="${order.orderStatus.name() == 'CANCELLED' or order.orderStatus.name() == 'REFUNDED'}" class="alert alert-danger d-flex align-items-center gap-2 mb-0">
-      <i class="bi bi-x-circle-fill fs-4"></i>
+    <div th:if="${order.orderStatus.stepIndex == 0}"
+         class="alert d-flex align-items-center gap-2 mb-0"
+         th:classappend="${order.orderStatus.name() == 'DA_HUY' ? 'alert-danger' : (order.orderStatus.name() == 'YEU_CAU_HOAN_TRA' ? 'alert-warning' : 'alert-secondary')}">
+      <i class="bi bi-exclamation-circle-fill fs-4"></i>
       <div>
-        <strong th:text="${order.orderStatus.name() == 'CANCELLED' ? 'Đơn hàng này đã bị HỦY' : 'Đơn hàng này đã HOÀN TIỀN'}">Đã hủy</strong>
+        <strong>Trạng thái hiện tại: <span th:text="${order.orderStatus.displayName}"></span></strong>
       </div>
     </div>
 
-    <div th:if="${order.orderStatus.name() != 'CANCELLED' and order.orderStatus.name() != 'REFUNDED'}" class="stepper-wrapper d-flex justify-content-between position-relative">
+    <div th:if="${order.orderStatus.stepIndex > 0}" class="stepper-wrapper d-flex justify-content-between position-relative">
       <div class="stepper-line"></div>
-      
+
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() != 'CANCELLED' and order.orderStatus.name() != 'REFUNDED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 1} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-credit-card"></i>
         </div>
@@ -139,7 +174,15 @@
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'CONFIRMED' or order.orderStatus.name() == 'PACKING' or order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 2} ? 'active' : ''">
+        <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="step-title fw-bold mt-2 small">Chờ xác nhận</div>
+      </div>
+
+      <div class="step-item text-center position-relative z-1"
+           th:classappend="${order.orderStatus.stepIndex >= 3} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-check-circle"></i>
         </div>
@@ -147,15 +190,15 @@
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'PACKING' or order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 4} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-box-seam"></i>
         </div>
-        <div class="step-title fw-bold mt-2 small">Đang đóng gói</div>
+        <div class="step-title fw-bold mt-2 small">Chuẩn bị hàng</div>
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 5} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-truck"></i>
         </div>
@@ -163,27 +206,59 @@
       </div>
 
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 6} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
-          <i class="bi bi-house-door"></i>
+          <i class="bi bi-house-check"></i>
         </div>
-        <div class="step-title fw-bold mt-2 small">Đã giao thành công</div>
+        <div class="step-title fw-bold mt-2 small">Đã giao hàng</div>
+      </div>
+
+      <div class="step-item text-center position-relative z-1"
+           th:classappend="${order.orderStatus.stepIndex >= 7} ? 'active' : ''">
+        <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
+          <i class="bi bi-patch-check"></i>
+        </div>
+        <div class="step-title fw-bold mt-2 small">Hoàn thành</div>
       </div>
     </div>
   </div>
 
   <!-- Thông tin người nhận -->
   <div class="chart-box mb-4">
-    <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-person-lines-fill text-primary me-2"></i>Thông tin giao nhận & Khách hàng</h6>
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+      <h6 class="fw-bold mb-0"><i class="bi bi-person-lines-fill text-primary me-2"></i>Thông tin giao nhận & Khách hàng</h6>
+      <span th:if="${order.lockedForEdit}" class="badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Đã khóa chỉnh sửa</span>
+    </div>
     <div class="row">
       <div class="col-md-6">
         <p class="mb-2"><strong>Người nhận:</strong> <span th:text="${order.receiverName}"></span></p>
         <p class="mb-2"><strong>Số điện thoại:</strong> <span th:text="${order.receiverPhone}"></span></p>
         <p class="mb-2"><strong>Địa chỉ giao hàng:</strong> <span th:text="${order.shippingAddress}"></span></p>
+        <form th:if="${!order.lockedForEdit}" th:action="@{/admin/orders/{id}/shipping(id=${order.id})}" method="post" class="mt-3 p-3 bg-light rounded border">
+          <div class="small fw-bold mb-2 text-muted">Cập nhật thông tin nhận hàng</div>
+          <div class="row g-2">
+            <div class="col-sm-6">
+              <input type="text" name="receiverName" class="form-control form-control-sm" th:value="${order.receiverName}" placeholder="Tên người nhận" required />
+            </div>
+            <div class="col-sm-6">
+              <input type="text" name="receiverPhone" class="form-control form-control-sm" th:value="${order.receiverPhone}" placeholder="Số điện thoại" required />
+            </div>
+            <div class="col-12">
+              <input type="text" name="shippingAddress" class="form-control form-control-sm" th:value="${order.shippingAddress}" placeholder="Địa chỉ giao hàng" required />
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-save me-1"></i> Lưu thông tin giao hàng</button>
+            </div>
+          </div>
+        </form>
       </div>
       <div class="col-md-6">
         <p class="mb-2"><strong>Trạng thái đơn:</strong>
           <span class="badge" th:classappend="${order.orderStatus.badgeClass}" th:text="${order.orderStatus.displayName}"></span>
+        </p>
+        <p class="mb-2"><strong>Trạng thái giữ kho:</strong>
+          <span th:if="${order.inventoryDeducted}" class="badge bg-success"><i class="bi bi-box-seam me-1"></i>Đã trừ kho (inventoryDeducted = true)</span>
+          <span th:unless="${order.inventoryDeducted}" class="badge bg-secondary">Chưa trừ kho / Đã hoàn kho</span>
         </p>
         <p class="mb-2"><strong>Ngày tạo đơn:</strong> <span th:text="${#temporals.format(order.createdAt, 'dd/MM/yyyy HH:mm')}"></span></p>
         <p class="mb-2"><strong>Mã giảm giá:</strong>
@@ -201,9 +276,10 @@
   <div class="chart-box mb-4 border-warning">
     <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
       <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-journal-text text-warning me-2"></i>Ghi chú nội bộ Admin</h6>
-      <span class="badge bg-warning text-dark">Chỉ Admin thấy</span>
+      <span th:if="${order.lockedForEdit}" class="badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Đã khóa</span>
+      <span th:unless="${order.lockedForEdit}" class="badge bg-warning text-dark">Chỉ Admin thấy</span>
     </div>
-    <form th:action="@{/admin/orders/{id}/note(id=${order.id})}" method="post">
+    <form th:if="${!order.lockedForEdit}" th:action="@{/admin/orders/{id}/note(id=${order.id})}" method="post">
       <div class="mb-3">
         <textarea name="adminNote" class="form-control" rows="3"
                   placeholder="Nhập ghi chú xử lý đơn hàng, lưu ý giao hàng, cuộc gọi xác nhận..."
@@ -213,11 +289,18 @@
         <i class="bi bi-save me-1"></i> Lưu ghi chú nội bộ
       </button>
     </form>
+    <div th:if="${order.lockedForEdit}">
+      <textarea class="form-control bg-light" rows="3" readonly disabled
+                th:text="${order.adminNote != null and !order.adminNote.isBlank() ? order.adminNote : 'Không có ghi chú'}"></textarea>
+    </div>
   </div>
 
   <!-- Danh sách sản phẩm -->
   <div class="chart-box mb-4">
-    <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-box-seam text-danger me-2"></i>Sản phẩm trong đơn</h6>
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+      <h6 class="fw-bold mb-0"><i class="bi bi-box-seam text-danger me-2"></i>Sản phẩm trong đơn</h6>
+      <span th:if="${order.lockedForEdit}" class="badge bg-secondary"><i class="bi bi-lock-fill me-1"></i>Không thể sửa số lượng</span>
+    </div>
     <div class="table-responsive">
       <table class="table table-bordered align-middle text-nowrap mb-0">
         <thead class="table-light fs-7">
@@ -239,7 +322,18 @@
             <span th:unless="${item.variant != null}" class="text-muted">Mặc định</span>
           </td>
           <td th:text="${#numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
-          <td th:text="${item.quantity}"></td>
+          <td>
+            <span th:if="${order.lockedForEdit}" th:text="${item.quantity}"></span>
+            <form th:if="${!order.lockedForEdit}"
+                  th:action="@{/admin/orders/{id}/items/{itemId}/quantity(id=${order.id},itemId=${item.id})}"
+                  method="post"
+                  class="d-inline-flex align-items-center gap-1">
+              <input type="number" name="quantity" min="1" class="form-control form-control-sm" style="width: 75px;" th:value="${item.quantity}" required />
+              <button type="submit" class="btn btn-outline-primary btn-sm" title="Cập nhật số lượng">
+                <i class="bi bi-check2"></i>
+              </button>
+            </form>
+          </td>
           <td class="text-danger fw-bold" th:text="${#numbers.formatDecimal(item.lineTotal, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
         </tr>
         <tr th:if="${#lists.isEmpty(items)}">
@@ -285,5 +379,16 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function confirmDetailStatusChange(form) {
+    const select = form.querySelector('select[name="status"]');
+    if (!select || !select.value) {
+      alert('Vui lòng chọn trạng thái hợp lệ tiếp theo.');
+      return false;
+    }
+    const nextLabel = select.options[select.selectedIndex].text;
+    return confirm(`Xác nhận chuyển trạng thái đơn hàng sang "${nextLabel}"?`);
+  }
+</script>
 </body>
 </html>

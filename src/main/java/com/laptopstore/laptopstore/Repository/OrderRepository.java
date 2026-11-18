@@ -60,7 +60,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COALESCE(SUM(o.discount), 0) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus IN :statuses")
     BigDecimal sumDiscountByDateRange(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("statuses") List<OrderStatus> statuses);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.voucher.id = :voucherId AND o.user.id = :userId AND o.orderStatus NOT IN ('CANCELLED', 'REFUNDED')")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.voucher.id = :voucherId AND o.user.id = :userId AND o.orderStatus NOT IN (com.laptopstore.laptopstore.enums.OrderStatus.DA_HUY, com.laptopstore.laptopstore.enums.OrderStatus.DA_HOAN_TRA, com.laptopstore.laptopstore.enums.OrderStatus.DA_HOAN_TIEN)")
     long countVoucherUsageByUser(@Param("voucherId") Long voucherId, @Param("userId") Long userId);
 
     List<Order> findByUser_UsernameOrderByCreatedAtDesc(String username);
@@ -76,13 +76,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         @Param("username") String username, 
         @Param("status") OrderStatus status);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.PENDING_PAYMENT AND o.createdAt < :cutoff")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.CHO_THANH_TOAN AND o.createdAt < :cutoff")
     long countStalePendingOrders(@Param("cutoff") LocalDateTime cutoff);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :since")
     long countOrdersSince(@Param("since") LocalDateTime since);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.CANCELLED AND o.createdAt >= :since")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.DA_HUY AND o.createdAt >= :since")
     long countCancelledOrdersSince(@Param("since") LocalDateTime since);
 
     /** Phân bổ đơn hàng theo trạng thái trong khoảng ngày */
@@ -95,5 +95,22 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Object[]> countOrdersGroupedByStatus(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
+    @Query("""
+        SELECT DISTINCT o FROM Order o
+        LEFT JOIN o.user u
+        LEFT JOIN o.orderItems oi
+        LEFT JOIN oi.product p
+        WHERE (:q IS NULL OR :q = ''
+          OR CAST(o.id AS string) LIKE CONCAT('%', :q, '%')
+          OR (o.orderCode IS NOT NULL AND LOWER(o.orderCode) LIKE LOWER(CONCAT('%', :q, '%')))
+          OR (o.receiverName IS NOT NULL AND LOWER(o.receiverName) LIKE LOWER(CONCAT('%', :q, '%')))
+          OR (o.receiverPhone IS NOT NULL AND LOWER(o.receiverPhone) LIKE LOWER(CONCAT('%', :q, '%')))
+          OR (u.username IS NOT NULL AND LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%')))
+          OR (u.fullName IS NOT NULL AND LOWER(u.fullName) LIKE LOWER(CONCAT('%', :q, '%')))
+          OR (p.name IS NOT NULL AND LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')))
+          OR (p.productCode IS NOT NULL AND LOWER(p.productCode) LIKE LOWER(CONCAT('%', :q, '%'))))
+        ORDER BY o.createdAt DESC
+    """)
+    List<Order> searchOrdersByKeyword(@Param("q") String q);
 }
 

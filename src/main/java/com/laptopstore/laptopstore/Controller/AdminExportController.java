@@ -137,7 +137,7 @@ public class AdminExportController {
             writer.println("ID,Mẫu Model,Tên sản phẩm,Thương hiệu,Giá niêm yết (VNĐ),Giảm giá (%),Giá bán (VNĐ),Tồn kho tổng,Chi tiết biến thể,Trạng thái kho");
 
             for (Product p : products) {
-                String id = p.getId() != null ? p.getId().toString() : "";
+                String id = escapeCsv(p.getDisplayId());
                 String model = escapeCsv(p.getModel());
                 String name = escapeCsv(p.getName());
                 String brand = p.getBrand() != null ? escapeCsv(p.getBrand().getName()) : "Khác";

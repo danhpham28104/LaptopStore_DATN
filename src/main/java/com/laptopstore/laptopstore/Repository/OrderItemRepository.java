@@ -13,14 +13,14 @@ import java.util.Optional;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findByOrder_Id(Long orderId);
 
-    @Query("SELECT SUM(oi.quantity) FROM OrderItem oi WHERE oi.product.id = :productId AND oi.order.orderStatus IN (com.laptopstore.laptopstore.enums.OrderStatus.CONFIRMED, com.laptopstore.laptopstore.enums.OrderStatus.PACKING, com.laptopstore.laptopstore.enums.OrderStatus.SHIPPING, com.laptopstore.laptopstore.enums.OrderStatus.DELIVERED)")
+    @Query("SELECT SUM(oi.quantity) FROM OrderItem oi WHERE oi.product.id = :productId AND oi.order.orderStatus IN (com.laptopstore.laptopstore.enums.OrderStatus.DA_XAC_NHAN, com.laptopstore.laptopstore.enums.OrderStatus.CHUAN_BI_HANG, com.laptopstore.laptopstore.enums.OrderStatus.DANG_GIAO_HANG, com.laptopstore.laptopstore.enums.OrderStatus.DA_GIAO_HANG, com.laptopstore.laptopstore.enums.OrderStatus.HOAN_THANH)")
     Optional<Long> sumSoldQuantityByProductId(@Param("productId") Long productId);
 
     @Query("""
         SELECT COUNT(oi) > 0 FROM OrderItem oi 
         WHERE oi.order.user.id = :userId 
           AND oi.product.id = :productId 
-          AND oi.order.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.DELIVERED
+          AND oi.order.orderStatus IN (com.laptopstore.laptopstore.enums.OrderStatus.DA_GIAO_HANG, com.laptopstore.laptopstore.enums.OrderStatus.HOAN_THANH)
     """)
     boolean existsByUserIdAndProductIdAndDeliveredOrder(@Param("userId") Long userId, @Param("productId") Long productId);
 
@@ -28,9 +28,18 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
         SELECT oi FROM OrderItem oi 
         WHERE oi.order.user.id = :userId 
           AND oi.id = :orderItemId 
-          AND oi.order.orderStatus = com.laptopstore.laptopstore.enums.OrderStatus.DELIVERED
+          AND oi.order.orderStatus IN (com.laptopstore.laptopstore.enums.OrderStatus.DA_GIAO_HANG, com.laptopstore.laptopstore.enums.OrderStatus.HOAN_THANH)
     """)
     Optional<OrderItem> findDeliveredOrderItem(@Param("userId") Long userId, @Param("orderItemId") Long orderItemId);
+
+    @Query("""
+        SELECT oi FROM OrderItem oi
+        WHERE oi.order.user.id = :userId
+          AND oi.product.id = :productId
+          AND oi.order.orderStatus IN (com.laptopstore.laptopstore.enums.OrderStatus.DA_GIAO_HANG, com.laptopstore.laptopstore.enums.OrderStatus.HOAN_THANH)
+        ORDER BY oi.order.createdAt DESC, oi.id DESC
+    """)
+    List<OrderItem> findDeliveredOrderItemsByUserIdAndProductId(@Param("userId") Long userId, @Param("productId") Long productId);
 
     /** Tổng số sản phẩm đã bán trong khoảng ngày (chỉ tính đơn thành công) */
     @Query("""

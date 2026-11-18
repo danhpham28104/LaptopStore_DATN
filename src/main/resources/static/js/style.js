@@ -131,32 +131,69 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// tim kiem san pham
+// tim kiem san pham (cap nhat danh sach san pham khi go hoac bam Tim kiem)
 document.addEventListener("DOMContentLoaded", () => {
-  const searchForm = document.querySelector(".search-form");
+  const searchForms = document.querySelectorAll(".search-form, .live-search-form");
   const productContainer = document.getElementById("product-list");
 
-  if (!searchForm || !productContainer) return;
+  if (!searchForms.length || !productContainer) return;
 
-  searchForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const q = searchForm.querySelector("input[name='q']").value.trim();
-    if (!q) return;
-
-    productContainer.innerHTML = `
-      <div class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="mt-3">Đang tìm kiếm sản phẩm...</p>
-      </div>
-    `;
+  async function executeFragmentSearch(q, shouldScroll) {
+    if (shouldScroll) {
+      productContainer.innerHTML = `
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-3">Đang tìm kiếm sản phẩm...</p>
+        </div>
+      `;
+    }
 
     try {
       const response = await fetch(`/fragments/products/search?q=${encodeURIComponent(q)}`);
+      if (!response.ok) throw new Error("Search failed");
       const html = await response.text();
-      productContainer.innerHTML = html;
+      if (html.trim() === "") {
+        productContainer.innerHTML = `
+          <div class="text-center py-5 w-100">
+            <i class="bi bi-search" style="font-size:3rem;color:var(--border);display:block;margin-bottom:12px;"></i>
+            <h5 style="color:var(--muted);">Không tìm thấy sản phẩm phù hợp</h5>
+            <p style="color:var(--muted);font-size:0.88rem;">Hãy thử thay đổi bộ lọc hoặc từ khoá tìm kiếm</p>
+          </div>
+        `;
+      } else {
+        productContainer.innerHTML = html;
+      }
+
+      if (shouldScroll) {
+        const section = document.getElementById("best-sellers");
+        if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (window.AOS) AOS.refresh();
     } catch (error) {
       console.error("❌ Lỗi khi tìm kiếm:", error);
       productContainer.innerHTML = `<p class="text-danger text-center">Không thể tải sản phẩm.</p>`;
+    }
+  }
+
+  searchForms.forEach(searchForm => {
+    const input = searchForm.querySelector("input[name='q']");
+    let typingTimer = null;
+
+    searchForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const q = input ? input.value.trim() : "";
+      searchForm.querySelectorAll(".live-search-dropdown").forEach(d => d.classList.add("d-none"));
+      await executeFragmentSearch(q, true);
+    });
+
+    if (input) {
+      input.addEventListener("input", () => {
+        clearTimeout(typingTimer);
+        const q = input.value.trim();
+        typingTimer = setTimeout(() => {
+          executeFragmentSearch(q, false);
+        }, 280);
+      });
     }
   });
 });

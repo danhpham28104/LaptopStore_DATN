@@ -77,12 +77,9 @@ public class AdminDashboardController {
         // 🔵 1. Thống kê theo khoảng ngày
         BigDecimal rangeRevenue = orderService.getRevenueByDateRange(startDate, endDate);
         long totalOrders = orderService.countOrdersByDateRange(startDate, endDate);
-        long successOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(
-                OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.PACKING, OrderStatus.SHIPPING, OrderStatus.DELIVERED));
-        long pendingOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(
-                OrderStatus.PENDING, OrderStatus.PENDING_PAYMENT));
-        long cancelledOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, List.of(
-                OrderStatus.CANCELLED, OrderStatus.RETURNED, OrderStatus.REFUNDED));
+        long successOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, OrderStatus.SUCCESS_STATUSES);
+        long pendingOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, OrderStatus.PENDING_STATUSES);
+        long cancelledOrders = orderService.countOrdersByStatusesInRange(startDate, endDate, OrderStatus.CANCELLED_STATUSES);
 
         // AOV (Average Order Value)
         BigDecimal aov = (successOrders > 0)

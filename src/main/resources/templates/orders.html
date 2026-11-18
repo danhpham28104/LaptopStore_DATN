@@ -63,21 +63,29 @@
                href="/orders">Tất cả</a>
         </li>
         <li class="nav-item">
+            <a class="nav-link" th:classappend="${currentStatus == 'CHO_THANH_TOAN'} ? 'active'"
+               href="/orders?status=CHO_THANH_TOAN">Chờ thanh toán</a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link" 
-               th:classappend="${currentStatus == 'PENDING_PAYMENT' or currentStatus == 'CONFIRMED'} ? 'active'"
-               href="/orders?status=PENDING_PAYMENT">Chờ xác nhận</a>
+               th:classappend="${currentStatus == 'CHO_XAC_NHAN' or currentStatus == 'DA_XAC_NHAN' or currentStatus == 'CHUAN_BI_HANG'} ? 'active'"
+               href="/orders?status=CHO_XAC_NHAN">Chờ xác nhận</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${currentStatus == 'SHIPPING'} ? 'active'"
-               href="/orders?status=SHIPPING">Đang giao</a>
+            <a class="nav-link" th:classappend="${currentStatus == 'DANG_GIAO_HANG'} ? 'active'"
+               href="/orders?status=DANG_GIAO_HANG">Đang giao</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${currentStatus == 'DELIVERED'} ? 'active'"
-               href="/orders?status=DELIVERED">Đã giao</a>
+            <a class="nav-link" th:classappend="${currentStatus == 'DA_GIAO_HANG'} ? 'active'"
+               href="/orders?status=DA_GIAO_HANG">Đã giao</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${currentStatus == 'CANCELLED'} ? 'active'"
-               href="/orders?status=CANCELLED">Đã hủy</a>
+            <a class="nav-link" th:classappend="${currentStatus == 'HOAN_THANH'} ? 'active'"
+               href="/orders?status=HOAN_THANH">Hoàn thành</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${currentStatus == 'DA_HUY'} ? 'active'"
+               href="/orders?status=DA_HUY">Đã hủy</a>
         </li>
     </ul>
 
@@ -142,8 +150,8 @@
                         <i class="bi bi-eye"></i> Xem chi tiết
                     </a>
 
-                    <!-- Nút mở modal hủy đơn (Cho phép PENDING_PAYMENT và CONFIRMED) -->
-                    <button th:if="${order.orderStatus.name() == 'PENDING_PAYMENT' or order.orderStatus.name() == 'CONFIRMED'}"
+                    <!-- Nút mở modal hủy đơn (chỉ hiện với các trạng thái cho phép hủy) -->
+                    <button th:if="${order.orderStatus.cancellable}"
                             type="button"
                             class="btn btn-danger btn-sm"
                             data-bs-toggle="modal"

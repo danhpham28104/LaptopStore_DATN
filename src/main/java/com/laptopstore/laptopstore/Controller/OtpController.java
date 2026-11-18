@@ -147,7 +147,7 @@ public class OtpController {
                 if (order.getPayment().getMethod() == com.laptopstore.laptopstore.enums.PaymentMethod.SEPAY) {
                     redirectUrl = "/checkout/sepay?orderId=" + orderId;
                 } else if (order.getPayment().getMethod() == com.laptopstore.laptopstore.enums.PaymentMethod.COD) {
-                    order.setOrderStatus(OrderStatus.CONFIRMED);
+                    order.setOrderStatus(OrderStatus.CHO_XAC_NHAN);
                     redirectUrl = "/orders/success?orderId=" + orderId;
                 }
             }

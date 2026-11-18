@@ -20,7 +20,7 @@ public class OrderStatusHistory {
     @JsonIgnore
     private Order order;
 
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = com.laptopstore.laptopstore.config.OrderStatusConverter.class)
     @Column(name = "status", length = 50)
     private OrderStatus status;
 

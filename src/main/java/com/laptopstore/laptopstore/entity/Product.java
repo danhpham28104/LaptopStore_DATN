@@ -18,7 +18,7 @@ import java.util.List;
 @Table(
         name = "product",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uk_product_model", columnNames = "model")
+                @UniqueConstraint(name = "uk_product_code", columnNames = "product_code")
         }
 )
 @SQLDelete(sql = "UPDATE product SET is_deleted = true WHERE id = ?")
@@ -28,6 +28,10 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // 🔹 Mã ID riêng của mỗi máy (nhập thủ công lúc xuất xưởng, gồm chữ/số)
+    @Column(name = "product_code", length = 100, unique = true)
+    private String productCode;
 
     // 🔹 Tên và mã model
     @Column(nullable = false, length = 150)
@@ -192,6 +196,13 @@ public class Product {
     // ✅ Getter / Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getProductCode() { return productCode; }
+    public void setProductCode(String productCode) { this.productCode = productCode; }
+
+    public String getDisplayId() {
+        return (productCode != null && !productCode.isBlank()) ? productCode : (id != null ? String.valueOf(id) : "");
+    }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

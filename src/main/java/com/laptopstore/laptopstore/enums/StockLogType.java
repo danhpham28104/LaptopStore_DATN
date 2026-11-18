@@ -7,17 +7,17 @@ public enum StockLogType {
     /** Nhập kho thủ công (Admin thêm hàng) */
     IMPORT("Nhập kho"),
 
-    /** Xuất kho do đơn hàng được tạo (đơn COD trừ thẳng) */
-    EXPORT_ORDER("Xuất kho – Đơn hàng"),
+    /** Xuất kho khi xác nhận đơn hàng (trạng thái DA_XAC_NHAN) */
+    EXPORT_ORDER("Xuất kho – Xác nhận đơn hàng"),
 
-    /** Khoá tạm thời khi tạo đơn QR */
-    RESERVE("Khoá tạm – Chờ thanh toán QR"),
+    /** Khoá tạm thời (dữ liệu lịch sử cũ) */
+    RESERVE("Khoá tạm – Chờ thanh toán"),
 
-    /** Xác nhận thanh toán QR → trừ stock chính thức */
+    /** Xác nhận thanh toán → trừ stock */
     CONFIRM_RESERVE("Xác nhận thanh toán – Trừ kho"),
 
-    /** Nhả kho khi hủy đơn hoặc QR timeout */
-    CANCEL_RESTORE("Hoàn kho – Hủy đơn"),
+    /** Tự động hoàn kho khi hủy đơn hoặc hoàn trả hàng */
+    CANCEL_RESTORE("Hoàn kho – Hủy / Hoàn trả đơn"),
 
     /** Điều chỉnh kho thủ công */
     ADJUSTMENT("Điều chỉnh thủ công");

@@ -23,14 +23,9 @@ import java.util.*;
 @Transactional(readOnly = true)
 public class AnalyticsService {
 
-    private static final List<OrderStatus> SUCCESS_STATUSES = List.of(
-            OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.PACKING,
-            OrderStatus.SHIPPING, OrderStatus.DELIVERED
-    );
+    private static final List<OrderStatus> SUCCESS_STATUSES = OrderStatus.SUCCESS_STATUSES;
 
-    private static final List<OrderStatus> CANCELLED_STATUSES = List.of(
-            OrderStatus.CANCELLED, OrderStatus.RETURNED, OrderStatus.REFUNDED
-    );
+    private static final List<OrderStatus> CANCELLED_STATUSES = OrderStatus.CANCELLED_STATUSES;
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;

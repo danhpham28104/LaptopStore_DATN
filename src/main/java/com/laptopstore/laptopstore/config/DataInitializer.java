@@ -38,19 +38,73 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private com.laptopstore.laptopstore.Service.ReviewService reviewService;
+
     @Override
     public void run(String... args) throws Exception {
         log.info("[DataInitializer] Kiểm tra và mở khoá tài khoản hệ thống...");
 
-        // 0. Migration các chuỗi order_status cũ trong DB sang tên Enum chuẩn
+        // 0. Migration các chuỗi order_status cũ trong DB sang tên Enum chuẩn mới
         try {
-            jdbcTemplate.update("UPDATE orders SET order_status = 'PENDING_PAYMENT' WHERE order_status IN ('Pending', 'pending')");
-            jdbcTemplate.update("UPDATE orders SET order_status = 'CONFIRMED' WHERE order_status IN ('Paid', 'paid', 'Confirmed', 'confirmed')");
-            jdbcTemplate.update("UPDATE orders SET order_status = 'SHIPPING' WHERE order_status IN ('Shipped', 'shipped')");
-            jdbcTemplate.update("UPDATE orders SET order_status = 'DELIVERED' WHERE order_status IN ('Delivered', 'delivered', 'Completed', 'completed')");
-            jdbcTemplate.update("UPDATE orders SET order_status = 'CANCELLED' WHERE order_status IN ('Cancelled', 'cancelled', 'Payment Timeout', 'Payment Failed')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'CHO_THANH_TOAN' WHERE order_status IN ('PENDING_PAYMENT', 'Pending Payment')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'CHO_XAC_NHAN' WHERE order_status IN ('PENDING', 'Pending', 'pending')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'DA_XAC_NHAN' WHERE order_status IN ('CONFIRMED', 'Confirmed', 'confirmed', 'PAID', 'Paid', 'paid')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'CHUAN_BI_HANG' WHERE order_status IN ('PROCESSING', 'PACKING', 'Processing', 'Packing')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'DANG_GIAO_HANG' WHERE order_status IN ('SHIPPING', 'SHIPPED', 'Shipped', 'shipped')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'DA_GIAO_HANG' WHERE order_status IN ('DELIVERED', 'Delivered', 'delivered')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'HOAN_THANH' WHERE order_status IN ('COMPLETED', 'Completed', 'completed')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'DA_HUY' WHERE order_status IN ('CANCELLED', 'Cancelled', 'cancelled', 'Payment Timeout', 'Payment Failed', 'PAYMENT_TIMEOUT', 'PAYMENT_FAILED')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'YEU_CAU_HOAN_TRA' WHERE order_status IN ('RETURN_REQUESTED')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'DA_HOAN_TRA' WHERE order_status IN ('RETURNED')");
+            jdbcTemplate.update("UPDATE orders SET order_status = 'DA_HOAN_TIEN' WHERE order_status IN ('REFUNDED')");
+
+            // Đồng bộ cờ inventory_deducted cho các đơn hàng cũ đã ở trạng thái đã giữ/trừ kho
+            jdbcTemplate.update("UPDATE orders SET inventory_deducted = true WHERE inventory_deducted = false AND order_status IN ('DA_XAC_NHAN', 'CHUAN_BI_HANG', 'DANG_GIAO_HANG', 'DA_GIAO_HANG', 'HOAN_THANH', 'YEU_CAU_HOAN_TRA')");
+
+            // Đồng bộ lịch sử trạng thái cũ
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'CHO_THANH_TOAN' WHERE new_status = 'PENDING_PAYMENT'");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'CHO_XAC_NHAN' WHERE new_status = 'PENDING'");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'DA_XAC_NHAN' WHERE new_status IN ('CONFIRMED', 'PAID')");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'CHUAN_BI_HANG' WHERE new_status IN ('PROCESSING', 'PACKING')");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'DANG_GIAO_HANG' WHERE new_status IN ('SHIPPING', 'SHIPPED')");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'DA_GIAO_HANG' WHERE new_status = 'DELIVERED'");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'HOAN_THANH' WHERE new_status = 'COMPLETED'");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'DA_HUY' WHERE new_status IN ('CANCELLED', 'PAYMENT_TIMEOUT', 'PAYMENT_FAILED')");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'YEU_CAU_HOAN_TRA' WHERE new_status = 'RETURN_REQUESTED'");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'DA_HOAN_TRA' WHERE new_status = 'RETURNED'");
+            jdbcTemplate.update("UPDATE order_status_history SET new_status = 'DA_HOAN_TIEN' WHERE new_status = 'REFUNDED'");
         } catch (Exception e) {
             log.warn("[DataInitializer] SQL Migration order_status: {}", e.getMessage());
+        }
+
+        // 0b. Xóa ràng buộc unique cũ trên cột model (cho phép nhiều máy trùng model nhưng khác mã ID xuất xưởng)
+        try {
+            jdbcTemplate.execute("ALTER TABLE product DROP INDEX uk_product_model");
+        } catch (Exception ignored) {}
+
+        // 0c. Tự động điền product_code cho các sản phẩm cũ chưa có mã ID xuất xưởng
+        try {
+            jdbcTemplate.update("UPDATE product SET product_code = CONCAT('LP-', LPAD(id, 4, '0')) WHERE product_code IS NULL OR product_code = ''");
+        } catch (Exception e) {
+            log.warn("[DataInitializer] SQL Migration product_code: {}", e.getMessage());
+        }
+
+        // 0d. Migration bảng reviews: đồng bộ updated_at, gộp review trùng lặp (giữ bản mới nhất), recalculate rating & thêm unique constraint
+        try {
+            jdbcTemplate.update("UPDATE reviews SET updated_at = created_at WHERE updated_at IS NULL");
+        } catch (Exception e) {
+            log.warn("[DataInitializer] SQL Migration reviews.updated_at: {}", e.getMessage());
+        }
+        try {
+            reviewService.cleanupDuplicateReviewsAndRecalculate();
+        } catch (Exception e) {
+            log.warn("[DataInitializer] Migration cleanupDuplicateReviewsAndRecalculate: {}", e.getMessage());
+        }
+        try {
+            jdbcTemplate.execute("ALTER TABLE reviews ADD CONSTRAINT uk_review_user_product_order_item UNIQUE (user_id, product_id, order_item_id)");
+        } catch (Exception ignored) {
+            // Constraint đã tồn tại trước đó
         }
 
         // 1. Đảm bảo các Role cơ bản tồn tại

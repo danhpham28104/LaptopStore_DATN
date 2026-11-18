@@ -31,24 +31,15 @@ public class InventoryReservationScheduler {
     private OrderService orderService;
 
     /**
-     * Chạy mỗi 60 giây: Tìm và hủy các đơn PENDING_PAYMENT đã quá hạn.
+     * Chạy mỗi 60 giây: Tìm và hủy các đơn CHO_THANH_TOAN đã quá hạn.
      */
     @Scheduled(fixedRate = 60_000)
     public void releaseExpiredReservations() {
         LocalDateTime now = LocalDateTime.now();
 
-        // Lấy tất cả đơn PENDING hoặc PENDING_PAYMENT có paymentDeadline < now
-        List<Order> expiredOrders = orderRepository
-            .findByOrderStatusAndPaymentDeadlineBefore(OrderStatus.PENDING_PAYMENT, now);
-        List<Order> expiredPending = orderRepository
-            .findByOrderStatusAndPaymentDeadlineBefore(OrderStatus.PENDING, now);
-        
-        java.util.List<Order> allExpired = new java.util.ArrayList<>(expiredOrders);
-        for (Order o : expiredPending) {
-            if (!allExpired.contains(o)) {
-                allExpired.add(o);
-            }
-        }
+        // Lấy tất cả đơn CHO_THANH_TOAN có paymentDeadline < now
+        List<Order> allExpired = orderRepository
+            .findByOrderStatusAndPaymentDeadlineBefore(OrderStatus.CHO_THANH_TOAN, now);
 
         if (allExpired.isEmpty()) return;
 

@@ -92,60 +92,80 @@
   <div class="order-box shadow-sm">
     <h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary me-2"></i>Tiến trình xử lý đơn hàng</h5>
     
-    <div th:if="${order.orderStatus.name() == 'CANCELLED' or order.orderStatus.name() == 'REFUNDED'}" class="alert alert-danger d-flex align-items-center gap-2 mb-0">
-      <i class="bi bi-x-circle-fill fs-3"></i>
+    <div th:if="${order.orderStatus.stepIndex == 0}"
+         class="alert d-flex align-items-center gap-2 mb-0"
+         th:classappend="${order.orderStatus.name() == 'DA_HUY' ? 'alert-danger' : (order.orderStatus.name() == 'YEU_CAU_HOAN_TRA' ? 'alert-warning' : 'alert-secondary')}">
+      <i class="bi bi-exclamation-circle-fill fs-3"></i>
       <div>
-        <strong th:text="${order.orderStatus.name() == 'CANCELLED' ? 'Đơn hàng này đã bị hủy' : 'Đơn hàng này đã được hoàn tiền'}">Đã hủy</strong>
+        <strong>Trạng thái đơn hàng: <span th:text="${order.orderStatus.displayName}">Đã hủy</span></strong>
         <div class="small">Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ Bộ phận Chăm sóc khách hàng để được giải đáp.</div>
       </div>
     </div>
 
-    <div th:if="${order.orderStatus.name() != 'CANCELLED' and order.orderStatus.name() != 'REFUNDED'}" class="stepper-wrapper d-flex justify-content-between position-relative">
+    <div th:if="${order.orderStatus.stepIndex > 0}" class="stepper-wrapper d-flex justify-content-between position-relative">
       <div class="stepper-line"></div>
       
       <!-- Step 1: Chờ thanh toán -->
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() != 'CANCELLED' and order.orderStatus.name() != 'REFUNDED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 1} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-credit-card"></i>
         </div>
         <div class="step-title fw-bold mt-2 small">Chờ thanh toán</div>
       </div>
 
-      <!-- Step 2: Đã xác nhận -->
+      <!-- Step 2: Chờ xác nhận -->
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'CONFIRMED' or order.orderStatus.name() == 'PACKING' or order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 2} ? 'active' : ''">
+        <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
+          <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="step-title fw-bold mt-2 small">Chờ xác nhận</div>
+      </div>
+
+      <!-- Step 3: Đã xác nhận -->
+      <div class="step-item text-center position-relative z-1"
+           th:classappend="${order.orderStatus.stepIndex >= 3} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-check-circle"></i>
         </div>
         <div class="step-title fw-bold mt-2 small">Đã xác nhận</div>
       </div>
 
-      <!-- Step 3: Đang đóng gói -->
+      <!-- Step 4: Chuẩn bị hàng -->
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'PACKING' or order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 4} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-box-seam"></i>
         </div>
-        <div class="step-title fw-bold mt-2 small">Đang đóng gói</div>
+        <div class="step-title fw-bold mt-2 small">Chuẩn bị hàng</div>
       </div>
 
-      <!-- Step 4: Đang giao hàng -->
+      <!-- Step 5: Đang giao hàng -->
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'SHIPPING' or order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 5} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-truck"></i>
         </div>
         <div class="step-title fw-bold mt-2 small">Đang giao hàng</div>
       </div>
 
-      <!-- Step 5: Đã giao hàng -->
+      <!-- Step 6: Đã giao hàng -->
       <div class="step-item text-center position-relative z-1"
-           th:classappend="${order.orderStatus.name() == 'DELIVERED'} ? 'active' : ''">
+           th:classappend="${order.orderStatus.stepIndex >= 6} ? 'active' : ''">
         <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
           <i class="bi bi-house-door"></i>
         </div>
         <div class="step-title fw-bold mt-2 small">Đã giao hàng</div>
+      </div>
+
+      <!-- Step 7: Hoàn thành -->
+      <div class="step-item text-center position-relative z-1"
+           th:classappend="${order.orderStatus.stepIndex >= 7} ? 'active' : ''">
+        <div class="step-icon mx-auto rounded-circle d-flex align-items-center justify-content-center">
+          <i class="bi bi-patch-check"></i>
+        </div>
+        <div class="step-title fw-bold mt-2 small">Hoàn thành</div>
       </div>
     </div>
   </div>
@@ -226,9 +246,9 @@
         </div>
       </div>
 
-      <!-- Đánh giá (chỉ khi đơn ở trạng thái DELIVERED) -->
-      <div th:if="${order.orderStatus.name() == 'DELIVERED'}" class="me-4">
-        <a th:href="@{'/product/' + ${item.product.id}}" class="btn btn-outline-primary btn-sm rounded-pill">
+      <!-- Đánh giá (chỉ khi đơn ở trạng thái DA_GIAO_HANG hoặc HOAN_THANH) -->
+      <div th:if="${order.orderStatus.name() == 'DA_GIAO_HANG' or order.orderStatus.name() == 'HOAN_THANH'}" class="me-4">
+        <a th:href="@{/product/{pid}#reviewsTab(pid=${item.product.id},orderItemId=${item.id})}" class="btn btn-outline-primary btn-sm rounded-pill">
           <i class="bi bi-star me-1"></i> Đánh giá sản phẩm
         </a>
       </div>
@@ -309,7 +329,7 @@
         </button>
       </form>
 
-      <div th:if="${order.orderStatus.name() == 'DELIVERED'}">
+      <div th:if="${order.orderStatus.name() == 'DA_GIAO_HANG' or order.orderStatus.name() == 'HOAN_THANH'}">
         <form th:if="${isEligibleForReturn}" th:action="@{'/orders/return/' + ${order.id}}" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn yêu cầu hoàn trả đơn hàng này?');">
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
           <button type="submit" class="btn btn-warning rounded-pill">

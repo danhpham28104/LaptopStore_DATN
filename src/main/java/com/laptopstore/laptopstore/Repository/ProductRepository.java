@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -31,7 +32,19 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByNameContainingIgnoreCase(String name);
 
-    Optional<Product> findByModel(String model);
+    Optional<Product> findFirstByModel(String model);
+
+    Optional<Product> findByProductCodeIgnoreCase(String productCode);
+
+    @Query(value = "SELECT COUNT(*) FROM product WHERE LOWER(product_code) = LOWER(:productCode) AND is_deleted = false AND (:excludeId IS NULL OR id != :excludeId)", nativeQuery = true)
+    long countByProductCodeIgnoreCaseExcludingId(@Param("productCode") String productCode, @Param("excludeId") Long excludeId);
+
+    @Modifying
+    @Query(value = "UPDATE product SET product_code = CONCAT(product_code, '_deleted_', :ts) WHERE LOWER(product_code) = LOWER(:productCode) AND is_deleted = true", nativeQuery = true)
+    void releaseDeletedProductCode(@Param("productCode") String productCode, @Param("ts") long ts);
+
+    @Query(value = "SELECT * FROM product WHERE LOWER(product_code) = LOWER(:productCode) OR LOWER(product_code) LIKE LOWER(CONCAT(:productCode, '_deleted_%')) ORDER BY id DESC LIMIT 1", nativeQuery = true)
+    Optional<Product> findAnyByProductCodeIncludingDeleted(@Param("productCode") String productCode);
 
     @Query(value = "SELECT COUNT(*) FROM product WHERE LOWER(model) = LOWER(:model) AND (:excludeId IS NULL OR id != :excludeId)", nativeQuery = true)
     long countByModelIgnoreCaseExcludingId(@Param("model") String model, @Param("excludeId") Long excludeId);
@@ -43,14 +56,40 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     SELECT DISTINCT p FROM Product p
     LEFT JOIN p.brand b
     LEFT JOIN p.category c
+    WHERE (:q IS NULL OR :q = ''
+      OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
+      OR (p.productCode IS NOT NULL AND LOWER(p.productCode) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR LOWER(p.model) LIKE LOWER(CONCAT('%', :q, '%'))
+      OR (b.name IS NOT NULL AND LOWER(b.name) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (c.name IS NOT NULL AND LOWER(c.name) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (p.cpu IS NOT NULL AND LOWER(p.cpu) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (p.gpu IS NOT NULL AND LOWER(p.gpu) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (p.ram IS NOT NULL AND LOWER(p.ram) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR CAST(p.id AS string) LIKE CONCAT('%', :q, '%'))
+    """)
+    List<Product> searchByKeyword(@Param("q") String q);
+
+    @Query("""
+    SELECT DISTINCT p FROM Product p
+    LEFT JOIN p.brand b
+    LEFT JOIN p.category c
     LEFT JOIN p.variants v
-    WHERE (:q IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')))
+    WHERE (:q IS NULL OR :q = ''
+      OR LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%'))
+      OR (p.productCode IS NOT NULL AND LOWER(p.productCode) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR LOWER(p.model) LIKE LOWER(CONCAT('%', :q, '%'))
+      OR (b.name IS NOT NULL AND LOWER(b.name) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (c.name IS NOT NULL AND LOWER(c.name) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (p.cpu IS NOT NULL AND LOWER(p.cpu) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (p.gpu IS NOT NULL AND LOWER(p.gpu) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR (p.ram IS NOT NULL AND LOWER(p.ram) LIKE LOWER(CONCAT('%', :q, '%')))
+      OR CAST(p.id AS string) LIKE CONCAT('%', :q, '%'))
       AND (:brand IS NULL OR LOWER(b.name) LIKE LOWER(CONCAT('%', :brand, '%')))
       AND (:categorySlug IS NULL OR LOWER(c.slug) = LOWER(:categorySlug))
-      AND (:ram IS NULL OR LOWER(p.ram) = LOWER(:ram))
-      AND (:cpu IS NULL OR LOWER(p.cpu) LIKE LOWER(CONCAT('%', :cpu, '%')))
-      AND (:color IS NULL OR LOWER(v.color) LIKE LOWER(CONCAT('%', :color, '%')))
-      AND (:storage IS NULL OR LOWER(v.storage) = LOWER(:storage))
+      AND (:ram IS NULL OR (p.ram IS NOT NULL AND LOWER(p.ram) LIKE LOWER(CONCAT('%', :ram, '%'))))
+      AND (:cpu IS NULL OR (p.cpu IS NOT NULL AND LOWER(p.cpu) LIKE LOWER(CONCAT('%', :cpu, '%'))))
+      AND (:color IS NULL OR (v.color IS NOT NULL AND LOWER(v.color) LIKE LOWER(CONCAT('%', :color, '%'))))
+      AND (:storage IS NULL OR (v.storage IS NOT NULL AND LOWER(v.storage) LIKE LOWER(CONCAT('%', :storage, '%'))))
       AND (:minPrice IS NULL OR p.price >= :minPrice)
       AND (:maxPrice IS NULL OR p.price <= :maxPrice)
     """)

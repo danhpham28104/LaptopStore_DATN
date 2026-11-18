@@ -395,10 +395,11 @@ private void upsertAdmin(Role adminRole) {
             String badge,
             List<VariantSpec> variants
     ) {
-        if (productRepository.findByModel(model).isPresent()) return;
+        if (productRepository.findFirstByModel(model).isPresent()) return;
 
         Product p = new Product();
         p.setName(name);
+        p.setProductCode(model);
         p.setModel(model);
         p.setBrand(brand);
         p.setPrice(BigDecimal.valueOf(priceVnd));

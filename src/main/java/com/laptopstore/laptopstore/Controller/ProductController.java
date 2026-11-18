@@ -1,6 +1,7 @@
 package com.laptopstore.laptopstore.Controller;
 
 import com.laptopstore.laptopstore.Service.*;
+import com.laptopstore.laptopstore.entity.OrderItem;
 import com.laptopstore.laptopstore.entity.Product;
 import com.laptopstore.laptopstore.entity.ProductVariant;
 import com.laptopstore.laptopstore.entity.Review;
@@ -86,7 +87,10 @@ public class ProductController {
 
     // Chi tiết sản phẩm
     @GetMapping({"/detail/{id}", "/{id}"})
-    public String productDetail(@PathVariable Long id, Model model, HttpServletRequest request) {
+    public String productDetail(@PathVariable Long id,
+                                @RequestParam(required = false) Long orderItemId,
+                                Model model,
+                                HttpServletRequest request) {
         Product product = productService.getProductById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
@@ -119,6 +123,9 @@ public class ProductController {
 
         boolean isWishlisted = false;
         boolean canReview = false;
+        Review existingReview = null;
+        Long selectedOrderItemId = null;
+        List<OrderItem> deliveredOrderItems = List.of();
 
         // Lịch sử xem và gợi ý đề cử sản phẩm
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
@@ -137,7 +144,10 @@ public class ProductController {
 
                 // Wishlist & Review status
                 isWishlisted = wishlistService.isWishlisted(user, id);
-                canReview = reviewService.canUserReviewProduct(user, id, null);
+                deliveredOrderItems = reviewService.getDeliveredOrderItemsForProduct(user, id);
+                selectedOrderItemId = reviewService.resolveDefaultOrderItemId(user, id, orderItemId);
+                canReview = reviewService.canUserReviewProduct(user, id, selectedOrderItemId);
+                existingReview = reviewService.getUserReviewForProduct(user, id, selectedOrderItemId).orElse(null);
             }
         }
 
@@ -151,6 +161,9 @@ public class ProductController {
 
         model.addAttribute("isWishlisted", isWishlisted);
         model.addAttribute("canReview", canReview);
+        model.addAttribute("existingReview", existingReview);
+        model.addAttribute("selectedOrderItemId", selectedOrderItemId);
+        model.addAttribute("deliveredOrderItems", deliveredOrderItems);
 
         return "product_detail";
     }

@@ -137,9 +137,65 @@
     }
 
     /* Search bar */
+    .desktop-search-form {
+      position: relative;
+    }
     .desktop-search-form .input-group {
       border-radius: var(--radius-sm);
       overflow: hidden;
+    }
+    .admin-suggest-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      min-width: 420px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md);
+      z-index: 1050;
+      max-height: 440px;
+      overflow-y: auto;
+    }
+    .admin-suggest-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      text-decoration: none;
+      color: var(--text);
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: background 0.14s ease;
+    }
+    .admin-suggest-item:hover,
+    .admin-suggest-item.active {
+      background: #f8fafc;
+    }
+    .admin-suggest-item img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: 6px;
+      border: 1px solid var(--border-light);
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .admin-suggest-footer {
+      display: block;
+      width: 100%;
+      padding: 9px 12px;
+      text-align: center;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--primary);
+      background: #fff5f6;
+      border: none;
+      cursor: pointer;
+    }
+    .admin-suggest-footer:hover {
+      background: #ffe8eb;
     }
 
     /* Pagination */
@@ -194,7 +250,8 @@
       <h4 class="fw-bold m-0">Quản lý sản phẩm</h4>
 
       <!-- Search Box -->
-      <form class="search-form desktop-search-form me-3"
+      <form class="search-form desktop-search-form me-3 position-relative"
+            id="adminProductSearchForm"
             th:action="@{/admin/products/search}"
             method="get"
             style="min-width: 350px;">
@@ -202,15 +259,18 @@
         <div class="input-group">
           <input type="text"
                  class="form-control"
+                 id="adminProductSearchInput"
                  name="q"
-                 placeholder="Tìm theo ID hoặc tên sản phẩm…"
-                 th:value="${q}">
+                 placeholder="Tìm theo ID, Model, tên sản phẩm, hãng…"
+                 th:value="${q}"
+                 autocomplete="off">
 
           <button class="btn btn-primary" type="submit">
             <i class="bi bi-search"></i>
           </button>
         </div>
 
+        <div id="adminProductSuggestBox" class="admin-suggest-dropdown d-none"></div>
       </form>
 
 
@@ -290,6 +350,7 @@
             <th>ID</th>
             <th>Ảnh</th>
             <th>Tên</th>
+            <th>Model</th>
             <th>Thương hiệu</th>
             <th>Giá</th>
             <th>Tồn kho</th>
@@ -303,7 +364,7 @@
               <input type="checkbox" class="product-checkbox" name="productIds" form="syncSelectedForm"
                      th:value="${p.id}">
             </td>
-            <td th:text="${p.id}"></td>
+            <td class="fw-bold text-primary" th:text="${p.displayId}"></td>
             <td>
               <img th:if="${p.images != null and !#strings.isEmpty(p.images)}"
                    th:src="@{${#strings.arraySplit(p.images, ',')[0]}}"
@@ -328,6 +389,7 @@
                   -<span th:text="${p.salePercent}"></span>%
               </span>
             </td>
+            <td><span class="badge bg-light text-dark border" th:text="${p.model}"></span></td>
             <td th:text="${p.brand != null ? p.brand.name : 'Không rõ'}"></td>
             <td th:text="${#numbers.formatDecimal(p.price, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
             <td>
@@ -356,10 +418,16 @@
           </tr>
           <!-- ROW DETAILS (ẩn mặc định) -->
           <tr class="detail-row" style="display: none;">
-            <td colspan="8">
+            <td colspan="10">
               <div class="p-3 bg-light rounded shadow-sm">
 
                 <h6 class="fw-bold mb-3">Thông tin chi tiết</h6>
+
+                <div class="row mb-2">
+                  <div class="col-md-4"><strong>ID (Mã máy):</strong> <span th:text="${p.displayId}"></span></div>
+                  <div class="col-md-4"><strong>Model:</strong> <span th:text="${p.model}"></span></div>
+                  <div class="col-md-4"><strong>ID hệ thống:</strong> <span th:text="${p.id}"></span></div>
+                </div>
 
                 <div class="row mb-2">
                   <div class="col-md-4"><strong>RAM:</strong> <span th:text="${p.ram}"></span></div>
@@ -378,6 +446,9 @@
           </tr>
           </tbody>
         </table>
+        <div th:if="${#lists.isEmpty(products)}" class="text-center text-muted py-4">
+          <i class="bi bi-search me-1"></i> Không tìm thấy sản phẩm phù hợp
+        </div>
       </div>
     </div>
 
@@ -426,13 +497,18 @@
               <!-- 🔹 THÔNG TIN CHUNG -->
               <h6 class="fw-bold mb-3">Thông tin sản phẩm</h6>
               <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Tên sản phẩm</label>
+                <div class="col-md-4">
+                  <label class="form-label">ID Laptop (Mã xuất xưởng) <span class="text-danger">*</span></label>
+                  <input type="text" name="productCode" class="form-control" placeholder="VD: ANV15-52, LP001, SN-2026..." required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
                   <input type="text" name="name" class="form-control" required>
                 </div>
 
-                <div class="col-md-6">
-                  <label class="form-label">Model</label>
+                <div class="col-md-4">
+                  <label class="form-label">Model <span class="text-danger">*</span></label>
                   <input type="text" name="modelName" class="form-control" required>
                 </div>
 
@@ -597,13 +673,18 @@
               <h6 class="fw-bold mb-3">Thông tin sản phẩm</h6>
               <div class="row g-3">
 
-                <div class="col-md-6">
-                  <label class="form-label">Tên sản phẩm</label>
+                <div class="col-md-4">
+                  <label class="form-label">ID Laptop (Mã xuất xưởng) <span class="text-danger">*</span></label>
+                  <input type="text" name="productCode" class="form-control" th:value="${p.displayId}" placeholder="VD: ANV15-52, LP001, SN-2026..." required>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
                   <input type="text" name="name" class="form-control" th:value="${p.name}" required>
                 </div>
 
-                <div class="col-md-6">
-                  <label class="form-label">Model</label>
+                <div class="col-md-4">
+                  <label class="form-label">Model <span class="text-danger">*</span></label>
                   <input type="text" name="modelName" class="form-control" th:value="${p.model}" required>
                 </div>
 
@@ -1159,6 +1240,159 @@
     }, 50);
     return true;
   }
+</script>
+
+<!-- Script: Gợi ý tìm kiếm trực tiếp khi gõ (Admin Products) -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('adminProductSearchForm');
+    const input = document.getElementById('adminProductSearchInput');
+    const box = document.getElementById('adminProductSuggestBox');
+    if (!form || !input || !box) return;
+
+    let timer = null;
+    let activeIdx = -1;
+    let lastItems = [];
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function highlightText(text, query) {
+      const safe = escapeHtml(text);
+      const q = (query || '').trim();
+      if (!q) return safe;
+      const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return safe.replace(new RegExp('(' + escapedQ + ')', 'gi'), '<mark class="px-0 bg-warning-subtle fw-bold">$1</mark>');
+    }
+
+    function formatVnd(val) {
+      if (val === null || val === undefined) return '0 ₫';
+      return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' ₫';
+    }
+
+    function closeBox() {
+      box.classList.add('d-none');
+      activeIdx = -1;
+    }
+
+    function updateActive() {
+      const els = box.querySelectorAll('.admin-suggest-item');
+      els.forEach((el, idx) => {
+        el.classList.toggle('active', idx === activeIdx);
+      });
+    }
+
+    function renderSuggestions(items, query) {
+      lastItems = items || [];
+      activeIdx = -1;
+
+      if (!lastItems.length) {
+        box.innerHTML = `<div class="p-3 text-center text-muted small">Không tìm thấy sản phẩm nào khớp với "<strong>${escapeHtml(query)}</strong>"</div>`;
+        box.classList.remove('d-none');
+        return;
+      }
+
+      const rowsHtml = lastItems.map(item => {
+        const filterVal = item.productCode || item.name || '';
+        const targetUrl = `/admin/products/search?q=${encodeURIComponent(filterVal)}`;
+        return `
+          <a href="${targetUrl}" class="admin-suggest-item">
+            <img src="${escapeHtml(item.image || '/images/default-avatar.png')}" onerror="this.src='/images/default-avatar.png'" alt="">
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-semibold text-truncate" style="font-size:0.88rem;">${highlightText(item.name, query)}</div>
+              <div class="small text-muted text-truncate">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">ID: ${highlightText(item.productCode, query)}</span>
+                <span class="me-1">Model: ${highlightText(item.model, query)}</span>
+                <span>• ${escapeHtml(item.brandName)}</span>
+              </div>
+            </div>
+            <div class="text-end flex-shrink-0 ms-2">
+              <div class="fw-bold text-danger" style="font-size:0.85rem;">${formatVnd(item.finalPrice)}</div>
+              <div class="small text-muted">Kho: ${item.stock ?? 0}</div>
+            </div>
+          </a>
+        `;
+      }).join('');
+
+      const footerHtml = `<button type="button" class="admin-suggest-footer" id="adminProductSuggestAllBtn">
+        <i class="bi bi-search me-1"></i> Xem tất cả kết quả cho "${escapeHtml(query)}"
+      </button>`;
+
+      box.innerHTML = rowsHtml + footerHtml;
+      box.classList.remove('d-none');
+
+      const allBtn = document.getElementById('adminProductSuggestAllBtn');
+      if (allBtn) {
+        allBtn.addEventListener('click', () => form.submit());
+      }
+    }
+
+    async function fetchSuggest(query) {
+      try {
+        const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(query)}&limit=8`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (input.value.trim() === query) {
+          renderSuggestions(data, query);
+        }
+      } catch (e) {
+        console.error('Lỗi gợi ý tìm kiếm:', e);
+      }
+    }
+
+    input.addEventListener('input', function () {
+      const q = this.value.trim();
+      clearTimeout(timer);
+      if (!q) {
+        box.innerHTML = '';
+        closeBox();
+        return;
+      }
+      timer = setTimeout(() => fetchSuggest(q), 180);
+    });
+
+    input.addEventListener('focus', function () {
+      const q = this.value.trim();
+      if (q && box.innerHTML.trim()) {
+        box.classList.remove('d-none');
+      } else if (q) {
+        fetchSuggest(q);
+      }
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (box.classList.contains('d-none')) return;
+      const els = box.querySelectorAll('.admin-suggest-item');
+      if (!els.length) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIdx = (activeIdx + 1) % els.length;
+        updateActive();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIdx = (activeIdx - 1 + els.length) % els.length;
+        updateActive();
+      } else if (e.key === 'Enter' && activeIdx >= 0 && els[activeIdx]) {
+        e.preventDefault();
+        window.location.href = els[activeIdx].getAttribute('href');
+      } else if (e.key === 'Escape') {
+        closeBox();
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!form.contains(e.target)) {
+        closeBox();
+      }
+    });
+  });
 </script>
 
 </body>

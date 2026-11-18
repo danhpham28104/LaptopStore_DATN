@@ -30,16 +30,17 @@
         </a>
 
         <!-- Search (desktop) -->
-        <form class="search-form desktop-search-form flex-grow-1" th:action="@{/product}" method="get">
+        <form class="search-form desktop-search-form flex-grow-1 position-relative live-search-form" th:action="@{/product}" method="get">
           <div class="input-group">
             <input type="text" class="form-control" name="q"
-                   placeholder="Tìm kiếm laptop, thương hiệu, cấu hình..."
+                   placeholder="Tìm kiếm laptop, mã ID, thương hiệu, cấu hình..."
                    th:value="${searchQuery}"
                    autocomplete="off">
             <button class="btn btn-primary" type="submit" aria-label="Tìm kiếm">
               <i class="bi bi-search"></i>
             </button>
           </div>
+          <div class="live-search-dropdown d-none"></div>
         </form>
 
         <!-- Header Actions -->
@@ -174,17 +175,19 @@
 
       <!-- Mobile Search Bar (hidden by default) -->
       <div class="mobile-search-bar d-xl-none" id="mobileSearchBar" style="display:none!important;">
-        <form th:action="@{/product}" method="get" class="pb-3">
+        <form th:action="@{/product}" method="get" class="pb-3 position-relative live-search-form">
           <div class="input-group" style="border:2px solid var(--border);border-radius:var(--radius-full);overflow:hidden;">
             <input type="text" class="form-control" name="q"
-                   placeholder="Tìm kiếm laptop..."
+                   placeholder="Tìm kiếm laptop, mã ID, cấu hình..."
                    th:value="${searchQuery}"
+                   autocomplete="off"
                    style="border:none;padding:10px 16px;font-size:0.9rem;box-shadow:none;">
             <button class="btn" type="submit"
                     style="background:var(--primary);color:#fff;border:none;padding:0 18px;">
               <i class="bi bi-search"></i>
             </button>
           </div>
+          <div class="live-search-dropdown d-none"></div>
         </form>
       </div>
     </div>
@@ -254,15 +257,17 @@
 
         <!-- Mobile search in panel -->
         <div style="padding:16px;">
-          <form th:action="@{/product}" method="get">
+          <form th:action="@{/product}" method="get" class="position-relative live-search-form">
             <div style="display:flex;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
-              <input type="text" name="q" placeholder="Tìm kiếm laptop..."
+              <input type="text" name="q" placeholder="Tìm kiếm laptop, mã ID..."
                      th:value="${searchQuery}"
+                     autocomplete="off"
                      style="flex:1;border:none;padding:10px 14px;font-size:0.88rem;outline:none;">
               <button type="submit" style="background:var(--primary);color:#fff;border:none;padding:0 16px;cursor:pointer;">
                 <i class="bi bi-search"></i>
               </button>
             </div>
+            <div class="live-search-dropdown d-none"></div>
           </form>
         </div>
 
@@ -406,6 +411,67 @@
     body.mobile-nav-open {
       overflow: hidden;
     }
+
+    /* Live search autocomplete dropdown */
+    .live-search-form {
+      position: relative;
+    }
+    .live-search-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.14);
+      z-index: 2050;
+      max-height: 460px;
+      overflow-y: auto;
+    }
+    .live-search-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      text-decoration: none;
+      color: var(--text, #1f2937);
+      border-bottom: 1px solid #f3f4f6;
+      transition: background 0.14s ease;
+    }
+    .live-search-item:hover,
+    .live-search-item.active {
+      background: #f8fafc;
+      color: var(--text, #1f2937);
+    }
+    .live-search-item img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid #f3f4f6;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .live-search-meta {
+      font-size: 0.76rem;
+      color: #6b7280;
+    }
+    .live-search-footer {
+      display: block;
+      width: 100%;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--primary, #d70018);
+      background: #fff5f6;
+      border: none;
+      cursor: pointer;
+    }
+    .live-search-footer:hover {
+      background: #ffe8eb;
+    }
   </style>
 
   <!-- ── Mobile Nav Script ── -->
@@ -455,6 +521,172 @@
           }
         });
       }
+    })();
+
+    // ── Live Search Autocomplete (Header Desktop + Mobile) ──
+    (function() {
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function highlightText(text, query) {
+        const safe = escapeHtml(text);
+        const q = (query || '').trim();
+        if (!q) return safe;
+        const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return safe.replace(new RegExp('(' + escapedQ + ')', 'gi'), '<mark class="px-0 bg-warning-subtle fw-bold">$1</mark>');
+      }
+
+      function formatVnd(val) {
+        if (val === null || val === undefined) return '0 ₫';
+        return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' ₫';
+      }
+
+      document.querySelectorAll('.live-search-form').forEach(function(form) {
+        const input = form.querySelector('input[name="q"]');
+        const dropdown = form.querySelector('.live-search-dropdown');
+        if (!input || !dropdown) return;
+
+        let timer = null;
+        let activeIdx = -1;
+
+        function closeDropdown() {
+          dropdown.classList.add('d-none');
+          activeIdx = -1;
+        }
+
+        function updateActive() {
+          dropdown.querySelectorAll('.live-search-item').forEach(function(el, idx) {
+            el.classList.toggle('active', idx === activeIdx);
+          });
+        }
+
+        function renderItems(items, query) {
+          activeIdx = -1;
+          if (!items || !items.length) {
+            dropdown.innerHTML = `<div class="p-3 text-center text-muted small">Không tìm thấy sản phẩm phù hợp với "<strong>${escapeHtml(query)}</strong>"</div>`;
+            dropdown.classList.remove('d-none');
+            return;
+          }
+
+          const itemsHtml = items.map(function(item) {
+            const specs = [item.brandName, item.cpu, item.ram].filter(Boolean).map(escapeHtml).join(' • ');
+            const hasSale = item.salePercent && item.salePercent > 0;
+            const oldPriceHtml = hasSale
+              ? `<div class="text-muted text-decoration-line-through" style="font-size:0.74rem;">${formatVnd(item.price)}</div>`
+              : '';
+            return `
+              <a href="/product/${item.id}" class="live-search-item">
+                <img src="${escapeHtml(item.image || '/images/default-avatar.png')}" onerror="this.src='/images/default-avatar.png'" alt="">
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold text-truncate" style="font-size:0.88rem;">${highlightText(item.name, query)}</div>
+                  <div class="live-search-meta text-truncate">
+                    <span>ID: <strong>${highlightText(item.productCode, query)}</strong></span>
+                    ${item.model ? `<span> • Model: ${highlightText(item.model, query)}</span>` : ''}
+                    ${specs ? `<span> • ${specs}</span>` : ''}
+                  </div>
+                </div>
+                <div class="text-end flex-shrink-0 ms-2">
+                  <div class="fw-bold" style="color:var(--primary,#d70018);font-size:0.86rem;">${formatVnd(item.finalPrice)}</div>
+                  ${oldPriceHtml}
+                </div>
+              </a>
+            `;
+          }).join('');
+
+          const footerHtml = `<button type="button" class="live-search-footer">
+            <i class="bi bi-search me-1"></i> Xem tất cả kết quả cho "${escapeHtml(query)}"
+          </button>`;
+
+          dropdown.innerHTML = itemsHtml + footerHtml;
+          dropdown.classList.remove('d-none');
+
+          const footerBtn = dropdown.querySelector('.live-search-footer');
+          if (footerBtn) {
+            footerBtn.addEventListener('click', function() {
+              closeDropdown();
+              if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+              } else {
+                form.submit();
+              }
+            });
+          }
+        }
+
+        async function fetchSuggestions(query) {
+          try {
+            const res = await fetch(`/api/products/suggest?q=${encodeURIComponent(query)}&limit=8`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (input.value.trim() === query) {
+              renderItems(data, query);
+            }
+          } catch (err) {
+            console.error('Lỗi gợi ý tìm kiếm:', err);
+          }
+        }
+
+        input.addEventListener('input', function() {
+          const q = this.value.trim();
+          clearTimeout(timer);
+          if (!q) {
+            dropdown.innerHTML = '';
+            closeDropdown();
+            return;
+          }
+          timer = setTimeout(function() {
+            fetchSuggestions(q);
+          }, 180);
+        });
+
+        input.addEventListener('focus', function() {
+          const q = this.value.trim();
+          if (q && dropdown.innerHTML.trim()) {
+            dropdown.classList.remove('d-none');
+          } else if (q) {
+            fetchSuggestions(q);
+          }
+        });
+
+        input.addEventListener('keydown', function(e) {
+          if (dropdown.classList.contains('d-none')) return;
+          const els = dropdown.querySelectorAll('.live-search-item');
+          if (e.key === 'ArrowDown' && els.length) {
+            e.preventDefault();
+            activeIdx = (activeIdx + 1) % els.length;
+            updateActive();
+          } else if (e.key === 'ArrowUp' && els.length) {
+            e.preventDefault();
+            activeIdx = (activeIdx - 1 + els.length) % els.length;
+            updateActive();
+          } else if (e.key === 'Enter') {
+            if (activeIdx >= 0 && els[activeIdx]) {
+              e.preventDefault();
+              window.location.href = els[activeIdx].getAttribute('href');
+            } else {
+              closeDropdown();
+            }
+          } else if (e.key === 'Escape') {
+            closeDropdown();
+          }
+        });
+
+        form.addEventListener('submit', function() {
+          closeDropdown();
+        });
+
+        document.addEventListener('click', function(e) {
+          if (!form.contains(e.target)) {
+            closeDropdown();
+          }
+        });
+      });
     })();
   </script>
 

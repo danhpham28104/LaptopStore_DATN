@@ -52,7 +52,11 @@ public class Order {
 
     @Convert(converter = com.laptopstore.laptopstore.config.OrderStatusConverter.class)
     @Column(length = 30, nullable = false)
-    private OrderStatus orderStatus = OrderStatus.PENDING_PAYMENT;
+    private OrderStatus orderStatus = OrderStatus.CHO_XAC_NHAN;
+
+    // 🔹 Cờ đánh dấu đơn hàng đã được trừ tồn kho hay chưa (chống trừ kho hoặc hoàn kho nhiều lần)
+    @Column(name = "inventory_deducted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean inventoryDeducted = false;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
@@ -207,6 +211,22 @@ public class Order {
 
     public void setOrderStatus(OrderStatus orderStatus) {
         this.orderStatus = orderStatus;
+    }
+
+    public Boolean getInventoryDeducted() {
+        return inventoryDeducted != null ? inventoryDeducted : false;
+    }
+
+    public boolean isInventoryDeducted() {
+        return Boolean.TRUE.equals(inventoryDeducted);
+    }
+
+    public void setInventoryDeducted(Boolean inventoryDeducted) {
+        this.inventoryDeducted = Boolean.TRUE.equals(inventoryDeducted);
+    }
+
+    public boolean isLockedForEdit() {
+        return orderStatus != null && orderStatus.isLockedForEdit();
     }
 
     @Override

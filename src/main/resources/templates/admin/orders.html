@@ -10,6 +10,50 @@
 
     <style>
       body { background-color: #f6f7fb; font-family: 'Segoe UI', sans-serif; }
+      .admin-suggest-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        min-width: 400px;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        z-index: 1050;
+        max-height: 420px;
+        overflow-y: auto;
+      }
+      .admin-suggest-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 12px;
+        text-decoration: none;
+        color: #1f2937;
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+      }
+      .admin-suggest-item:hover,
+      .admin-suggest-item.active {
+        background: #f8fafc;
+      }
+      .admin-suggest-footer {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        text-align: center;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: #d70018;
+        background: #fff5f6;
+        border: none;
+        cursor: pointer;
+      }
+      .admin-suggest-footer:hover {
+        background: #ffe8eb;
+      }
     </style>
   </head>
 
@@ -40,9 +84,21 @@
 
   <!-- Content -->
   <div class="content">
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <span th:text="${successMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <span th:text="${errorMessage}"></span>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h4 class="fw-bold">Quản lý đơn hàng</h4>
-      <form class="search-form desktop-search-form me-3"
+      <form class="search-form desktop-search-form me-3 position-relative"
+            id="adminOrderSearchForm"
             th:action="@{/admin/orders/search}"
             method="get"
             style="min-width: 350px;">
@@ -50,15 +106,18 @@
         <div class="input-group">
           <input type="text"
                  class="form-control"
+                 id="adminOrderSearchInput"
                  name="q"
-                 placeholder="Tìm theo tên hoặc ID…"
-                 th:value="${q}">
+                 placeholder="Tìm theo ID, mã đơn, tên KH, SĐT, sản phẩm…"
+                 th:value="${q}"
+                 autocomplete="off">
 
           <button class="btn btn-primary" type="submit">
             <i class="bi bi-search"></i>
           </button>
         </div>
 
+        <div id="adminOrderSuggestBox" class="admin-suggest-dropdown d-none"></div>
       </form>
     </div>
 
@@ -70,11 +129,11 @@
         <span class="fw-semibold text-primary"><span id="selectedCount">0</span> đơn hàng được chọn</span>
         <select id="bulkStatus" class="form-select form-select-sm d-inline-block w-auto ms-2">
           <option value="">-- Chuyển sang trạng thái --</option>
-          <option value="CONFIRMED">Đã xác nhận</option>
-          <option value="PACKING">Đang đóng gói</option>
-          <option value="SHIPPING">Đang giao hàng</option>
-          <option value="DELIVERED">Đã giao hàng</option>
-          <option value="CANCELLED">Đã hủy</option>
+          <option th:each="st : ${T(com.laptopstore.laptopstore.enums.OrderStatus).values()}"
+                  th:if="${st.name() != 'CHO_THANH_TOAN'}"
+                  th:value="${st.name()}"
+                  th:text="${st.displayName}">
+          </option>
         </select>
         <button class="btn btn-primary btn-sm ms-1" onclick="applyBulkStatus()">
           <i class="bi bi-check-circle"></i> Áp dụng
@@ -106,27 +165,40 @@
             <td th:text="${#temporals.format(o.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
             <td th:text="${#numbers.formatDecimal(o.totalAmount, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
             <td>
-              <!-- ❌ Nếu đơn hàng đã bị hủy hoặc hoàn tiền -->
-              <span th:if="${o.orderStatus.name() == 'CANCELLED' or o.orderStatus.name() == 'REFUNDED'}"
-                    class="badge" th:classappend="${o.orderStatus.badgeClass}"
-                    th:text="${o.orderStatus.displayName}">
-              </span>
+              <!-- Badge màu theo trạng thái + trạng thái trừ kho -->
+              <div class="d-flex flex-wrap align-items-center gap-1">
+                <span class="badge" th:classappend="${o.orderStatus.badgeClass}"
+                      th:text="${o.orderStatus.displayName}">
+                </span>
+                <span th:if="${o.inventoryDeducted}"
+                      class="badge bg-light text-success border border-success"
+                      title="Đã trừ tồn kho và giữ hàng cho đơn này">
+                  <i class="bi bi-box-seam"></i> Đã giữ kho
+                </span>
+                <span th:if="${o.lockedForEdit}"
+                      class="badge bg-light text-secondary border"
+                      title="Dữ liệu đơn hàng đã khóa">
+                  <i class="bi bi-lock-fill"></i> Đã khóa
+                </span>
+              </div>
 
-              <!-- ✔ Nếu đơn hàng chưa hủy → cho phép cập nhật -->
-              <form th:if="${o.orderStatus.name() != 'CANCELLED' and o.orderStatus.name() != 'REFUNDED'}"
+              <!-- Chỉ hiện các trạng thái tiếp theo hợp lệ, có hộp thoại xác nhận -->
+              <form th:if="${!#lists.isEmpty(o.orderStatus.allowedNextStatuses)}"
                     th:action="@{'/admin/orders/update-status/' + ${o.id}}"
                     method="post"
-                    class="d-flex align-items-center">
+                    th:attr="data-order-code=${o.orderCode != null ? o.orderCode : '#' + o.id}"
+                    onsubmit="return confirmOrderStatusChange(this)"
+                    class="d-flex align-items-center mt-2">
 
-                <select name="status" class="form-select form-select-sm me-2">
-                  <option th:each="st : ${T(com.laptopstore.laptopstore.enums.OrderStatus).values()}"
+                <select name="status" class="form-select form-select-sm me-2" required>
+                  <option value="" disabled selected>-- Chuyển sang --</option>
+                  <option th:each="st : ${o.orderStatus.allowedNextStatuses}"
                           th:value="${st.name()}"
-                          th:selected="${o.orderStatus == st}"
                           th:text="${st.displayName}">
                   </option>
                 </select>
 
-                <button class="btn btn-outline-primary btn-sm">
+                <button type="submit" class="btn btn-outline-primary btn-sm" title="Xác nhận chuyển trạng thái">
                   <i class="bi bi-check2"></i>
                 </button>
               </form>
@@ -196,10 +268,27 @@
       }
     }
 
+    function confirmOrderStatusChange(form) {
+      const select = form.querySelector('select[name="status"]');
+      if (!select || !select.value) {
+        alert('Vui lòng chọn trạng thái hợp lệ tiếp theo.');
+        return false;
+      }
+      const nextLabel = select.options[select.selectedIndex].text;
+      const orderLabel = form.getAttribute('data-order-code') || 'này';
+      return confirm(`Xác nhận chuyển đơn hàng ${orderLabel} sang trạng thái "${nextLabel}"?`);
+    }
+
     function applyBulkStatus() {
       const ids = [...document.querySelectorAll('.order-checkbox:checked')].map(cb => cb.value);
-      const status = document.getElementById('bulkStatus').value;
+      const selectEl = document.getElementById('bulkStatus');
+      const status = selectEl.value;
       if (!status || ids.length === 0) return alert('Vui lòng chọn trạng thái và ít nhất 1 đơn hàng');
+
+      const statusLabel = selectEl.options[selectEl.selectedIndex].text;
+      if (!confirm(`Xác nhận chuyển ${ids.length} đơn hàng đã chọn sang trạng thái "${statusLabel}"?`)) {
+        return;
+      }
 
       const csrfToken = document.querySelector('[name=_csrf]')?.value || '';
 
@@ -211,7 +300,11 @@
         },
         body: JSON.stringify({ ids: ids.map(Number), status: status })
       }).then(r => r.json()).then(data => {
-        alert(`Đã cập nhật ${data.updated} đơn hàng`);
+        let msg = `Đã cập nhật thành công ${data.updated}/${data.total} đơn hàng.`;
+        if (data.errors && data.errors.length > 0) {
+          msg += `\n\nKhông thể cập nhật ${data.failed} đơn (do quy tắc chuyển trạng thái hoặc thiếu tồn kho):\n- ` + data.errors.join('\n- ');
+        }
+        alert(msg);
         location.reload();
       }).catch(err => {
         console.error(err);
@@ -229,22 +322,11 @@
       let message = "";
       let type = "success";
 
-      if (params.get("added") === "true") {
-        message = "Đã thêm sản phẩm thành công!";
-      }
       if (params.get("updated") === "true") {
-        message = "Đã cập nhật sản phẩm thành công!";
-      }
-      if (params.get("deleted") === "true") {
-        message = "Đã xoá sản phẩm!";
-        type = "danger";
-      }
-      if (params.get("error") === "brand") {
-        message = "Không tìm thấy thương hiệu!";
-        type = "danger";
+        message = "Đã cập nhật trạng thái đơn hàng thành công!";
       }
       if (params.get("error") === "notfound") {
-        message = "Không tìm thấy sản phẩm!";
+        message = "Không tìm thấy đơn hàng!";
         type = "danger";
       }
 
@@ -264,5 +346,148 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const form = document.getElementById('adminOrderSearchForm');
+      const input = document.getElementById('adminOrderSearchInput');
+      const box = document.getElementById('adminOrderSuggestBox');
+      if (!form || !input || !box) return;
+
+      let timer = null;
+      let activeIdx = -1;
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function highlightText(text, query) {
+        const safe = escapeHtml(text);
+        const q = (query || '').trim();
+        if (!q) return safe;
+        const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return safe.replace(new RegExp('(' + escapedQ + ')', 'gi'), '<mark class="px-0 bg-warning-subtle fw-bold">$1</mark>');
+      }
+
+      function formatVnd(val) {
+        if (val === null || val === undefined) return '0 ₫';
+        return new Intl.NumberFormat('vi-VN').format(Math.round(val)) + ' ₫';
+      }
+
+      function closeBox() {
+        box.classList.add('d-none');
+        activeIdx = -1;
+      }
+
+      function updateActive() {
+        box.querySelectorAll('.admin-suggest-item').forEach((el, idx) => {
+          el.classList.toggle('active', idx === activeIdx);
+        });
+      }
+
+      function renderSuggestions(items, query) {
+        activeIdx = -1;
+        if (!items || !items.length) {
+          box.innerHTML = `<div class="p-3 text-center text-muted small">Không tìm thấy đơn hàng nào khớp với "<strong>${escapeHtml(query)}</strong>"</div>`;
+          box.classList.remove('d-none');
+          return;
+        }
+
+        const rowsHtml = items.map(item => `
+          <a href="/admin/orders/${item.id}" class="admin-suggest-item">
+            <div class="min-w-0">
+              <div class="fw-semibold text-truncate" style="font-size:0.88rem;">
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle me-1">#${escapeHtml(item.id)}</span>
+                <span>${highlightText(item.orderCode, query)}</span>
+              </div>
+              <div class="small text-muted text-truncate">
+                ${highlightText(item.receiverName, query)} • ${highlightText(item.receiverPhone, query)}
+              </div>
+            </div>
+            <div class="text-end flex-shrink-0 ms-2">
+              <div class="fw-bold text-danger" style="font-size:0.85rem;">${formatVnd(item.totalAmount)}</div>
+              <div class="small text-muted">${escapeHtml(item.statusDisplay)}</div>
+            </div>
+          </a>
+        `).join('');
+
+        const footerHtml = `<button type="button" class="admin-suggest-footer" id="adminOrderSuggestAllBtn">
+          <i class="bi bi-search me-1"></i> Xem tất cả đơn hàng khớp "${escapeHtml(query)}"
+        </button>`;
+
+        box.innerHTML = rowsHtml + footerHtml;
+        box.classList.remove('d-none');
+
+        const allBtn = document.getElementById('adminOrderSuggestAllBtn');
+        if (allBtn) {
+          allBtn.addEventListener('click', () => form.submit());
+        }
+      }
+
+      async function fetchSuggest(query) {
+        try {
+          const res = await fetch(`/admin/orders/api/suggest?q=${encodeURIComponent(query)}&limit=8`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (input.value.trim() === query) {
+            renderSuggestions(data, query);
+          }
+        } catch (e) {
+          console.error('Lỗi gợi ý đơn hàng:', e);
+        }
+      }
+
+      input.addEventListener('input', function () {
+        const q = this.value.trim();
+        clearTimeout(timer);
+        if (!q) {
+          box.innerHTML = '';
+          closeBox();
+          return;
+        }
+        timer = setTimeout(() => fetchSuggest(q), 180);
+      });
+
+      input.addEventListener('focus', function () {
+        const q = this.value.trim();
+        if (q && box.innerHTML.trim()) {
+          box.classList.remove('d-none');
+        } else if (q) {
+          fetchSuggest(q);
+        }
+      });
+
+      input.addEventListener('keydown', function (e) {
+        if (box.classList.contains('d-none')) return;
+        const els = box.querySelectorAll('.admin-suggest-item');
+        if (!els.length) return;
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          activeIdx = (activeIdx + 1) % els.length;
+          updateActive();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          activeIdx = (activeIdx - 1 + els.length) % els.length;
+          updateActive();
+        } else if (e.key === 'Enter' && activeIdx >= 0 && els[activeIdx]) {
+          e.preventDefault();
+          window.location.href = els[activeIdx].getAttribute('href');
+        } else if (e.key === 'Escape') {
+          closeBox();
+        }
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!form.contains(e.target)) {
+          closeBox();
+        }
+      });
+    });
+  </script>
   </body>
   </html>

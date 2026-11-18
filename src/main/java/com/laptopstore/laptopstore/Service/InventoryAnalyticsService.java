@@ -21,10 +21,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class InventoryAnalyticsService {
 
-    private static final List<OrderStatus> VALID_STATUSES = List.of(
-            OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.PACKING,
-            OrderStatus.SHIPPING, OrderStatus.DELIVERED
-    );
+    private static final List<OrderStatus> VALID_STATUSES = OrderStatus.SUCCESS_STATUSES;
 
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;

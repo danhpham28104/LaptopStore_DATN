@@ -78,19 +78,18 @@ public class PaymentStatusCheckService {
 
             for (Payment payment : overduePayments) {
                 Order order = payment.getOrder();
-                if (order != null && order.getOrderStatus() != OrderStatus.CANCELLED) {
-                    try {
-                        orderService.cancelOrder(order.getId());
-                    } catch (Exception ex) {
-                        logger.warn("Order {} already cancelled or cannot be cancelled: {}", order.getOrderCode(), ex.getMessage());
+                if (order != null && order.getOrderStatus() != OrderStatus.DA_HUY) {
+                    if (order.getOrderStatus() != null && order.getOrderStatus().isCancellable()) {
+                        try {
+                            orderService.cancelOrder(order.getId());
+                        } catch (Exception ex) {
+                            logger.warn("Order {} cannot be cancelled automatically: {}", order.getOrderCode(), ex.getMessage());
+                        }
                     }
-                    order.setOrderStatus(OrderStatus.CANCELLED);
                     payment.setStatus(PaymentStatus.FAILED);
-
-                    orderRepository.save(order);
                     paymentRepository.save(payment);
 
-                    logger.info("⏰ Marked order {} as timeout & restored stock", order.getOrderCode());
+                    logger.info("⏰ Marked overdue payment failed for order {}", order.getOrderCode());
                 }
             }
 
@@ -135,10 +134,11 @@ public class PaymentStatusCheckService {
         // Nếu payment đã được xác nhận thành công từ provider
         if (isPaymentConfirmed(payment)) {
             payment.setStatus(PaymentStatus.PAID);
-            order.setOrderStatus(OrderStatus.CONFIRMED);
-
             paymentRepository.save(payment);
-            orderRepository.save(order);
+
+            if (order.getOrderStatus() == OrderStatus.CHO_THANH_TOAN) {
+                orderService.confirmQrPayment(order.getId(), "System: PaymentStatusCheck");
+            }
 
             logger.info("✅ Order {} marked as PAID", order.getOrderCode());
         }
@@ -188,18 +188,23 @@ public class PaymentStatusCheckService {
             if ("SUCCESS".equalsIgnoreCase(status)) {
                 payment.setStatus(PaymentStatus.SUCCESS);
                 payment.setTransactionId(transactionId);
-                order.setOrderStatus(OrderStatus.CONFIRMED);
+                paymentRepository.save(payment);
+
+                if (order.getOrderStatus() == OrderStatus.CHO_THANH_TOAN) {
+                    orderService.confirmQrPayment(order.getId(), "Payment Webhook");
+                }
 
                 logger.info("✅ Payment confirmed via webhook for order: {}", orderCode);
             } else if ("FAILED".equalsIgnoreCase(status)) {
                 payment.setStatus(PaymentStatus.FAILED);
-                order.setOrderStatus(OrderStatus.CANCELLED);
+                paymentRepository.save(payment);
+
+                if (order.getOrderStatus() != null && order.getOrderStatus().isCancellable()) {
+                    orderService.cancelOrder(order.getId());
+                }
 
                 logger.warn("❌ Payment failed for order: {}", orderCode);
             }
-
-            paymentRepository.save(payment);
-            orderRepository.save(order);
 
         } catch (Exception e) {
             logger.error("❌ Error processing webhook: {}", e.getMessage(), e);

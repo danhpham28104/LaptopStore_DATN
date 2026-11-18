@@ -19,10 +19,7 @@ import java.util.*;
 @Transactional(readOnly = true)
 public class RfmSegmentationService {
 
-    private static final List<OrderStatus> SUCCESS_STATUSES = List.of(
-            OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.PACKING,
-            OrderStatus.SHIPPING, OrderStatus.DELIVERED
-    );
+    private static final List<OrderStatus> SUCCESS_STATUSES = OrderStatus.SUCCESS_STATUSES;
 
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;

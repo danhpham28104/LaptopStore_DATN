@@ -44,10 +44,13 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
-    // Tìm theo tên
+    // Tìm theo từ khóa (khớp 1 phần tên, ID, model, hãng, cấu hình)
     @Transactional(readOnly = true)
     public List<Product> searchByName(String keyword) {
-        return productRepository.findByNameContainingIgnoreCase(keyword);
+        if (keyword == null || keyword.isBlank()) {
+            return productRepository.findAll();
+        }
+        return productRepository.searchByKeyword(keyword.trim());
     }
 
     // Phân trang
@@ -94,11 +97,36 @@ public class ProductService {
     public void delete(Long id) {
         productRepository.findById(id).ifPresent(product -> {
             product.setDeleted(true);
+            long ts = System.currentTimeMillis();
+            if (product.getProductCode() != null && !product.getProductCode().contains("_deleted_")) {
+                product.setProductCode(product.getProductCode() + "_deleted_" + ts);
+            }
             if (product.getModel() != null && !product.getModel().contains("_deleted_")) {
-                product.setModel(product.getModel() + "_deleted_" + System.currentTimeMillis());
+                product.setModel(product.getModel() + "_deleted_" + ts);
             }
             productRepository.save(product);
         });
+    }
+
+    // Kiểm tra mã ID xuất xưởng (productCode) đã tồn tại chưa
+    @Transactional(readOnly = true)
+    public boolean existsByProductCode(String productCode, Long excludeId) {
+        if (productCode == null || productCode.isBlank()) return false;
+        return productRepository.countByProductCodeIgnoreCaseExcludingId(productCode.trim(), excludeId) > 0;
+    }
+
+    // Tìm sản phẩm theo mã ID xuất xưởng (bao gồm cả sản phẩm đã xóa mềm)
+    @Transactional(readOnly = true)
+    public Optional<Product> findAnyByProductCode(String productCode) {
+        if (productCode == null || productCode.isBlank()) return Optional.empty();
+        return productRepository.findAnyByProductCodeIncludingDeleted(productCode.trim());
+    }
+
+    // Giải phóng product_code đang nằm ở bản ghi đã xóa mềm (nếu có)
+    @Transactional
+    public void releaseDeletedProductCode(String productCode) {
+        if (productCode == null || productCode.isBlank()) return;
+        productRepository.releaseDeletedProductCode(productCode.trim(), System.currentTimeMillis());
     }
 
     // Kiểm tra model đã tồn tại trong DB chưa (bao gồm cả sản phẩm đã xóa)

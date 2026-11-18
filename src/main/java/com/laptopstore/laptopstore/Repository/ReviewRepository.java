@@ -30,6 +30,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     Optional<Review> findByUserIdAndOrderItemId(Long userId, Long orderItemId);
 
+    Optional<Review> findByUserIdAndProductIdAndOrderItemId(Long userId, Long productId, Long orderItemId);
+
+    boolean existsByUserIdAndProductIdAndOrderItemId(Long userId, Long productId, Long orderItemId);
+
+    Optional<Review> findFirstByUserIdAndProductIdAndOrderItemIsNullOrderByIdDesc(Long userId, Long productId);
+
+    List<Review> findByUserIdAndProductIdOrderByIdDesc(Long userId, Long productId);
+
     // Đếm review theo từng mức sao
     @Query("SELECT r.rating, COUNT(r) FROM Review r WHERE r.product.id = :productId AND r.status = :status GROUP BY r.rating")
     List<Object[]> countByProductIdAndStatusGroupByRating(@Param("productId") Long productId, @Param("status") ReviewStatus status);

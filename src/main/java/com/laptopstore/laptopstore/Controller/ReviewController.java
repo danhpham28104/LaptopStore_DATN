@@ -44,13 +44,17 @@ public class ReviewController {
             User user = userService.findByUsername(principal.getName())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin tài khoản!"));
 
-            reviewService.addReview(user, reviewDto);
-            redirectAttributes.addFlashAttribute("success", "Cảm ơn bạn! Đánh giá của bạn đã được ghi nhận.");
+            Review saved = reviewService.addReview(user, reviewDto);
+            redirectAttributes.addFlashAttribute("success", "Cảm ơn bạn! Đánh giá của bạn đã được lưu.");
+            Long itemId = saved.getOrderItem() != null ? saved.getOrderItem().getId() : reviewDto.getOrderItemId();
+            if (itemId != null) {
+                return "redirect:/product/" + reviewDto.getProductId() + "?orderItemId=" + itemId + "#reviewsTab";
+            }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
 
-        return "redirect:/product/" + reviewDto.getProductId();
+        return "redirect:/product/" + reviewDto.getProductId() + "#reviewsTab";
     }
 
     @PostMapping("/api/reviews/add")
@@ -67,8 +71,10 @@ public class ReviewController {
             User user = userService.findByUsername(principal.getName()).orElse(null);
             Review review = reviewService.addReview(user, reviewDto);
             response.put("success", true);
-            response.put("message", "Đánh giá của bạn đã gửi thành công!");
+            response.put("message", "Đánh giá của bạn đã được lưu thành công!");
             response.put("reviewId", review.getId());
+            response.put("rating", review.getRating());
+            response.put("updatedAt", review.getUpdatedAt());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("success", false);
@@ -83,28 +89,17 @@ public class ReviewController {
             @PathVariable Long productId,
             @RequestParam(required = false) Integer rating) {
 
-        List<Review> reviews;
-        if (rating != null) {
-            if (rating <= 2) {
-                reviews = reviewRepository.findByProductIdAndStatusAndRatingLessThanEqualOrderByCreatedAtDesc(
-                        productId, ReviewStatus.APPROVED, 2);
-            } else {
-                reviews = reviewRepository.findByProductIdAndStatusAndRatingOrderByCreatedAtDesc(
-                        productId, ReviewStatus.APPROVED, rating);
-            }
-        } else {
-            reviews = reviewService.getApprovedReviewsByProduct(productId);
-        }
+        List<Review> allApproved = reviewService.getApprovedReviewsByProduct(productId);
+        List<Review> reviews = reviewService.getApprovedReviewsByProductAndRating(productId, rating);
 
-        // Đếm theo từng sao
+        // Đếm theo từng sao trên danh sách review duy nhất hiện hành
         Map<Integer, Long> starCounts = new HashMap<>();
         for (int i = 1; i <= 5; i++) starCounts.put(i, 0L);
-        reviewRepository.countByProductIdAndStatusGroupByRating(productId, ReviewStatus.APPROVED)
-                .forEach(row -> {
-                    if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
-                        starCounts.put((Integer) row[0], (Long) row[1]);
-                    }
-                });
+        for (Review r : allApproved) {
+            if (r.getRating() != null && r.getRating() >= 1 && r.getRating() <= 5) {
+                starCounts.put(r.getRating(), starCounts.get(r.getRating()) + 1L);
+            }
+        }
 
         List<Map<String, Object>> reviewList = reviews.stream().map(r -> {
             Map<String, Object> map = new HashMap<>();
@@ -112,6 +107,8 @@ public class ReviewController {
             map.put("rating", r.getRating());
             map.put("comment", r.getComment());
             map.put("createdAt", r.getCreatedAt());
+            map.put("updatedAt", r.getUpdatedAt());
+            map.put("orderItemId", r.getOrderItem() != null ? r.getOrderItem().getId() : null);
             map.put("user", Map.of("fullName", r.getUser() != null ? (r.getUser().getFullName() != null && !r.getUser().getFullName().isBlank() ? r.getUser().getFullName() : r.getUser().getUsername()) : "Khách hàng TechStore"));
             return map;
         }).toList();

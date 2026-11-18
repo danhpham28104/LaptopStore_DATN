@@ -49,12 +49,30 @@ public class AdminOrderController {
         return "admin/orders";
     }
 
-    /** 🔹 Cập nhật trạng thái đơn hàng */
+    /** 🔹 Cập nhật trạng thái đơn hàng (qua Service Layer, có validation chuyển trạng thái) */
     @PostMapping("/update-status/{id}")
-    public String updateStatus(@PathVariable Long id, @RequestParam String status) {
-        OrderStatus newStatus = OrderStatus.fromString(status);
-        orderService.updateStatus(id, newStatus);
-        return "redirect:/admin/orders?updated=true";
+    public String updateStatus(
+            @PathVariable Long id,
+            @RequestParam String status,
+            @RequestParam(required = false) String redirectTo,
+            @RequestParam(required = false) String note,
+            java.security.Principal principal,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
+    ) {
+        String performedBy = (principal != null) ? ("Admin: " + principal.getName()) : "Admin";
+        try {
+            OrderStatus newStatus = OrderStatus.fromStringStrict(status);
+            Order updated = orderService.updateOrderStatus(id, newStatus, performedBy, note);
+            String code = updated.getOrderCode() != null ? updated.getOrderCode() : ("#" + id);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Đã chuyển đơn hàng " + code + " sang trạng thái \"" + newStatus.getDisplayName() + "\".");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        if ("detail".equalsIgnoreCase(redirectTo)) {
+            return "redirect:/admin/orders/" + id;
+        }
+        return "redirect:/admin/orders";
     }
 
     /** 🔹 Cập nhật ghi chú nội bộ Admin */
@@ -64,8 +82,47 @@ public class AdminOrderController {
             @RequestParam(required = false) String adminNote,
             org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
     ) {
-        orderService.updateAdminNote(id, adminNote);
-        redirectAttributes.addFlashAttribute("successMessage", "Đã lưu ghi chú nội bộ thành công!");
+        try {
+            orderService.updateAdminNote(id, adminNote);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu ghi chú nội bộ thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/orders/" + id;
+    }
+
+    /** 🔹 Cập nhật thông tin giao hàng (bị khóa khi đơn đã Hoàn thành) */
+    @PostMapping("/{id}/shipping")
+    public String updateShippingInfo(
+            @PathVariable Long id,
+            @RequestParam String receiverName,
+            @RequestParam String receiverPhone,
+            @RequestParam String shippingAddress,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
+    ) {
+        try {
+            orderService.updateOrderShippingInfo(id, receiverName, receiverPhone, shippingAddress);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật thông tin giao hàng thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/orders/" + id;
+    }
+
+    /** 🔹 Cập nhật số lượng sản phẩm trong đơn (bị khóa khi đơn đã Hoàn thành) */
+    @PostMapping("/{id}/items/{itemId}/quantity")
+    public String updateOrderItemQuantity(
+            @PathVariable Long id,
+            @PathVariable Long itemId,
+            @RequestParam int quantity,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
+    ) {
+        try {
+            orderService.updateOrderItemQuantity(id, itemId, quantity);
+            redirectAttributes.addFlashAttribute("successMessage", "Đã cập nhật số lượng sản phẩm thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
         return "redirect:/admin/orders/" + id;
     }
 
@@ -102,21 +159,11 @@ public class AdminOrderController {
 
     @GetMapping("/search")
     public String searchOrders(
-            @RequestParam String q,
+            @RequestParam(required = false) String q,
             Model model
     ) {
-        List<Order> results;
-
-        if (q.matches("\\d+")) { // tìm theo ID
-            orderService.getOrderById(Long.parseLong(q))
-                    .ifPresentOrElse(
-                            order -> model.addAttribute("orders", List.of(order)),
-                            () -> model.addAttribute("orders", List.of())
-                    );
-        } else {
-            model.addAttribute("orders", List.of());
-        }
-
+        List<Order> results = orderService.searchOrders(q);
+        model.addAttribute("orders", results);
         model.addAttribute("q", q);
         model.addAttribute("searchMode", true); // 👈 tắt phân trang
         model.addAttribute("active", "orders");
@@ -124,25 +171,73 @@ public class AdminOrderController {
         return "admin/orders";
     }
 
+    @GetMapping("/api/suggest")
+    @ResponseBody
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<java.util.Map<String, Object>> suggestOrders(
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "limit", defaultValue = "8") int limit
+    ) {
+        if (q == null || q.isBlank()) {
+            return List.of();
+        }
+        int safeLimit = Math.max(1, Math.min(limit, 15));
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+        return orderService.searchOrders(q.trim()).stream()
+                .limit(safeLimit)
+                .map(o -> {
+                    java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                    item.put("id", o.getId());
+                    item.put("orderCode", o.getOrderCode() != null ? o.getOrderCode() : ("#" + o.getId()));
+                    item.put("receiverName", o.getReceiverName() != null ? o.getReceiverName() : "");
+                    item.put("receiverPhone", o.getReceiverPhone() != null ? o.getReceiverPhone() : "");
+                    item.put("totalAmount", o.getTotalAmount() != null ? o.getTotalAmount() : java.math.BigDecimal.ZERO);
+                    item.put("statusDisplay", o.getOrderStatus() != null ? o.getOrderStatus().getDisplayName() : "");
+                    item.put("createdAt", o.getCreatedAt() != null ? o.getCreatedAt().format(fmt) : "");
+                    return item;
+                })
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     @PostMapping("/bulk-status")
     @ResponseBody
-    public java.util.Map<String, Object> bulkUpdateStatus(@RequestBody java.util.Map<String, Object> body) {
+    public java.util.Map<String, Object> bulkUpdateStatus(
+            @RequestBody java.util.Map<String, Object> body,
+            java.security.Principal principal
+    ) {
         List<Long> ids = ((List<?>) body.get("ids")).stream()
                 .map(o -> Long.parseLong(o.toString())).collect(java.util.stream.Collectors.toList());
         String status = (String) body.get("status");
-        OrderStatus newStatus = OrderStatus.fromString(status);
-
-        int updated = 0;
-        for (Long id : ids) {
-            try {
-                orderService.updateStatus(id, newStatus);
-                updated++;
-            } catch (Exception ignored) {}
-        }
+        String performedBy = (principal != null) ? ("Admin: " + principal.getName()) : "Admin";
 
         java.util.Map<String, Object> result = new java.util.HashMap<>();
+        OrderStatus newStatus;
+        try {
+            newStatus = OrderStatus.fromStringStrict(status);
+        } catch (Exception e) {
+            result.put("updated", 0);
+            result.put("failed", ids.size());
+            result.put("total", ids.size());
+            result.put("errors", List.of(e.getMessage()));
+            return result;
+        }
+
+        int updated = 0;
+        List<String> errors = new java.util.ArrayList<>();
+        for (Long id : ids) {
+            try {
+                orderService.updateOrderStatus(id, newStatus, performedBy, null);
+                updated++;
+            } catch (Exception e) {
+                errors.add("Đơn #" + id + ": " + e.getMessage());
+            }
+        }
+
         result.put("updated", updated);
+        result.put("failed", errors.size());
         result.put("total", ids.size());
+        result.put("errors", errors);
         return result;
     }
 

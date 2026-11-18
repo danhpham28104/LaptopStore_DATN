@@ -177,6 +177,11 @@
 
             <!-- Product name -->
             <h1 class="product-name detail-name mt-2" th:text="${product.name}">Tên sản phẩm</h1>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2 text-muted small">
+              <span>Mã ID: <strong class="text-dark" th:text="${product.displayId}">—</strong></span>
+              <span>•</span>
+              <span>Model: <strong class="text-dark" th:text="${product.model}">—</strong></span>
+            </div>
 
             <!-- Pricing -->
             <div class="pricing-section">
@@ -345,6 +350,8 @@
               <div class="tab-pane fade" id="technical">
                 <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--text);">Thông số kỹ thuật</h3>
                 <div class="spec-table">
+                  <div class="spec-row"><span class="spec-name">Mã ID (Xuất xưởng)</span><span class="spec-value" th:text="${product.displayId}">—</span></div>
+                  <div class="spec-row"><span class="spec-name">Model</span><span class="spec-value" th:text="${product.model}">—</span></div>
                   <div class="spec-row"><span class="spec-name">RAM</span><span class="spec-value" th:text="${product.ram}">—</span></div>
                   <div class="spec-row"><span class="spec-name">SSD</span><span class="spec-value" th:text="${#lists.isEmpty(variants) ? '—' : variants.get(0).storage}">—</span></div>
                   <div class="spec-row"><span class="spec-name">Màn hình</span><span class="spec-value" th:text="${product.display}">—</span></div>
@@ -379,28 +386,50 @@
                   <!-- Form viết nhận xét -->
                   <div class="col-md-8">
                     <div th:if="${canReview}" class="card border-primary mb-4">
-                      <div class="card-header bg-primary text-white fw-bold">
-                        <i class="bi bi-pencil-square me-2"></i>Viết nhận xét đánh giá sản phẩm
+                      <div class="card-header bg-primary text-white fw-bold d-flex align-items-center justify-content-between">
+                        <span>
+                          <i class="bi bi-pencil-square me-2"></i>
+                          <span th:text="${existingReview != null ? 'Cập nhật đánh giá của bạn' : 'Viết nhận xét đánh giá sản phẩm'}">Viết nhận xét đánh giá sản phẩm</span>
+                        </span>
+                        <span th:if="${existingReview != null}" class="badge bg-light text-primary">Mỗi sản phẩm/đơn hàng 1 đánh giá</span>
                       </div>
                       <div class="card-body">
                         <form th:action="@{/reviews/add}" method="post">
                           <input type="hidden" name="productId" th:value="${product.id}"/>
+                          <div class="mb-3" th:if="${deliveredOrderItems != null and #lists.size(deliveredOrderItems) > 1}">
+                            <label class="form-label fw-bold">Đơn hàng đã mua:</label>
+                            <select name="orderItemId"
+                                    class="form-select w-auto"
+                                    th:attr="data-product-id=${product.id}"
+                                    onchange="window.location.href='/product/' + this.dataset.productId + '?orderItemId=' + this.value + '#reviewsTab'">
+                              <option th:each="oi : ${deliveredOrderItems}"
+                                      th:value="${oi.id}"
+                                      th:selected="${selectedOrderItemId != null and selectedOrderItemId == oi.id}"
+                                      th:text="${'Đơn ' + (oi.order != null and oi.order.orderCode != null ? oi.order.orderCode : '#' + oi.id) + (oi.variant != null ? ' (' + oi.variant.color + ' - ' + oi.variant.storage + ')' : '')}">
+                              </option>
+                            </select>
+                          </div>
+                          <input th:if="${deliveredOrderItems == null or #lists.size(deliveredOrderItems) <= 1}"
+                                 type="hidden" name="orderItemId" th:value="${selectedOrderItemId}"/>
                           <div class="mb-3">
                             <label class="form-label fw-bold">Số sao chọn đánh giá:</label>
                             <select name="rating" class="form-select w-auto" required>
-                              <option value="5">⭐⭐⭐⭐⭐ (5 sao - Rất hài lòng)</option>
-                              <option value="4">⭐⭐⭐⭐ (4 sao - Hài lòng)</option>
-                              <option value="3">⭐⭐⭐ (3 sao - Bình thường)</option>
-                              <option value="2">⭐⭐ (2 sao - Không hài lòng)</option>
-                              <option value="1">⭐ (1 sao - Rất tệ)</option>
+                              <option value="5" th:selected="${existingReview == null or existingReview.rating == 5}">⭐⭐⭐⭐⭐ (5 sao - Rất hài lòng)</option>
+                              <option value="4" th:selected="${existingReview != null and existingReview.rating == 4}">⭐⭐⭐⭐ (4 sao - Hài lòng)</option>
+                              <option value="3" th:selected="${existingReview != null and existingReview.rating == 3}">⭐⭐⭐ (3 sao - Bình thường)</option>
+                              <option value="2" th:selected="${existingReview != null and existingReview.rating == 2}">⭐⭐ (2 sao - Không hài lòng)</option>
+                              <option value="1" th:selected="${existingReview != null and existingReview.rating == 1}">⭐ (1 sao - Rất tệ)</option>
                             </select>
                           </div>
                           <div class="mb-3">
                             <label class="form-label fw-bold">Nội dung nhận xét:</label>
-                            <textarea name="comment" class="form-control" rows="3" placeholder="Chia sẻ cảm nhận chi tiết về hiệu năng, màn hình, bàn phím và thiết kế của chiếc Laptop này..." required></textarea>
+                            <textarea name="comment" class="form-control" rows="3"
+                                      placeholder="Chia sẻ cảm nhận chi tiết về hiệu năng, màn hình, bàn phím và thiết kế của chiếc Laptop này..."
+                                      required th:text="${existingReview != null ? existingReview.comment : ''}"></textarea>
                           </div>
                           <button type="submit" class="btn btn-primary rounded-pill px-4">
-                            <i class="bi bi-send me-1"></i> Gửi nhận xét
+                            <i class="bi bi-send me-1"></i>
+                            <span th:text="${existingReview != null ? 'Cập nhật đánh giá' : 'Gửi nhận xét'}">Gửi nhận xét</span>
                           </button>
                         </form>
                       </div>
@@ -408,7 +437,7 @@
 
                     <div th:if="${!canReview}" class="alert alert-light border mb-4">
                       <i class="bi bi-shield-check text-success me-2"></i>
-                      <span class="text-muted">Chỉ những khách hàng đã mua sản phẩm và đơn hàng ở trạng thái <strong>Đã giao hàng (DELIVERED)</strong> mới có thể gửi nhận xét đánh giá.</span>
+                      <span class="text-muted">Chỉ những khách hàng đã mua sản phẩm và đơn hàng ở trạng thái <strong>Đã giao hàng / Hoàn thành</strong> mới có thể gửi nhận xét đánh giá.</span>
                     </div>
 
                     <!-- Filter buttons & Danh sách nhận xét -->
@@ -635,6 +664,15 @@
   /*<![CDATA[*/
   const productId = /*[[${product.id}]]*/ 0;
 
+  function escapeReviewHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function filterReviews(rating, btnElement) {
     const url = `/api/reviews/product/${productId}` + (rating !== null && rating !== undefined ? `?rating=${rating}` : '');
     fetch(url)
@@ -649,12 +687,16 @@
         }
         document.getElementById('count2').textContent = (starCounts[1] || 0) + (starCounts[2] || 0);
 
-        // Render review list
+        // Render review list (đã đảm bảo không trùng theo mỗi user/product/orderItem)
         const reviews = data.reviews || [];
         if (reviews.length > 0) {
           const html = reviews.map(r => {
-            const userName = (r.user && r.user.fullName) ? r.user.fullName : 'Khách hàng TechStore';
-            const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '';
+            const userName = escapeReviewHtml((r.user && r.user.fullName) ? r.user.fullName : 'Khách hàng TechStore');
+            const createdDateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '';
+            const isEdited = r.updatedAt && r.createdAt && new Date(r.updatedAt).getTime() > new Date(r.createdAt).getTime() + 1000;
+            const dateBadge = isEdited
+              ? `Cập nhật: ${new Date(r.updatedAt).toLocaleDateString('vi-VN')}`
+              : createdDateStr;
             const ratingVal = r.rating || 5;
             let starsHtml = '';
             for (let s = 0; s < ratingVal; s++) {
@@ -667,12 +709,12 @@
                     <strong class="text-dark">${userName}</strong>
                     <span class="verified-badge" style="font-size:0.75rem;"><i class="bi bi-check-circle-fill text-success me-1"></i>Đã mua hàng (Verified Purchase)</span>
                   </div>
-                  <small class="text-muted">${dateStr}</small>
+                  <small class="text-muted">${dateBadge}</small>
                 </div>
                 <div class="mb-2">
                   ${starsHtml}
                 </div>
-                <p class="mb-0 text-dark">${r.comment || ''}</p>
+                <p class="mb-0 text-dark">${escapeReviewHtml(r.comment)}</p>
               </div>
             `;
           }).join('');
@@ -699,6 +741,13 @@
   document.addEventListener('DOMContentLoaded', function() {
     const defaultBtn = document.querySelector('.review-filter button');
     filterReviews(null, defaultBtn);
+
+    if (window.location.hash === '#reviewsTab') {
+      const tabTrigger = document.querySelector('[data-bs-target="#reviewsTab"]');
+      if (tabTrigger && typeof bootstrap !== 'undefined') {
+        bootstrap.Tab.getOrCreateInstance(tabTrigger).show();
+      }
+    }
   });
   /*]]>*/
 </script>

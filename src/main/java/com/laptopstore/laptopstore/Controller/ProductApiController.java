@@ -18,6 +18,49 @@ public class ProductApiController {
     private ProductService productService;
 
     /**
+     * Gợi ý tìm kiếm sản phẩm trực tiếp theo 1 phần từ khóa (autocomplete)
+     */
+    @GetMapping("/suggest")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ResponseEntity<List<Map<String, Object>>> suggestProducts(
+            @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "limit", defaultValue = "8") int limit
+    ) {
+        if (q == null || q.isBlank()) {
+            return ResponseEntity.ok(List.of());
+        }
+        int safeLimit = Math.max(1, Math.min(limit, 15));
+        List<Product> matches = productService.searchByName(q.trim());
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (int i = 0; i < Math.min(matches.size(), safeLimit); i++) {
+            Product p = matches.get(i);
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", p.getId());
+            item.put("productCode", p.getDisplayId());
+            item.put("name", p.getName());
+            item.put("model", p.getModel() != null ? p.getModel() : "");
+            item.put("brandName", p.getBrand() != null ? p.getBrand().getName() : "Khác");
+            item.put("categoryName", p.getCategory() != null ? p.getCategory().getName() : "");
+            item.put("cpu", p.getCpu() != null ? p.getCpu() : "");
+            item.put("ram", p.getRam() != null ? p.getRam() : "");
+            item.put("price", p.getPrice());
+            item.put("finalPrice", p.getFinalPrice());
+            item.put("salePercent", p.getSalePercent() != null ? p.getSalePercent() : 0);
+            item.put("stock", p.getStock() != null ? p.getStock() : 0);
+
+            String mainImg = "/images/default-avatar.png";
+            if (p.getImages() != null && !p.getImages().isBlank()) {
+                mainImg = p.getImages().split(",")[0].trim();
+            }
+            item.put("image", mainImg);
+            results.add(item);
+        }
+
+        return ResponseEntity.ok(results);
+    }
+
+    /**
      * Lay chi tiet san pham + danh sach bien the dang JSON de hien thi Quick Select Modal
      */
     @GetMapping("/{id}")
@@ -30,6 +73,8 @@ public class ProductApiController {
         Product p = opt.get();
         Map<String, Object> res = new LinkedHashMap<>();
         res.put("id", p.getId());
+        res.put("productCode", p.getDisplayId());
+        res.put("model", p.getModel());
         res.put("name", p.getName());
         res.put("brandName", p.getBrand() != null ? p.getBrand().getName() : "Khác");
         res.put("price", p.getPrice());

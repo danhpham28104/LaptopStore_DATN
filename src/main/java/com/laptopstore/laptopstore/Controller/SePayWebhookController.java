@@ -117,15 +117,14 @@ public class SePayWebhookController {
             return ResponseEntity.ok("INVALID_AMOUNT");
         }
 
-        // 🔹 3. Cập nhật trạng thái đơn hàng & xác nhận kho chuẩn xác
+        // 🔹 3. Cập nhật trạng thái thanh toán & chuyển đơn CHO_THANH_TOAN -> CHO_XAC_NHAN
         if (order.getOrderStatus().isPendingPayment()) {
-            orderService.confirmQrPayment(order.getId(), "SePay Webhook");
-            order.setOrderStatus(OrderStatus.CONFIRMED);
             if (order.getPayment() != null) {
                 order.getPayment().setStatus(com.laptopstore.laptopstore.enums.PaymentStatus.PAID);
                 order.getPayment().setTransactionId(transactionId != null ? transactionId : "SEPAY_" + System.currentTimeMillis());
+                paymentRepository.save(order.getPayment());
             }
-            orderService.saveOrder(order);
+            orderService.confirmQrPayment(order.getId(), "SePay Webhook");
 
             // 🔹 Track PAYMENT_SUCCESS
             analyticsEventService.trackPaymentSuccess(order.getId());
